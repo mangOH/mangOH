@@ -1,0 +1,2 @@
+# Ignore apps directory (contains other git repos)
+apps

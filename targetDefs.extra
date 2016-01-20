@@ -1,0 +1,5 @@
+# Root directory for MangOH code
+export MANGOH_ROOT = $(LEGATO_ROOT)/../mangOH
+
+# Override the default sdef file to use the MangOH one
+export SDEF_TO_USE = $(MANGOH_ROOT)/mangoh.sdef
