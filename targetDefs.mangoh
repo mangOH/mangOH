@@ -1,5 +1,6 @@
 # Root directory for MangOH code
 export MANGOH_ROOT = $(LEGATO_ROOT)/../mangOH
+export MANGOH_WIFI_ROOT = $(MANGOH_ROOT)/apps/WiFi
 
 # Override the default sdef file to use the MangOH one
 export SDEF_TO_USE = $(MANGOH_ROOT)/mangoh.sdef

@@ -26,6 +26,10 @@ apps:
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderService.adef
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderDemo/gpioExpanderDemo.adef
 
+    $MANGOH_WIFI_ROOT/service/wifiService.adef
+    $MANGOH_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
+    $MANGOH_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
+
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
 }
