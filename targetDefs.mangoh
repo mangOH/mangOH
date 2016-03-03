@@ -2,5 +2,12 @@
 export MANGOH_ROOT = $(LEGATO_ROOT)/../mangOH
 export MANGOH_WIFI_ROOT = $(MANGOH_ROOT)/apps/WiFi
 
+# this variable goes from environment -> cmake -> Doxygen.
+# It can be used in Legato Doxygen code to conditionally add MangOH links etc.
+# \if MANGOH_WIFI_DOXYGEN_DEFINE
+# ....
+# \endif
+export MANGOH_WIFI_DOXYGEN_DEFINE = MANGOH_WIFI_DOXYGEN_DEFINE
+
 # Override the default sdef file to use the MangOH one
 export SDEF_TO_USE = $(MANGOH_ROOT)/mangoh.sdef
