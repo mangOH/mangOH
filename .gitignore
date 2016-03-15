@@ -1,2 +1,3 @@
-# Ignore apps directory (contains other git repos)
+# Ignore apps & samples directories (contains other git repos)
 apps
+samples
