@@ -29,6 +29,8 @@ apps:
     $MANGOH_WIFI_ROOT/service/wifiService.adef
     $MANGOH_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
     $MANGOH_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
+    $MANGOH_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
+    $MANGOH_WIFI_ROOT/apps/tools/wifi/wifi.adef
 
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
@@ -39,4 +41,5 @@ commands:
     cm = tools:/bin/cm
     fwupdate = tools:/bin/fwupdate
     secstore = tools:/bin/secstore
+    wifi = wifi:/bin/wifi
 }

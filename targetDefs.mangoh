@@ -9,5 +9,12 @@ export MANGOH_WIFI_ROOT = $(MANGOH_ROOT)/apps/WiFi
 # \endif
 export MANGOH_WIFI_DOXYGEN_DEFINE = MANGOH_WIFI_DOXYGEN_DEFINE
 
+######### Platform Adaptor values
+# values are the names of the subdirectories in /WiFi/service/platformAdaptor/$(MANGOH_WIFI_PA)
+# currently available :
+# ti - running hardware
+# ti_simu - running a simulated Access Point.  (Wifi Client to remains to be simulated)
+export MANGOH_WIFI_PA = ti
+
 # Override the default sdef file to use the MangOH one
 export SDEF_TO_USE = $(MANGOH_ROOT)/mangoh.sdef
