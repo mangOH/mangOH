@@ -4,10 +4,11 @@ export MANGOH_WIFI_ROOT = $(MANGOH_ROOT)/apps/WiFi
 
 # this variable goes from environment -> cmake -> Doxygen.
 # It can be used in Legato Doxygen code to conditionally add MangOH links etc.
-# \if MANGOH_WIFI_DOXYGEN_DEFINE
+# \if EXTERNAL_DOXYGEN_DEFINE
 # ....
 # \endif
-export MANGOH_WIFI_DOXYGEN_DEFINE = MANGOH_WIFI_DOXYGEN_DEFINE
+export EXTERNAL_DOXYGEN_DEFINE = EXTERNAL_DOXYGEN_DEFINE
+export EXTERNAL_DOXYGEN_ROOT = $(MANGOH_ROOT)/apps/WiFi
 
 ######### Platform Adaptor values
 # values are the names of the subdirectories in /WiFi/service/platformAdaptor/$(MANGOH_WIFI_PA)
