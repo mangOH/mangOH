@@ -26,6 +26,9 @@ apps:
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderService.adef
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderDemo/gpioExpanderDemo.adef
 
+    $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService.adef
+    $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools.adef
+
     $MANGOH_WIFI_ROOT/service/wifiService.adef
     $MANGOH_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
     $MANGOH_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
@@ -42,4 +45,5 @@ commands:
     fwupdate = tools:/bin/fwupdate
     secstore = tools:/bin/secstore
     wifi = wifi:/bin/wifi
+    mux = muxCtrlTools:/bin/mux
 }
