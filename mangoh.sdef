@@ -29,6 +29,10 @@ apps:
     $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService.adef
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools.adef
 
+    $MANGOH_ROOT/apps/MqttClient/mqttClient.adef
+    $MANGOH_ROOT/apps/DataRouter/dataRouter.adef
+    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge.adef
+
     $MANGOH_WIFI_ROOT/service/wifiService.adef
     $MANGOH_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
     $MANGOH_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
