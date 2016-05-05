@@ -7,6 +7,13 @@
  */
 //--------------------------------------------------------------------------------------------------
 
+
+interfaceSearch:
+{
+    interfaces/modemServices
+    interfaces/positioning
+}
+
 apps:
 {
     // Platform services.
