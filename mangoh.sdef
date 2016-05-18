@@ -1,18 +1,9 @@
 //--------------------------------------------------------------------------------------------------
-/**
- * MangOH system definition that includes essential modem and positioning services
- * plus available MangOH apps
- *
- * Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
- */
+// MangOH system definition that includes essential modem and positioning services
+// plus available MangOH apps
+//
+// Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
 //--------------------------------------------------------------------------------------------------
-
-
-interfaceSearch:
-{
-    interfaces/modemServices
-    interfaces/positioning
-}
 
 apps:
 {
@@ -55,6 +46,18 @@ commands:
     cm = tools:/bin/cm
     fwupdate = tools:/bin/fwupdate
     secstore = tools:/bin/secstore
+    pmtool = tools:/bin/pmtool
     wifi = wifi:/bin/wifi
     mux = muxCtrlTools:/bin/mux
+}
+
+bindings:
+{
+    <root>.le_fwupdate -> fwupdateService.le_fwupdate
+}
+
+interfaceSearch:
+{
+    interfaces/modemServices
+    interfaces/positioning
 }
