@@ -21,6 +21,12 @@ apps:
     $LEGATO_ROOT/apps/platformServices/voiceCallService
     $LEGATO_ROOT/apps/platformServices/gpioService
 
+    $LEGATO_WIFI_ROOT/service/wifiService.adef
+    $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
+    $LEGATO_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
+    $LEGATO_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
+    $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi.adef
+
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderService.adef
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderDemo/gpioExpanderDemo.adef
 
@@ -30,12 +36,6 @@ apps:
     $MANGOH_ROOT/apps/MqttClient/mqttClient.adef
     $MANGOH_ROOT/apps/DataRouter/dataRouter.adef
     $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge.adef
-
-    $MANGOH_WIFI_ROOT/service/wifiService.adef
-    $MANGOH_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
-    $MANGOH_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
-    $MANGOH_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
-    $MANGOH_WIFI_ROOT/apps/tools/wifi/wifi.adef
 
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
