@@ -35,6 +35,7 @@ apps:
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient.adef
     $MANGOH_ROOT/apps/DataRouter/dataRouter.adef
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool.adef
     $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge.adef
 
     // Command-line tools.
@@ -49,6 +50,7 @@ commands:
     pmtool = tools:/bin/pmtool
     wifi = wifi:/bin/wifi
     mux = muxCtrlTools:/bin/mux
+    dr = drTool:/bin/dr
 }
 
 bindings:
