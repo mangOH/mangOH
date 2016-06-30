@@ -37,6 +37,7 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/dataRouter.adef
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool.adef
     $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge.adef
+    $MANGOH_ROOT/apps/SocialService/socialService.adef
 
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
@@ -48,9 +49,14 @@ commands:
     fwupdate = tools:/bin/fwupdate
     secstore = tools:/bin/secstore
     pmtool = tools:/bin/pmtool
+
     wifi = wifi:/bin/wifi
+
     mux = muxCtrlTools:/bin/mux
+
     dr = drTool:/bin/dr
+
+    twitter = socialService:/bin/twitter
 }
 
 bindings:
