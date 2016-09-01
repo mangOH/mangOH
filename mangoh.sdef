@@ -28,7 +28,6 @@ apps:
     $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi.adef
 
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderService.adef
-    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderDemo/gpioExpanderDemo.adef
 
     $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService.adef
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools.adef
