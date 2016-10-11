@@ -1,0 +1,30 @@
+sandboxed: true
+version: 1.0.0
+maxFileSystemBytes: 512K
+start: manual
+
+executables:
+{
+    batteryReading = ( batteryReadingComponent )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+    run:
+    {
+        (batteryReading)
+    }
+    faultAction: restart
+}
+
+requires:
+{
+   device:
+   {
+       [rw] /dev/i2c-0 /dev/i2c-0
+   }
+}
