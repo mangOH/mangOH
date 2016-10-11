@@ -1,0 +1,12 @@
+requires:
+{
+    api:
+    {
+        ${LEGATO_ROOT}/interfaces/modemServices/le_adc.api
+    }
+}
+
+sources:
+{
+   noiseData.c
+}
