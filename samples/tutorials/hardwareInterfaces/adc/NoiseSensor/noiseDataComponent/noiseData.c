@@ -13,14 +13,11 @@
  * @note Please change this timeout value as needed.
  */
 //--------------------------------------------------------------------------------------------------
-#define ADC_SAMPLE_INTERVAL_IN_SECONDS (1)
+#define ADC_SAMPLE_INTERVAL_IN_MILLI_SECONDS (1)
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Timer handler that will publish the current ADC reading.
- *
- * @note
- *      
+ * Timer handler  will publish the current ADC reading.
  */
 //--------------------------------------------------------------------------------------------------
 static void adcTimer
@@ -30,7 +27,7 @@ static void adcTimer
 {
     int32_t value;
 
-    const le_result_t result = le_adc_ReadValue("EXT_ADC1",&value);
+    const le_result_t result = le_adc_ReadValue("EXT_ADC1", &value);
 
     if (result == LE_OK)
     {
@@ -42,14 +39,17 @@ static void adcTimer
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+/**
+ * Main program starts here
+ */
+//--------------------------------------------------------------------------------------------------
 COMPONENT_INIT
 {
-   LE_INFO("---------------------- ADC Reading started");
+    LE_INFO("---------------------- ADC Reading started");
 
-    le_clk_Time_t  timerInterval = {.sec = ADC_SAMPLE_INTERVAL_IN_SECONDS, .usec = 0};
-    le_timer_Ref_t adcTimerRef;
-    adcTimerRef = le_timer_Create("ADC Timer");
-    le_timer_SetInterval(adcTimerRef, timerInterval);
+    le_timer_Ref_t adcTimerRef = le_timer_Create("ADC Timer");
+    le_timer_SetMsInterval(adcTimerRef, ADC_SAMPLE_INTERVAL_IN_MILLI_SECONDS * 1000);
     le_timer_SetRepeat(adcTimerRef, 0);
 
     le_timer_SetHandler(adcTimerRef, adcTimer);

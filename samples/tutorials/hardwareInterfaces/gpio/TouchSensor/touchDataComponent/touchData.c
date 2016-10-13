@@ -10,11 +10,10 @@
 #include "legato.h"
 #include "interfaces.h"
 
-static int8_t pushButtonValue;
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Sets default configuration LED D750 as off
+ * Sets default configuration LED D750 as on
  */
 //--------------------------------------------------------------------------------------------------
 static void ConfigureLed
@@ -22,7 +21,7 @@ static void ConfigureLed
     void
 )
 {
-    // Configure initial value as LED off
+    // Configure initial value as LED on
    
     LE_FATAL_IF(mangoh_ledGpio_SetPushPullOutput(MANGOH_LEDGPIO_ACTIVE_HIGH, true) != LE_OK,
                 "Couldn't configure LED PLAY as a push pull output");
@@ -49,14 +48,14 @@ static void ConfigurePushButton
  * LED D750 changes state when Push Button changes state
  */
 //--------------------------------------------------------------------------------------------------
-static  void touch_ledGpio_ChangeCallback
+static  void touch_ledGpio_ChangeHandler
 (
     bool state, void *ctx
 )
 {
     // set call back for change in state of GPIO
     mangoh_ledGpio_SetEdgeSense(MANGOH_LEDGPIO_EDGE_BOTH);
-    if (state == true)
+    if (state)
     {
         mangoh_ledGpio_Activate();
     }
@@ -66,9 +65,13 @@ static  void touch_ledGpio_ChangeCallback
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+/**
+ * Main program starts here
+ */
+//--------------------------------------------------------------------------------------------------
 COMPONENT_INIT
 {
-    pushButtonValue = 0;
 
     LE_INFO("===============touchsensor application has started");
 
@@ -76,7 +79,7 @@ COMPONENT_INIT
     ConfigurePushButton();
 
     mangoh_pushButton_AddChangeEventHandler(MANGOH_PUSHBUTTON_EDGE_BOTH,
-                                            touch_ledGpio_ChangeCallback,
-                                            &pushButtonValue,
+                                            touch_ledGpio_ChangeHandler,
+                                            NULL,
                                             0);
 }

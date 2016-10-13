@@ -7,13 +7,13 @@
 #include "legato.h"
 #include "interfaces.h"
 
-#define LED_SAMPLE_INTERVAL_IN_SECONDS (1)
+#define LED_SAMPLE_INTERVAL_IN_MILLI_SECONDS (1)
 
 static int8_t state = 0;
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Sets default configuration LED D750 as off
+ * Sets default configuration LED D750 as on
  */
 //--------------------------------------------------------------------------------------------------
 static void ConfigureLed
@@ -37,7 +37,7 @@ static void ledTimer
 )
 {
     mangoh_ledGpio_SetEdgeSense(MANGOH_LEDGPIO_EDGE_BOTH);
-    if (state == true)
+    if (state)
     {
         mangoh_ledGpio_Activate();
         state = false;
@@ -49,16 +49,19 @@ static void ledTimer
     }
 }
 
+//--------------------------------------------------------------------------------------------------
+/**
+ * Main program starts here
+ */
+//--------------------------------------------------------------------------------------------------
 COMPONENT_INIT
 {
     LE_INFO("===============blinking LED application has started");
 
     ConfigureLed();
 
-    le_clk_Time_t timerInterval = {.sec = LED_SAMPLE_INTERVAL_IN_SECONDS, .usec = 0};
-    le_timer_Ref_t ledTimerRef;
-    ledTimerRef = le_timer_Create("LED Timer");
-    le_timer_SetInterval(ledTimerRef, timerInterval);
+    le_timer_Ref_t ledTimerRef = le_timer_Create("LED Timer");
+    le_timer_SetMsInterval(ledTimerRef, LED_SAMPLE_INTERVAL_IN_MILLI_SECONDS * 1000);
     le_timer_SetRepeat(ledTimerRef, 0);
 
     le_timer_SetHandler(ledTimerRef,ledTimer);
