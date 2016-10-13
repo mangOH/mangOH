@@ -1,0 +1,28 @@
+sandboxed: true
+version: 1.0.0
+maxFileSystemBytes: 512K
+start: manual
+
+
+executables:
+{
+    noiseData = ( noiseDataComponent )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+    run:
+    {
+        ( noiseData )
+    }
+    faultAction: restart
+}
+
+bindings:
+{
+    noiseData.noiseDataComponent.le_adc -> modemService.le_adc
+}

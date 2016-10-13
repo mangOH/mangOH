@@ -1,0 +1,29 @@
+sandboxed: true
+version: 1.0.0
+maxFileSystemBytes: 512K
+start: manual
+
+
+executables:
+{
+    touchData = ( touchDataComponent )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+    run:
+    {
+        ( touchData )
+    }
+    faultAction: restart
+}
+
+bindings:
+{
+    touchData.touchDataComponent.mangoh_pushButton ->  gpioExpanderService.mangoh_gpioExp1Pin7
+    touchData.touchDataComponent.mangoh_ledGpio -> gpioExpanderService.mangoh_gpioExp1Pin5
+}
