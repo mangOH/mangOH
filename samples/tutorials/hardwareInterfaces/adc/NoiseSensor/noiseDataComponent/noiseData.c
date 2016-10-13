@@ -13,7 +13,7 @@
  * @note Please change this timeout value as needed.
  */
 //--------------------------------------------------------------------------------------------------
-#define ADC_SAMPLE_INTERVAL_IN_MILLI_SECONDS (1)
+#define ADC_SAMPLE_INTERVAL_IN_MILLISECONDS (1000)
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -49,7 +49,7 @@ COMPONENT_INIT
     LE_INFO("---------------------- ADC Reading started");
 
     le_timer_Ref_t adcTimerRef = le_timer_Create("ADC Timer");
-    le_timer_SetMsInterval(adcTimerRef, ADC_SAMPLE_INTERVAL_IN_MILLI_SECONDS * 1000);
+    le_timer_SetMsInterval(adcTimerRef, ADC_SAMPLE_INTERVAL_IN_MILLISECONDS);
     le_timer_SetRepeat(adcTimerRef, 0);
 
     le_timer_SetHandler(adcTimerRef, adcTimer);

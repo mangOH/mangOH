@@ -7,7 +7,7 @@
 #include "legato.h"
 #include "interfaces.h"
 
-#define LED_SAMPLE_INTERVAL_IN_MILLI_SECONDS (1)
+#define LED_SAMPLE_INTERVAL_IN_MILLISECONDS (1000)
 
 static int8_t state = 0;
 
@@ -61,7 +61,7 @@ COMPONENT_INIT
     ConfigureLed();
 
     le_timer_Ref_t ledTimerRef = le_timer_Create("LED Timer");
-    le_timer_SetMsInterval(ledTimerRef, LED_SAMPLE_INTERVAL_IN_MILLI_SECONDS * 1000);
+    le_timer_SetMsInterval(ledTimerRef, LED_SAMPLE_INTERVAL_IN_MILLISECONDS);
     le_timer_SetRepeat(ledTimerRef, 0);
 
     le_timer_SetHandler(ledTimerRef,ledTimer);
