@@ -182,7 +182,7 @@ static void EnableI2cBus
  *
  */
 //--------------------------------------------------------------------------------------------------
-static void ReadBatterychargerRegister
+static void ReadBatteryChargerRegister
 (
     void
 )
@@ -230,7 +230,7 @@ static void ReadBatterychargerRegister
  *
  */
 //-------------------------------------------------------------------------------------------------
-static void OutputBatterychargerVoltage
+static void OutputBatteryChargerVoltage
 (
     void
 )
@@ -253,6 +253,6 @@ COMPONENT_INIT
       
     LE_INFO("===============I2C Reading & Writing application has started");
     EnableI2cBus();
-    ReadBatterychargerRegister();
-    OutputBatterychargerVoltage();
+    ReadBatteryChargerRegister();
+    OutputBatteryChargerVoltage();
 }
