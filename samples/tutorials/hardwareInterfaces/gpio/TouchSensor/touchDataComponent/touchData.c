@@ -54,7 +54,6 @@ static  void touch_ledGpio_ChangeHandler
 )
 {
     // set call back for change in state of GPIO
-    mangoh_ledGpio_SetEdgeSense(MANGOH_LEDGPIO_EDGE_BOTH);
     if (state)
     {
         mangoh_ledGpio_Activate();
