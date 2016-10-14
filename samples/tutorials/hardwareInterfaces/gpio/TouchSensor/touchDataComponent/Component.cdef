@@ -2,12 +2,12 @@ requires:
 {
     api:
     {
-       mangoh_ledGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
-       mangoh_pushButton = ${LEGATO_ROOT}/interfaces/le_gpio.api
+        mangoh_ledGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
+        mangoh_pushButton = ${LEGATO_ROOT}/interfaces/le_gpio.api
     }
 }
 
 sources:
 {
-   touchData.c
+    touchData.c
 }

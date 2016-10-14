@@ -23,8 +23,8 @@ processes:
 
 requires:
 {
-   device:
-   {
-       [rw] /dev/i2c-0 /dev/i2c-0
-   }
+    device:
+    {
+        [rw] /dev/i2c-0 /dev/i2c-0
+    }
 }

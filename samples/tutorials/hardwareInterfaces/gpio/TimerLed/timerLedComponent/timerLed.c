@@ -28,7 +28,7 @@ static void ConfigureLed
 
 //--------------------------------------------------------------------------------------------------
 /**
- * LED D750 changes state as defined by LED_SAMPLE_INTERVAL_IN_SECONDS 
+ * LED D750 changes state as defined by LED_SAMPLE_INTERVAL_IN_SECONDS
  */
 //--------------------------------------------------------------------------------------------------
 static void ledTimer

@@ -8,5 +8,5 @@ requires:
 
 sources:
 {
-   noiseData.c
+    noiseData.c
 }

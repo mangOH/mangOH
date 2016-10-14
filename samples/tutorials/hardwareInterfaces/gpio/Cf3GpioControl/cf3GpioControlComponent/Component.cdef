@@ -2,12 +2,12 @@ requires:
 {
     api:
     {
-       le_sensorGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
-       mangoh_ledGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
+        le_sensorGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
+        mangoh_ledGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
     }
 }
 
 sources:
 {
-   cf3GpioControl.c
+    cf3GpioControl.c
 }

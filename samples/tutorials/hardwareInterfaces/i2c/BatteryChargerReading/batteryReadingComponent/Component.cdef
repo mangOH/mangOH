@@ -1,5 +1,4 @@
-
 sources:
 {
-   batteryReading.c
+    batteryReading.c
 }

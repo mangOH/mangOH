@@ -1,6 +1,6 @@
 //--------------------------------------------------------------------------------------------------
-/** 
- * This app reads the current adc reading every 1 seconds 
+/**
+ * This app reads the current adc reading every 1 seconds
  */
 //--------------------------------------------------------------------------------------------------
 #include "legato.h"

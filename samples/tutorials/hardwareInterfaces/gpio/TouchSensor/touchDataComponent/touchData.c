@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------------------------------------
-/** 
+/**
  * This sample app reads state of  IoT1_GPIO1 (gpio25) or Push Button SW200
  * If state change is detected, it makes corresponding change in state of LED D750
  * Use this sample to understand how to configure a gpio as an input or output
@@ -22,7 +22,6 @@ static void ConfigureLed
 )
 {
     // Configure initial value as LED on
-   
     LE_FATAL_IF(mangoh_ledGpio_SetPushPullOutput(MANGOH_LEDGPIO_ACTIVE_HIGH, true) != LE_OK,
                 "Couldn't configure LED PLAY as a push pull output");
 }
@@ -38,8 +37,7 @@ static void ConfigurePushButton
 )
 {
     // Configure Push Button as input and set its initial value as high
-
-    LE_FATAL_IF(mangoh_pushButton_SetInput(MANGOH_PUSHBUTTON_ACTIVE_HIGH ) != LE_OK,
+    LE_FATAL_IF(mangoh_pushButton_SetInput(MANGOH_PUSHBUTTON_ACTIVE_HIGH) != LE_OK,
                 "Couldn't configure touch sensor as default input high");
 }
 
@@ -50,7 +48,8 @@ static void ConfigurePushButton
 //--------------------------------------------------------------------------------------------------
 static  void touch_ledGpio_ChangeHandler
 (
-    bool state, void *ctx
+    bool state,
+    void *ctx
 )
 {
     // set call back for change in state of GPIO
@@ -71,8 +70,7 @@ static  void touch_ledGpio_ChangeHandler
 //--------------------------------------------------------------------------------------------------
 COMPONENT_INIT
 {
-
-    LE_INFO("===============touchsensor application has started");
+    LE_INFO("=============== touchsensor application has started");
 
     ConfigureLed();
     ConfigurePushButton();
