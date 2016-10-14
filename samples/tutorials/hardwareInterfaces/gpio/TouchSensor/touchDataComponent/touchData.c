@@ -52,7 +52,6 @@ static  void touch_ledGpio_ChangeHandler
     void *ctx
 )
 {
-    // set call back for change in state of GPIO
     if (state)
     {
         mangoh_ledGpio_Activate();
