@@ -1,9 +1,14 @@
-//--------------------------------------------------------------------------------------------------
 /**
- * This app reads all the Register on BQ24196 or BQ24296 Battery Chargers
- * It also writes output voltage for battery charger to 3.7V
+ * @file
+ *
+ * This app reads all the Register on BQ24196 or BQ24296 Battery Chargers. It also writes output
+ * voltage for battery charger to 3.7V.
+ *
+ * <HR>
+ *
+ * Copyright (C) Sierra Wireless, Inc. Use of this work is subject to license.
  */
-//--------------------------------------------------------------------------------------------------
+
 #include "legato.h"
 #include "interfaces.h"
 #include <linux/i2c-dev-user.h>

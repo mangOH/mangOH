@@ -1,11 +1,14 @@
-//--------------------------------------------------------------------------------------------------
 /**
- * This sample app reads state of  IoT1_GPIO1 (gpio25) or Push Button SW200
- * If state change is detected, it makes corresponding change in state of LED D750
- * Use this sample to understand how to configure a gpio as an input or output
- * and use call back function
+ * @file
+ *
+ * This sample app reads state of IoT1_GPIO1 (gpio25) or Push Button SW200. If state change is
+ * detected, it makes corresponding change in state of LED D750. Use this sample to understand how
+ * to configure a gpio as an input or output and use call back function.
+ *
+ * <HR>
+ *
+ * Copyright (C) Sierra Wireless, Inc. Use of this work is subject to license.
  */
-//--------------------------------------------------------------------------------------------------
 
 #include "legato.h"
 #include "interfaces.h"

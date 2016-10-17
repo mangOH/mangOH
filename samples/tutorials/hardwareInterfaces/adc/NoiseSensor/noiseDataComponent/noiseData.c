@@ -1,8 +1,13 @@
-//--------------------------------------------------------------------------------------------------
 /**
+ * @file
+ *
  * This app reads the current adc reading every 1 seconds
+ *
+ * <HR>
+ *
+ * Copyright (C) Sierra Wireless, Inc. Use of this work is subject to license.
  */
-//--------------------------------------------------------------------------------------------------
+
 #include "legato.h"
 #include "interfaces.h"
 

@@ -1,8 +1,12 @@
-//--------------------------------------------------------------------------------------------------
-/*
+/**
+ * @file
+ *
  * This sample app is a blinking LED at 1 second interval
+ *
+ * <HR>
+ *
+ * Copyright (C) Sierra Wireless, Inc. Use of this work is subject to license.
  */
-//--------------------------------------------------------------------------------------------------
 
 #include "legato.h"
 #include "interfaces.h"
