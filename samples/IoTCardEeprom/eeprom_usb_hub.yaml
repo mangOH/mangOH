@@ -10,7 +10,7 @@ content:
     content:
       # header
       - 0xAA
-      - 0xA5
+      - 0x55
       # major version
       - 0x01
       # minor version
