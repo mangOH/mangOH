@@ -1,0 +1,53 @@
+---
+#-------------------------------------------------------------------------------
+# Ethernet IoT card EEPROM content
+#-------------------------------------------------------------------------------
+size: 4096
+content:
+  # iot card descriptor
+  -
+    size: 192
+    content:
+      # header
+      - 0xAA
+      - 0xA5
+      # major version
+      - 0x01
+      # minor version
+      - 0x00
+      # vendor name
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - Sierra Wireless
+      # product name
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - Ethernet IoT Card
+      # hardware major revision
+      - 0x01
+      # hardware minor revision
+      - 0x00
+      # serial number
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - "ENET-000000"
+      # environmental class
+      - 0x41 # 'A' TODO: is this correct?
+      # power category
+      - 1 # TODO: is this correct?
+      # height category
+      - 1
+      # eeprom write protect
+      - 1
+  # usb interface descriptor
+  -
+    size: 64
+    content:
+      # type - usb
+      - 3

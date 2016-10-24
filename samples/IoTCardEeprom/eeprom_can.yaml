@@ -1,0 +1,75 @@
+---
+#-------------------------------------------------------------------------------
+# CAN bus IoT card EEPROM content
+#-------------------------------------------------------------------------------
+size: 4096
+content:
+  # iot card descriptor
+  -
+    size: 192
+    content:
+      # header
+      - 0xAA
+      - 0xA5
+      # major version
+      - 0x01
+      # minor version
+      - 0x00
+      # vendor name
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - Sierra Wireless
+      # product name
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - CAN Bus IoT Card
+      # hardware major revision
+      - 0x01
+      # hardware minor revision
+      - 0x00
+      # serial number
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - "CAN-000000"
+      # environmental class
+      - 0x41 # 'A' TODO: is this correct?
+      # power category
+      - 1 # TODO: is this correct?
+      # height category
+      - 1
+      # eeprom write protect
+      - 1
+  # gpio interface descriptor
+  -
+    size: 64
+    content:
+      # type - gpio
+      - 0
+      # GPIO 0 (INT_n) - input with pull-up
+      - 0x03
+      # GPIO 1 (RESET_n) - output high
+      - 0x05
+      # GPIO 2 (RX0BF_n) - input floating
+      - 0x00
+      # GPIO 3 (RX1BF_n) - input floating
+      - 0x00
+  # spi interface descriptor
+  -
+    size: 64
+    content:
+      # type - spi
+      - 2
+      # interrupt gpio - use GPIO0 as interrupt
+      - 0x00
+      # kernel module alias
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - mcp251x

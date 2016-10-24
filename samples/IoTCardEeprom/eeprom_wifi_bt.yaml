@@ -1,0 +1,73 @@
+---
+#-------------------------------------------------------------------------------
+# WiFi/Bluetooth IoT card EEPROM content
+#-------------------------------------------------------------------------------
+size: 4096
+content:
+  # iot card descriptor
+  -
+    size: 192
+    content:
+      # header
+      - 0xAA
+      - 0xA5
+      # major version
+      - 0x01
+      # minor version
+      - 0x00
+      # vendor name
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - Sierra Wireless
+      # product name
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - WiFi Bluetooth IoT Card
+      # hardware major revision
+      - 0x01
+      # hardware minor revision
+      - 0x00
+      # serial number
+      -
+        size: 32
+        fill: 0x00
+        content:
+          - "WIFIBT-000000"
+      # environmental class
+      - 0x41 # 'A' TODO: is this correct?
+      # power category
+      - 2 # TODO: is this correct?
+      # height category
+      - 1
+      # eeprom write protect
+      - 1
+  # gpio interface descriptor
+  -
+    size: 64
+    content:
+      # type - gpio
+      - 0
+      # GPIO 0 (WL_n) - input floating
+      - 0x00
+      # GPIO 1 (UNUSED) - input floating
+      - 0x00
+      # GPIO 2 (BT_EN) - output low
+      - 0x04
+      # GPIO 3 (WLAN_EN) - output low
+      - 0x04
+  # sdio interface descriptor
+  -
+    size: 64
+    content:
+      # type - sdio
+      - 4
+  # uart interface descriptor
+  -
+    size: 64
+    content:
+      # type - uart
+      - 8
