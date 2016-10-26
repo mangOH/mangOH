@@ -51,14 +51,14 @@ content:
     content:
       # type - gpio
       - 0
-      # GPIO 0 (WL_n) - input floating
-      - 0x00
+      # GPIO 0 (WL_IRQ_N) - input floating
+      - 0x03
       # GPIO 1 (UNUSED) - input floating
-      - 0x00
-      # GPIO 2 (BT_EN) - output low
-      - 0x04
-      # GPIO 3 (WLAN_EN) - output low
-      - 0x04
+      - 0x03
+      # GPIO 2 (BT_EN) - output high
+      - 0x05
+      # GPIO 3 (WLAN_EN) - output high
+      - 0x05
   # sdio interface descriptor
   -
     size: 64

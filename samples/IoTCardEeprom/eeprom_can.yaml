@@ -52,13 +52,13 @@ content:
       # type - gpio
       - 0
       # GPIO 0 (INT_n) - input with pull-up
-      - 0x03
-      # GPIO 1 (RESET_n) - output high
+      - 0x01
+      # GPIO 1 (Output Enable) - output high
       - 0x05
       # GPIO 2 (RX0BF_n) - input floating
-      - 0x00
+      - 0x03
       # GPIO 3 (RX1BF_n) - input floating
-      - 0x00
+      - 0x03
   # spi interface descriptor
   -
     size: 64

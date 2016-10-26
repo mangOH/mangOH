@@ -54,11 +54,11 @@ content:
       # GPIO 0 (I2C_HUB_PROG_EN) - output low
       - 0x04
       # GPIO 1 (UNUSED) - input floating
-      - 0x00
+      - 0x03
       # GPIO 2 (UNUSED) - input floating
-      - 0x00
+      - 0x03
       # GPIO 3 (UNUSED) - input floating
-      - 0x00
+      - 0x03
   # usb interface descriptor
   -
     size: 64
