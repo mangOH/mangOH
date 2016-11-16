@@ -1,0 +1,20 @@
+executables:
+{
+    mangohVoiceCall = ( mangohVoiceCall )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+}
+
+start: manual
+
+bindings:
+{
+    mangohVoiceCall.mangohVoiceCall.le_voicecall -> voiceCallService.le_voicecall
+    mangohVoiceCall.mangohVoiceCall.le_audio -> audioService.le_audio
+}
