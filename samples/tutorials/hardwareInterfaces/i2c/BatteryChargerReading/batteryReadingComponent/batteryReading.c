@@ -199,26 +199,42 @@ static void ReadBatteryChargerRegister
     SmbusReadReg(0, 0x6B, 0x00, &RegisterReading);
     LE_DEBUG("Input Source Control value is %d", RegisterReading);
 
+    sleep(1);
+
     SmbusReadReg(0, 0x6B, 0x01, &RegisterReading);
     LE_DEBUG("Power-On Configuration Register value is %d", RegisterReading);
+
+    sleep(1);
 
     SmbusReadReg(0, 0x6B, 0x02, &RegisterReading);
     LE_DEBUG("Charge Current Control Register value is %d", RegisterReading);
 
+    sleep(1);
+
     SmbusReadReg(0, 0x6B, 0x03, &RegisterReading);
     LE_DEBUG(" Pre-Charge/Termination Current Control Register value is %d", RegisterReading);
+
+    sleep(1);
 
     SmbusReadReg(0, 0x6B, 0x04, &RegisterReading);
     LE_DEBUG("Charge Voltage Control Register value is %d", RegisterReading);
 
+    sleep(1);
+
     SmbusReadReg(0, 0x6B, 0x05, &RegisterReading);
     LE_DEBUG("Charge Termination/Timer Control Register value is %d", RegisterReading);
+
+    sleep(1);
 
     SmbusReadReg(0, 0x6B, 0x06, &RegisterReading);
     LE_DEBUG("Thermal Regulation Control Register value is %d", RegisterReading);
 
+    sleep(1);
+
     SmbusReadReg(0, 0x6B, 0x07, &RegisterReading);
     LE_DEBUG("Misc Operation Control Register value is %d", RegisterReading);
+
+    sleep(1);
 
     SmbusReadReg(0, 0x6B, 0x08, &RegisterReading);
     LE_DEBUG("System Status Register value is %d", RegisterReading);
