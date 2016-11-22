@@ -13,7 +13,7 @@
 #include "interfaces.h"
 #include <linux/i2c-dev-user.h>
 
-//-------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 //* Static functions
 //--------------------------------------------------------------------------------------------------
 
@@ -66,6 +66,7 @@ static int I2cAccessBusAddr
     if (ioctl(fd, I2C_SLAVE_FORCE, i2cAddr) < 0)
     {
         LE_ERROR("Could not set address to 0x%02x: %s", i2cAddr, strerror(errno));
+        close(fd);
         return LE_FAULT;
     }
 
@@ -130,39 +131,40 @@ static le_result_t SmbusReadReg
 static le_result_t SmbusWriteReg
 (
     uint8_t i2cBus,   ////< I2C bus to perform the write on
-    uint8_t i2cAddr,  ////< I2C device  address
+    uint8_t i2cAddr,  ////< I2C device address
     uint8_t reg,      ////< Register within the I2C device to write to
     uint8_t data      ////< Data to write to the given register
 )
 {
-int i2cFd = I2cAccessBusAddr(i2cBus, i2cAddr);
+    int i2cFd = I2cAccessBusAddr(i2cBus, i2cAddr);
 
-if (i2cFd == LE_FAULT)
-{
-    LE_ERROR("failed to open i2c bus %d for access to address %d", i2cBus, i2cAddr);
-    return LE_FAULT ;
+    if (i2cFd == LE_FAULT)
+    {
+        LE_ERROR("failed to open i2c bus %d for access to address %d", i2cBus, i2cAddr);
+        return LE_FAULT ;
+    }
+
+    le_result_t result;
+
+    const int writeResult = i2c_smbus_write_byte_data(i2cFd, reg, data);
+    if (writeResult < 0)
+    {
+        LE_ERROR("smbus write failed with error %d", writeResult);
+        result = LE_FAULT;
+    }
+    else
+    {
+        LE_DEBUG("SMBUS Write addr 0x%x, reg=0x%x, data=0x%x", i2cAddr, reg, data);
+        result = LE_OK;
+    }
+
+    close(i2cFd);
+
+    return result;
 }
 
-le_result_t result;
-
-const int writeResult = i2c_smbus_write_byte_data(i2cFd, reg, data);
-if (writeResult < 0)
-{
-    LE_ERROR("smbus write failed with error %d", writeResult);
-    result = LE_FAULT;
-}
-else
-{
-    LE_DEBUG("SMBUS Write addr 0x%x, reg=0x%x, data=0x%x", i2cAddr, reg, data);
-    result = LE_OK;
-}
-
-close(i2cFd);
-
-return result;
-}
-
-/**-----------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
+/**
  * Enables I2C Switch.
  * This switch is used on mangoh to provide buffering on the i2c lines.
  * If this is not enabled then you cannot access the Battery charger.
@@ -184,8 +186,7 @@ static void EnableI2cBus
 
 //--------------------------------------------------------------------------------------------------
 /**
- * This functions reads and prints all the registers on  an SMBUS write of a 1 byte register
- *
+ * Reads and prints all the registers on an SMBUS write of a 1 byte register
  */
 //--------------------------------------------------------------------------------------------------
 static void ReadBatteryChargerRegister
@@ -193,65 +194,64 @@ static void ReadBatteryChargerRegister
     void
 )
 {
-// read all ten registers of Battery charger with i2c address 0x71
-    uint8_t RegisterReading;
+    // read all ten registers of Battery charger with i2c address 0x6B
+    uint8_t registerReading;
 
-    SmbusReadReg(0, 0x6B, 0x00, &RegisterReading);
-    LE_DEBUG("Input Source Control value is %d", RegisterReading);
-
-    sleep(1);
-
-    SmbusReadReg(0, 0x6B, 0x01, &RegisterReading);
-    LE_DEBUG("Power-On Configuration Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x00, &registerReading);
+    LE_DEBUG("Input Source Control value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x02, &RegisterReading);
-    LE_DEBUG("Charge Current Control Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x01, &registerReading);
+    LE_DEBUG("Power-On Configuration Register value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x03, &RegisterReading);
-    LE_DEBUG(" Pre-Charge/Termination Current Control Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x02, &registerReading);
+    LE_DEBUG("Charge Current Control Register value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x04, &RegisterReading);
-    LE_DEBUG("Charge Voltage Control Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x03, &registerReading);
+    LE_DEBUG("Pre-Charge/Termination Current Control Register value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x05, &RegisterReading);
-    LE_DEBUG("Charge Termination/Timer Control Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x04, &registerReading);
+    LE_DEBUG("Charge Voltage Control Register value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x06, &RegisterReading);
-    LE_DEBUG("Thermal Regulation Control Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x05, &registerReading);
+    LE_DEBUG("Charge Termination/Timer Control Register value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x07, &RegisterReading);
-    LE_DEBUG("Misc Operation Control Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x06, &registerReading);
+    LE_DEBUG("Thermal Regulation Control Register value is %d", registerReading);
 
     sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x08, &RegisterReading);
-    LE_DEBUG("System Status Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x07, &registerReading);
+    LE_DEBUG("Misc Operation Control Register value is %d", registerReading);
 
-    SmbusReadReg(0, 0x6B, 0x09, &RegisterReading);
-    LE_DEBUG("Fault Register value is %d", RegisterReading);
+    sleep(1);
 
-    SmbusReadReg(0, 0x6B, 0x0A, &RegisterReading);
-    LE_DEBUG("Vendor / Part / Revision Status Register value is %d", RegisterReading);
+    SmbusReadReg(0, 0x6B, 0x08, &registerReading);
+    LE_DEBUG("System Status Register value is %d", registerReading);
+
+    SmbusReadReg(0, 0x6B, 0x09, &registerReading);
+    LE_DEBUG("Fault Register value is %d", registerReading);
+
+    SmbusReadReg(0, 0x6B, 0x0A, &registerReading);
+    LE_DEBUG("Vendor / Part / Revision Status Register value is %d", registerReading);
 }
 
 //--------------------------------------------------------------------------------------------------
 /**
- * This function changes battery charger output voltage and reads back register
- *
+ * Changes battery charger output voltage and reads back register.
  */
-//-------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 static void OutputBatteryChargerVoltage
 (
     void
@@ -260,16 +260,15 @@ static void OutputBatteryChargerVoltage
     uint8_t OutputVoltage;
     SmbusWriteReg(0, 0x6B, 0x04, 0xBA);
 
-    SmbusReadReg(0, 0x6B, 0x04,  &OutputVoltage);
+    SmbusReadReg(0, 0x6B, 0x04, &OutputVoltage);
     LE_DEBUG("Output voltage is set to %d", OutputVoltage);
 }
 
 //--------------------------------------------------------------------------------------------------
 /**
  * Main program starts below
- *
  */
-//-------------------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------------------
 COMPONENT_INIT
 {
 
