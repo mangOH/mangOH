@@ -20,7 +20,7 @@ content:
         size: 32
         fill: 0x00
         content:
-          - Sierra Wireless
+          - Talon Communications
       # product name
       -
         size: 32
@@ -35,14 +35,16 @@ content:
       -
         size: 32
         fill: 0x00
+        # The serial number has been left empty. This field should be filled in differently on each
+        # unit. How this is achieved will depend on the EEPROM programming method that is chosen.
         content:
-          - "ENET-000000"
+          - ""
       # environmental class
-      - 0x41 # 'A' TODO: is this correct?
+      - 0x41 # 'A'
       # power category
-      - 1 # TODO: is this correct?
-      # height category
       - 1
+      # height category
+      - 2
       # eeprom write protect
       - 1
   # usb interface descriptor

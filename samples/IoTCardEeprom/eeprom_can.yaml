@@ -20,7 +20,7 @@ content:
         size: 32
         fill: 0x00
         content:
-          - Sierra Wireless
+          - Talon Communications
       # product name
       -
         size: 32
@@ -35,12 +35,14 @@ content:
       -
         size: 32
         fill: 0x00
+        # The serial number has been left empty. This field should be filled in differently on each
+        # unit. How this is achieved will depend on the EEPROM programming method that is chosen.
         content:
-          - "CAN-000000"
+          - ""
       # environmental class
-      - 0x41 # 'A' TODO: is this correct?
+      - 0x41 # 'A'
       # power category
-      - 1 # TODO: is this correct?
+      - 1
       # height category
       - 1
       # eeprom write protect
@@ -51,22 +53,22 @@ content:
     content:
       # type - gpio
       - 0
-      # GPIO 0 (INT_n) - input with pull-up
+      # GPIO 1 (INT_n) - input with pull-up
       - 0x01
-      # GPIO 1 (Output Enable) - output high
+      # GPIO 2 (Output Enable) - output high
       - 0x05
-      # GPIO 2 (RX0BF_n) - input floating
-      - 0x03
-      # GPIO 3 (RX1BF_n) - input floating
-      - 0x03
+      # GPIO 3 (RX0BF_n) - input with pull-up
+      - 0x01
+      # GPIO 4 (RX1BF_n) - input with pull-up
+      - 0x01
   # spi interface descriptor
   -
     size: 64
     content:
       # type - spi
       - 2
-      # interrupt gpio - use GPIO0 as interrupt
-      - 0x00
+      # interrupt gpio - use GPIO1 as interrupt
+      - 0x01
       # kernel module alias
       -
         size: 32

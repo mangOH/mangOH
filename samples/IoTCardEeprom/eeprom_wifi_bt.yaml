@@ -20,7 +20,7 @@ content:
         size: 32
         fill: 0x00
         content:
-          - Sierra Wireless
+          - Talon Communications
       # product name
       -
         size: 32
@@ -35,12 +35,14 @@ content:
       -
         size: 32
         fill: 0x00
+        # The serial number has been left empty. This field should be filled in differently on each
+        # unit. How this is achieved will depend on the EEPROM programming method that is chosen.
         content:
-          - "WIFIBT-000000"
+          - ""
       # environmental class
-      - 0x41 # 'A' TODO: is this correct?
+      - 0x41 # 'A'
       # power category
-      - 2 # TODO: is this correct?
+      - 2
       # height category
       - 1
       # eeprom write protect
@@ -51,13 +53,13 @@ content:
     content:
       # type - gpio
       - 0
-      # GPIO 0 (WL_IRQ_N) - input floating
+      # GPIO 1 (WL_IRQ_N) - input floating
       - 0x03
-      # GPIO 1 (UNUSED) - input floating
-      - 0x03
-      # GPIO 2 (BT_EN) - output high
+      # GPIO 2 (UNUSED) - input with pull-up
+      - 0x01
+      # GPIO 3 (BT_EN) - output high
       - 0x05
-      # GPIO 3 (WLAN_EN) - output high
+      # GPIO 4 (WLAN_EN) - output high
       - 0x05
   # sdio interface descriptor
   -
