@@ -53,8 +53,8 @@ content:
     content:
       # type - gpio
       - 0
-      # GPIO 1 (WL_IRQ_N) - input floating
-      - 0x03
+      # GPIO 1 (WL_IRQ_N) - input with pull-up
+      - 0x01
       # GPIO 2 (UNUSED) - input with pull-up
       - 0x01
       # GPIO 3 (BT_EN) - output high
