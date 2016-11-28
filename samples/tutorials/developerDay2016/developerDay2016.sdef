@@ -1,0 +1,48 @@
+//--------------------------------------------------------------------------------------------------
+// System definition for a tutorial app which uses an ADC based light sensor as a means to wake up
+// from low power sleep and send a tweet. Also goes back to sleep if it gets dark.
+//
+// Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
+//--------------------------------------------------------------------------------------------------
+
+apps:
+{
+    // Platform services.
+    $LEGATO_ROOT/apps/platformServices/airVantage/avcService
+    $LEGATO_ROOT/apps/platformServices/cellNetService
+    $LEGATO_ROOT/apps/platformServices/dataConnectionService
+    $LEGATO_ROOT/apps/platformServices/fwupdateService
+    $LEGATO_ROOT/apps/platformServices/modemService
+    $LEGATO_ROOT/apps/platformServices/positioningService
+    $LEGATO_ROOT/apps/platformServices/powerMgr
+    $LEGATO_ROOT/apps/platformServices/secStore
+    $LEGATO_ROOT/apps/platformServices/gpioService
+
+    $MANGOH_ROOT/apps/SocialService/socialService.adef
+
+    // Command-line tools.
+    $LEGATO_ROOT/apps/tools/tools
+
+    $MANGOH_ROOT/samples/tutorials/developerDay2016/apps/wakeupAndTweet.adef
+}
+
+commands:
+{
+    cm = tools:/bin/cm
+    fwupdate = tools:/bin/fwupdate
+    secstore = tools:/bin/secstore
+    pmtool = tools:/bin/pmtool
+
+    twitter = socialService:/bin/twitter
+}
+
+bindings:
+{
+    <root>.le_fwupdate -> fwupdateService.le_fwupdate
+}
+
+interfaceSearch:
+{
+    interfaces/modemServices
+    interfaces/positioning
+}

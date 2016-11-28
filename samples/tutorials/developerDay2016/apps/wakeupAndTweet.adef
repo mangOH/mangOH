@@ -1,0 +1,36 @@
+version: 1.0
+sandboxed: true
+start: auto
+
+executables:
+{
+    wakeupAndTweet = (wakeupAndTweet)
+}
+
+processes:
+{
+    envVars:
+    {
+        // Enable output of LE_DEBUG() messages
+        LE_LOG_LEVEL = DEBUG
+    }
+
+    run:
+    {
+        (wakeupAndTweet)
+    }
+
+    // During development it is convenient to stop the app if a process fails. In production, it
+    // usually makes more sense too use the "restart" option to restart the process that failed or
+    // "restartApp" to restart all processes in the app.
+    faultAction: stopApp
+}
+
+bindings:
+{
+    wakeupAndTweet.wakeupAndTweet.twitter       -> socialService.twitter
+    wakeupAndTweet.wakeupAndTweet.le_ulpm       -> powerMgr.le_ulpm
+    wakeupAndTweet.wakeupAndTweet.le_bootReason -> powerMgr.le_bootReason
+    wakeupAndTweet.wakeupAndTweet.le_adc        -> modemService.le_adc
+    wakeupAndTweet.wakeupAndTweet.le_data       -> dataConnectionService.le_data
+}

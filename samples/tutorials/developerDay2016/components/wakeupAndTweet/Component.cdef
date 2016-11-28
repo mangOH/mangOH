@@ -1,0 +1,22 @@
+requires:
+{
+    api:
+    {
+        ${MANGOH_ROOT}/apps/SocialService/interfaces/twitter.api
+        le_ulpm.api
+        le_bootReason.api
+        le_adc.api
+        le_data.api
+    }
+}
+
+sources:
+{
+    src/main.cpp
+    src/connectAndRun.cpp
+}
+
+cxxflags:
+{
+    -std=c++11
+}
