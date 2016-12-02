@@ -1,4 +1,4 @@
-version: 1.0
+version: 2.0
 sandboxed: true
 start: auto
 
@@ -33,4 +33,5 @@ bindings:
     wakeupAndTweet.wakeupAndTweet.le_bootReason -> powerMgr.le_bootReason
     wakeupAndTweet.wakeupAndTweet.le_adc        -> modemService.le_adc
     wakeupAndTweet.wakeupAndTweet.le_data       -> dataConnectionService.le_data
+    wakeupAndTweet.wakeupAndTweet.le_avdata     -> avcService.le_avdata
 }

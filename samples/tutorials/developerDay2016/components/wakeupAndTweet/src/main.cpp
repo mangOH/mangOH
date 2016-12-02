@@ -26,6 +26,10 @@ static const uint32_t UnicodeSleepingFace = 0x1F634;
 
 static le_timer_Ref_t LightSensorSampleTimer;
 
+static bool TweetPending;
+static bool AvConnecting;
+static le_avdata_AssetInstanceRef_t LightSensorAsset;
+
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -96,6 +100,11 @@ static void LightSensorSampleTimerHandler
         LE_DEBUG("Light sensor reports value %d", lightSensorReading);
     }
 
+    if (le_avdata_SetInt(LightSensorAsset, "Reading", lightSensorReading) != LE_OK)
+    {
+        LE_WARN("Couldn't publish light sensor reading");
+    }
+
     if (lightSensorReading < ADC_LEVEL_SLEEP)
     {
         LE_INFO(
@@ -141,21 +150,62 @@ static void LightSensorSampleTimerHandler
     }
 }
 
+static bool TryStartTimer(void)
+{
+    const bool start = (!TweetPending && !AvConnecting);
+    if (start)
+    {
+        LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+    }
+
+    return start;
+}
+
+static void AvDataSessionStateHandler
+(
+    le_avdata_SessionState_t sessionState,
+    void* contextPtr
+)
+{
+    switch (sessionState)
+    {
+    case LE_AVDATA_SESSION_STARTED:
+        LE_DEBUG("AV data session started");
+        AvConnecting = false;
+        LightSensorAsset = le_avdata_Create("LightSensor");
+        TryStartTimer();
+        break;
+
+    case LE_AVDATA_SESSION_STOPPED:
+        LE_WARN("AirVantage session has stopped, but this was not requested");
+        break;
+
+    default:
+        LE_FATAL("Unhandled AV data session state (%d)", sessionState);
+        break;
+    }
+}
+
 
 COMPONENT_INIT
 {
     LE_DEBUG("wakeupAndTweetApp started");
+
+    TweetPending = true;
+    AvConnecting = true;
+
+    le_avdata_AddSessionStateHandler(AvDataSessionStateHandler, NULL);
+    le_avdata_RequestSession();
 
     LightSensorSampleTimer = le_timer_Create("light sensor");
     LE_ASSERT_OK(le_timer_SetHandler(LightSensorSampleTimer, LightSensorSampleTimerHandler));
     LE_ASSERT_OK(le_timer_SetMsInterval(LightSensorSampleTimer, LIGHT_SENSOR_SAMPLE_INTERVAL_MS));
     LE_ASSERT_OK(le_timer_SetRepeat(LightSensorSampleTimer, 0));
 
-    // Only start the timer if it will not be done after the tweet is sent
-    bool startTimer = true;
 
     if (le_bootReason_WasAdc(LIGHT_SENSOR_ADC_NUM))
     {
+        TweetPending = true;
         LE_DEBUG("Boot reason was ADC %u", LIGHT_SENSOR_ADC_NUM);
         size_t emojiLength = 4;
         char emoji[emojiLength] = {0};
@@ -166,24 +216,17 @@ COMPONENT_INIT
         auto tweet = std::make_shared<std::string>(tweetStream.str());
         if (wakeupAndTweet_ConnectAndRun([tweet]{
                     SendTweet(tweet->c_str());
-                    LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
-                }) == LE_OK)
-        {
-            startTimer = false;
-        }
-        else
+                    TweetPending = false;
+                    TryStartTimer();
+                }) != LE_OK)
         {
             LE_ERROR("Couldn't create data connection to send tweet");
+            TweetPending = false;
         }
     }
     else
     {
         LE_DEBUG("Boot reason was not ADC %u", LIGHT_SENSOR_ADC_NUM);
-        startTimer = true;
-    }
-
-    if (startTimer)
-    {
-        LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+        TweetPending = false;
     }
 }

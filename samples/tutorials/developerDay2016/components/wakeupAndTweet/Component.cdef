@@ -7,6 +7,7 @@ requires:
         le_bootReason.api
         le_adc.api
         le_data.api
+        airVantage/le_avdata.api
     }
 }
 
@@ -19,4 +20,15 @@ sources:
 cxxflags:
 {
     -std=c++11
+}
+
+assets:
+{
+    LightSensor =
+    {
+        variables:
+        {
+            int Reading
+        }
+    }
 }
