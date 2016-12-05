@@ -146,6 +146,14 @@ COMPONENT_INIT
 {
     LE_DEBUG("wakeupAndTweetApp started");
 
+    LightSensorSampleTimer = le_timer_Create("light sensor");
+    LE_ASSERT_OK(le_timer_SetHandler(LightSensorSampleTimer, LightSensorSampleTimerHandler));
+    LE_ASSERT_OK(le_timer_SetMsInterval(LightSensorSampleTimer, LIGHT_SENSOR_SAMPLE_INTERVAL_MS));
+    LE_ASSERT_OK(le_timer_SetRepeat(LightSensorSampleTimer, 0));
+
+    // Only start the timer if it will not be done after the tweet is sent
+    bool startTimer = true;
+
     if (le_bootReason_WasAdc(LIGHT_SENSOR_ADC_NUM))
     {
         LE_DEBUG("Boot reason was ADC %u", LIGHT_SENSOR_ADC_NUM);
@@ -156,7 +164,14 @@ COMPONENT_INIT
         std::ostringstream tweetStream;
         tweetStream << emoji << " I'm just waking up at #SierraWirelessDevDay";
         auto tweet = std::make_shared<std::string>(tweetStream.str());
-        if (wakeupAndTweet_ConnectAndRun([tweet]{SendTweet(tweet->c_str());}) != LE_OK)
+        if (wakeupAndTweet_ConnectAndRun([tweet]{
+                    SendTweet(tweet->c_str());
+                    LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+                }) == LE_OK)
+        {
+            startTimer = false;
+        }
+        else
         {
             LE_ERROR("Couldn't create data connection to send tweet");
         }
@@ -164,11 +179,11 @@ COMPONENT_INIT
     else
     {
         LE_DEBUG("Boot reason was not ADC %u", LIGHT_SENSOR_ADC_NUM);
+        startTimer = true;
     }
 
-    LightSensorSampleTimer = le_timer_Create("light sensor");
-    LE_ASSERT_OK(le_timer_SetHandler(LightSensorSampleTimer, LightSensorSampleTimerHandler));
-    LE_ASSERT_OK(le_timer_SetMsInterval(LightSensorSampleTimer, LIGHT_SENSOR_SAMPLE_INTERVAL_MS));
-    LE_ASSERT_OK(le_timer_SetRepeat(LightSensorSampleTimer, 0));
-    LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+    if (startTimer)
+    {
+        LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+    }
 }
