@@ -18,6 +18,8 @@ apps:
     $LEGATO_ROOT/apps/platformServices/secStore
     $LEGATO_ROOT/apps/platformServices/gpioService
 
+    $LEGATO_ROOT/apps/sample/lwm2mAirVantageControl/lwm2mControl
+
     $MANGOH_ROOT/apps/SocialService/socialService.adef
 
     // Command-line tools.
