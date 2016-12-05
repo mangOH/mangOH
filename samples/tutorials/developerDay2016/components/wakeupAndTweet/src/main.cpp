@@ -162,7 +162,7 @@ COMPONENT_INIT
         LE_ASSERT_OK(le_utf8_EncodeUnicodeCodePoint(UnicodeTiredFace, emoji, &emojiLength));
 
         std::ostringstream tweetStream;
-        tweetStream << emoji << " I'm just waking up at #SierraWirelessDevDay";
+        tweetStream << emoji << " I'm just waking up at Sierra Wireless Developer Day 2016. #SierraDD2016";
         auto tweet = std::make_shared<std::string>(tweetStream.str());
         if (wakeupAndTweet_ConnectAndRun([tweet]{
                     SendTweet(tweet->c_str());
