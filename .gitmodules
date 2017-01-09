@@ -1,0 +1,27 @@
+[submodule "apps/ArduinoBridge"]
+	path = apps/ArduinoBridge
+	url = git://github.com/mangOH/ArduinoBridge
+[submodule "apps/DataRouter"]
+	path = apps/DataRouter
+	url = git://github.com/mangOH/DataRouter
+[submodule "apps/MqttClient"]
+	path = apps/MqttClient
+	url = git://github.com/mangOH/MqttClient
+[submodule "apps/GpioExpander"]
+	path = apps/GpioExpander
+	url = git://github.com/mangOH/GpioExpander
+[submodule "apps/MuxControl"]
+	path = apps/MuxControl
+	url = git://github.com/mangOH/MuxControl
+[submodule "apps/SocialService"]
+	path = apps/SocialService
+	url = git://github.com/mangOH/SocialService
+[submodule "samples/TemperatureMonitor"]
+	path = samples/TemperatureMonitor
+	url = git://github.com/mangOH/TemperatureMonitor
+[submodule "samples/RelayControl"]
+	path = samples/RelayControl
+	url = git://github.com/mangOH/RelayControl
+[submodule "samples/Demos"]
+	path = samples/Demos
+	url = git://github.com/mangOH/Demos

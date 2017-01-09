@@ -5,6 +5,12 @@
 // Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
 //--------------------------------------------------------------------------------------------------
 
+buildVars:
+{
+	LEGATO_WIFI_ROOT = $LEGATO_ROOT/modules/WiFi
+	LEGATO_WIFI_PA = ti
+}
+
 apps:
 {
     // Platform services.
