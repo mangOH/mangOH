@@ -20,6 +20,10 @@ apps:
     $LEGATO_ROOT/apps/platformServices/smsInboxService
     $LEGATO_ROOT/apps/platformServices/voiceCallService
     $LEGATO_ROOT/apps/platformServices/gpioService
+    $LEGATO_ROOT/apps/platformServices/atClient
+    $LEGATO_ROOT/apps/platformServices/atServer
+    $LEGATO_ROOT/apps/platformServices/spiService
+    $LEGATO_ROOT/apps/platformServices/devMode
 
     // TODO: The mangOH Red has a single GPIO expander and a 4-port I2C switch, so
     // gpioExpanderService will need to be adapted to support both platforms.
@@ -35,6 +39,8 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool.adef
     $MANGOH_ROOT/apps/SocialService/socialService.adef
 
+    $MANGOH_ROOT/apps/RedWifiBt/spiSlaveTest.adef
+
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
 }
@@ -45,6 +51,8 @@ commands:
     fwupdate = tools:/bin/fwupdate
     secstore = tools:/bin/secstore
     pmtool = tools:/bin/pmtool
+    gnss = tools:/bin/gnss
+    uartMode = tools:/bin/uartMode
 
     // mux = muxCtrlTools:/bin/mux
 
