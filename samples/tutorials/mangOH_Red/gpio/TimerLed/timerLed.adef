@@ -1,0 +1,28 @@
+sandboxed: true
+version: 1.0.0
+maxFileSystemBytes: 512K
+start: manual
+
+
+executables:
+{
+    timerLed = ( timerLedComponent )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+    run:
+    {
+        ( timerLed )
+    }
+    faultAction: restart
+}
+
+bindings:
+{
+    timerLed.timerLedComponent.mangoh_ledGpio -> gpioExpanderService.mangoh_gpioExp1Pin4
+}

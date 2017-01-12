@@ -1,0 +1,12 @@
+requires:
+{
+    api:
+    {
+        mangoh_ledGpio = ${LEGATO_ROOT}/interfaces/le_gpio.api
+    }
+}
+
+sources:
+{
+    timerLed.c
+}
