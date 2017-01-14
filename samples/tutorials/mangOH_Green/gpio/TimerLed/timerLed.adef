@@ -24,5 +24,5 @@ processes:
 
 bindings:
 {
-    timerLed.timerLedComponent.mangoh_ledGpio -> gpioExpanderService.mangoh_gpioExp1Pin5
+    timerLed.timerLedComponent.mangoh_ledGpio -> gpioExpanderServiceGreen.mangoh_gpioExp1Pin5
 }

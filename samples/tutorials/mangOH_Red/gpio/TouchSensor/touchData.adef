@@ -24,6 +24,6 @@ processes:
 
 bindings:
 {
-    touchData.touchDataComponent.mangoh_pushButton ->  gpioExpanderService.mangoh_gpioExp1Pin3
-    touchData.touchDataComponent.mangoh_ledGpio -> gpioExpanderService.mangoh_gpioExp1Pin4
+    touchData.touchDataComponent.mangoh_pushButton ->  gpioExpanderServiceRed.mangoh_gpioExpPin3
+    touchData.touchDataComponent.mangoh_ledGpio -> gpioExpanderServiceRed.mangoh_gpioExpPin4
 }

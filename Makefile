@@ -11,8 +11,10 @@ $(shell grep 'export .*_PA_.* .*' $(LEGATO_ROOT)/Makefile >> legatoDefs.mk)
 .PHONY: all $(TARGET)
 all: $(TARGET)
 
+MANGOH_ROOT=$(shell pwd)
+
 $(TARGET):
-	export MANGOH_ROOT=$(shell pwd) && \
+	export MANGOH_ROOT=$(MANGOH_ROOT) && \
 	mksys -t $(TARGET) \
 	-i "$(LEGATO_ROOT)/interfaces/supervisor" \
 	-i "$(LEGATO_ROOT)/interfaces/positioning" \
@@ -29,6 +31,7 @@ $(TARGET):
 	-s "$(LEGATO_ROOT)/apps/platformServices/airVantage" \
 	-s "$(LEGATO_ROOT)/apps/platformServices" \
 	-s "$(LEGATO_ROOT)/apps/tools" \
+	-s "$(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService" \
 	-C -g -X -g -L -g \
 	mangOH_Green.sdef
 	#mangOH_Red.sdef

@@ -25,5 +25,5 @@ processes:
 bindings:
 {
     cf3GpioControl.cf3GpioControlComponent.le_sensorGpio -> <root>.le_gpioPin25
-    cf3GpioControl.cf3GpioControlComponent.mangoh_ledGpio -> gpioExpanderService.mangoh_gpioExp1Pin5
+    cf3GpioControl.cf3GpioControlComponent.mangoh_ledGpio -> gpioExpanderServiceGreen.mangoh_gpioExp1Pin5
 }

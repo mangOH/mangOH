@@ -25,6 +25,3 @@
 [submodule "samples/Demos"]
 	path = samples/Demos
 	url = git://github.com/mangOH/Demos
-[submodule "apps/GpioExpanderRed"]
-	path = apps/GpioExpanderRed
-	url = git://github.com/mangOH/GpioExpanderRed

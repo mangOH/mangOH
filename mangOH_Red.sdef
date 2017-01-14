@@ -25,7 +25,7 @@ apps:
     $LEGATO_ROOT/apps/platformServices/spiService
     $LEGATO_ROOT/apps/platformServices/devMode
 
-    $MANGOH_ROOT/apps/GpioExpanderRed/gpioExpanderService/gpioExpanderService.adef
+    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed.adef
 
     // TODO: MuxControl was written specifically for mangOH Green.  Perhaps mangOH Red needs a
     // similar facility to manage uart routing.
