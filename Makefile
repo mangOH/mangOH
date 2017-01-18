@@ -1,12 +1,14 @@
+# This makefile depends on targetDefs.* files in the Legato root folder. In order to facilitate the
+# inclusion of these files, make needs to be invoked with a --include-dir=$LEGATO_ROOT parameter.
 TARGET:=wp85
 
 # Load default PA definitions from main Legato Makefile
 $(shell grep 'export PA_DIR .*' $(LEGATO_ROOT)/Makefile > legatoDefs.mk)
 $(shell grep 'export .*_PA_.* .*' $(LEGATO_ROOT)/Makefile >> legatoDefs.mk)
--include legatoDefs.mk
+include legatoDefs.mk
 
 # Default targets definitions from Framework
--include targetDefs.$(TARGET)
+include targetDefs.$(TARGET)
 
 .PHONY: all $(TARGET)
 all: $(TARGET)
@@ -15,7 +17,9 @@ MANGOH_ROOT=$(shell pwd)
 
 $(TARGET):
 	export MANGOH_ROOT=$(MANGOH_ROOT) && \
-	mksys -t $(TARGET) \
+	mksys \
+	$(MKSYS_FLAGS) \
+	-t $(TARGET) \
 	-i "$(LEGATO_ROOT)/interfaces/supervisor" \
 	-i "$(LEGATO_ROOT)/interfaces/positioning" \
 	-i "$(LEGATO_ROOT)/interfaces/airVantage" \
