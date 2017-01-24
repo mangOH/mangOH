@@ -15,12 +15,10 @@ Launch the **Legato Command Line** shortcut to load the Legato development envir
 
 ### Get the source code
 
-Clone this repository and initialize the sub-modules
-* `git clone git://github.com/swiDeveloperStudio/mangOH`
-* `cd mangOH`
-* `./setup.sh`
+Clone this repository and the submodules it requires
+* `git clone --recursive git://github.com/mangOH/mangOH`
 
 ### Build
 
-Build the MangOH Legato system
-* `make all`
+Build the mangOH Legato system
+* `make --include-dir=$LEGATO_ROOT wp85`
