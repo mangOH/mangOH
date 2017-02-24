@@ -13,7 +13,13 @@ include targetDefs.$(TARGET)
 .PHONY: all $(TARGET)
 all: $(TARGET)
 
+# The comment below is for Developer Studio integration.  Do not remove it.
+# DS_CLONE_ROOT(MANGOH_ROOT)
 MANGOH_ROOT=$(shell pwd)
+
+# The comment below is for Developer Studio integration.  Do not remove it.
+# DS_CUSTOM_OPTIONS(EXTRA_OPTS)
+EXTRA_OPTS = -s "$(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService"
 
 $(TARGET):
 	export MANGOH_ROOT=$(MANGOH_ROOT) && \
@@ -35,7 +41,7 @@ $(TARGET):
 	-s "$(LEGATO_ROOT)/apps/platformServices/airVantage" \
 	-s "$(LEGATO_ROOT)/apps/platformServices" \
 	-s "$(LEGATO_ROOT)/apps/tools" \
-	-s "$(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService" \
+	$(EXTRA_OPTS) \
 	-C -g -X -g -L -g \
 	mangOH_Green.sdef
 	#mangOH_Red.sdef
