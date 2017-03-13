@@ -31,22 +31,22 @@ apps:
     $LEGATO_ROOT/apps/platformServices/spiService
     $LEGATO_ROOT/apps/platformServices/devMode
 
-    $LEGATO_WIFI_ROOT/service/wifiService.adef
-    $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
-    $LEGATO_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
-    $LEGATO_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
-    $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi.adef
+    $LEGATO_WIFI_ROOT/service/wifiService
+    $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest
+    $LEGATO_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest
+    $LEGATO_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp
+    $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi
 
-    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen.adef
+    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
 
-    $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService.adef
-    $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools.adef
+    $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
+    $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
 
-    $MANGOH_ROOT/apps/MqttClient/mqttClient.adef
-    $MANGOH_ROOT/apps/DataRouter/dataRouter.adef
-    $MANGOH_ROOT/apps/DataRouter/drTool/drTool.adef
-    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge.adef
-    $MANGOH_ROOT/apps/SocialService/socialService.adef
+    $MANGOH_ROOT/apps/MqttClient/mqttClient
+    $MANGOH_ROOT/apps/DataRouter/dataRouter
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
+    $MANGOH_ROOT/apps/SocialService/socialService
 
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools

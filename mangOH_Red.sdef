@@ -25,17 +25,17 @@ apps:
     $LEGATO_ROOT/apps/platformServices/spiService
     $LEGATO_ROOT/apps/platformServices/devMode
 
-    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed.adef
+    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
     // TODO: MuxControl was written specifically for mangOH Green.  Perhaps mangOH Red needs a
     // similar facility to manage uart routing.
-    // $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService.adef
-    // $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools.adef
+    // $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
+    // $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
 
-    $MANGOH_ROOT/apps/MqttClient/mqttClient.adef
-    $MANGOH_ROOT/apps/DataRouter/dataRouter.adef
-    $MANGOH_ROOT/apps/DataRouter/drTool/drTool.adef
-    $MANGOH_ROOT/apps/SocialService/socialService.adef
+    $MANGOH_ROOT/apps/MqttClient/mqttClient
+    $MANGOH_ROOT/apps/DataRouter/dataRouter
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    $MANGOH_ROOT/apps/SocialService/socialService
 
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
