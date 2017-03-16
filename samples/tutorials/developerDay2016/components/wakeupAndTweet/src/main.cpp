@@ -98,10 +98,7 @@ static void LightSensorSampleTimerHandler
         LE_DEBUG("Light sensor reports value %d", lightSensorReading);
     }
 
-    if (le_avdata_SetInt(LightSensorAsset, "Reading", lightSensorReading) != LE_OK)
-    {
-        LE_WARN("Couldn't publish light sensor reading");
-    }
+    le_avdata_SetInt(LightSensorAsset, "Reading", lightSensorReading);
 
     if (lightSensorReading < ADC_LEVEL_SLEEP)
     {
@@ -109,22 +106,16 @@ static void LightSensorSampleTimerHandler
             "Initiating shutdown due to light sensor value %d which is below the minimum %d",
             lightSensorReading,
             ADC_LEVEL_SLEEP);
-        if (le_ulpm_BootOnAdcConfigure(
+
+        if (le_ulpm_BootOnAdc(
                 LIGHT_SENSOR_ADC_NUM,
                 LIGHT_SENSOR_SAMPLE_INTERVAL_MS,
-                0,
+                0.0,
                 ADC_LEVEL_WAKEUP) != LE_OK)
         {
             LE_ERROR("Failed to configure ADC3 as a wakeup source");
             return;
         }
-
-        if (le_ulpm_BootOnAdcSetEnabled(LIGHT_SENSOR_ADC_NUM, true) != LE_OK)
-        {
-            LE_ERROR("Couldn't enable ADC3 as wakeup source");
-            return;
-        }
-
 
         auto shutdownResult = le_ulpm_ShutDown();
         switch (shutdownResult)
@@ -168,8 +159,14 @@ COMPONENT_INIT
         char emoji[emojiLength] = {0};
         LE_ASSERT_OK(le_utf8_EncodeUnicodeCodePoint(UnicodeTiredFace, emoji, &emojiLength));
 
+        char dateTime[128];
+        LE_ASSERT_OK(le_clk_GetLocalDateTimeString(
+                LE_CLK_STRING_FORMAT_DATE_TIME, dateTime, sizeof(dateTime), NULL));
+
+        char imei[32];
+        LE_ASSERT_OK(le_info_GetImei(imei, sizeof(imei)));
         std::ostringstream tweetStream;
-        tweetStream << emoji << " I'm just waking up at Sierra Wireless Developer Day 2016. #SierraDD2016";
+        tweetStream << emoji << " mangOH with IMEI=" << imei << " has woken up at " << dateTime;
         auto tweet = std::make_shared<std::string>(tweetStream.str());
         if (wakeupAndTweet_ConnectAndRun([tweet]{
                     SendTweet(tweet->c_str());

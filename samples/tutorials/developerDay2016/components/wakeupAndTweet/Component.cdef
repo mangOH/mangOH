@@ -7,7 +7,8 @@ requires:
         le_bootReason.api
         le_adc.api
         le_data.api
-        airVantage/le_avdata.api
+        airVantage/legacy/le_avdata.api
+        modemServices/le_info.api
     }
 }
 
