@@ -25,3 +25,7 @@
 [submodule "samples/Demos"]
 	path = samples/Demos
 	url = https://github.com/mangOH/Demos
+[submodule "linux_kernel_modules/cp2130"]
+	path = linux_kernel_modules/cp2130
+	url = https://github.com/mangOH/cp2130
+	branch = development
