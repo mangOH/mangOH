@@ -1458,8 +1458,22 @@ int lsm6ds3_common_probe(struct lsm6ds3_data *cdata, int irq, u16 bustype)
 	if (irq > 0) {
 #ifdef CONFIG_OF
 		err = lsm6ds3_parse_dt(cdata);
-		if (err < 0)
+		if (err == -EINVAL) {
+			if (cdata->dev->platform_data) {
+				cdata->drdy_int_pin =
+					((struct lsm6ds3_platform_data *)
+					 cdata->dev->platform_data)->drdy_int_pin;
+
+				if ((cdata->drdy_int_pin > 2) ||
+				    (cdata->drdy_int_pin < 1))
+					cdata->drdy_int_pin = 1;
+			} else {
+				cdata->drdy_int_pin = 1;
+			}
+		} else if (err)
+		{
 			return err;
+		}
 #else /* CONFIG_OF */
 		if (cdata->dev->platform_data) {
 			cdata->drdy_int_pin = ((struct lsm6ds3_platform_data *)
