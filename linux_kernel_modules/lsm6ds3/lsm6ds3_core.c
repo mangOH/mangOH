@@ -27,6 +27,7 @@
 #endif
 
 #include "lsm6ds3_core.h"
+#include "lsm6ds3_platform_data.h"
 
 /* COMMON VALUES FOR ACCEL-GYRO SENSORS */
 #define LSM6DS3_WHO_AM_I			0x0f
