@@ -1,0 +1,4 @@
+sources:
+{
+    lsm6ds3_core.c
+}
