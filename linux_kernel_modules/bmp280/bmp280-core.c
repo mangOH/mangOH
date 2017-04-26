@@ -32,6 +32,7 @@
 #include <linux/completion.h>
 #include <linux/pm_runtime.h>
 #include <linux/random.h>
+#include <linux/version.h>
 
 #include "bmp280.h"
 
@@ -105,18 +106,27 @@ enum { P1, P2, P3, P4, P5, P6, P7, P8, P9 };
 static const struct iio_chan_spec bmp280_channels[] = {
 	{
 		.type = IIO_PRESSURE,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
-	},
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+		| BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO)
+#endif
+		,
+    },
 	{
 		.type = IIO_TEMP,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+		| BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO)
+#endif
+		,
 	},
 	{
 		.type = IIO_HUMIDITYRELATIVE,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+		| BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO)
+#endif
+		,
 	},
 };
 
@@ -379,6 +389,7 @@ static int bmp280_read_raw(struct iio_dev *indio_dev,
 			break;
 		}
 		break;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		switch (chan->type) {
 		case IIO_HUMIDITYRELATIVE:
@@ -398,6 +409,7 @@ static int bmp280_read_raw(struct iio_dev *indio_dev,
 			break;
 		}
 		break;
+#endif
 	default:
 		ret = -EINVAL;
 		break;
@@ -466,9 +478,13 @@ static int bmp280_write_raw(struct iio_dev *indio_dev,
 			    int val, int val2, long mask)
 {
 	int ret = 0;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 	struct bmp280_data *data = iio_priv(indio_dev);
+#endif
 
 	switch (mask) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		pm_runtime_get_sync(data->dev);
 		mutex_lock(&data->lock);
@@ -490,6 +506,7 @@ static int bmp280_write_raw(struct iio_dev *indio_dev,
 		pm_runtime_mark_last_busy(data->dev);
 		pm_runtime_put_autosuspend(data->dev);
 		break;
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -982,12 +999,22 @@ int bmp280_common_probe(struct device *dev,
 	mdelay(data->start_up_time);
 
 	/* Bring chip out of reset if there is an assigned GPIO line */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+	gpiod = devm_gpiod_get(dev, "reset");
+	/* Deassert the signal */
+	if (!IS_ERR(gpiod)) {
+		gpiod_direction_output(gpiod, 1);
+		dev_info(dev, "release reset\n");
+		gpiod_set_value(gpiod, 0);
+	}
+#else
 	gpiod = devm_gpiod_get(dev, "reset", GPIOD_OUT_HIGH);
 	/* Deassert the signal */
 	if (!IS_ERR(gpiod)) {
 		dev_info(dev, "release reset\n");
 		gpiod_set_value(gpiod, 0);
 	}
+#endif
 
 	data->regmap = regmap;
 	ret = regmap_read(regmap, BMP280_REG_ID, &chip_id);
@@ -1105,6 +1132,151 @@ static int bmp280_runtime_resume(struct device *dev)
 	return data->chip_info->chip_config(data);
 }
 #endif /* CONFIG_PM */
+
+/*
+ * The PM functions below were copied directly from Linux kernel v4.10.12 since
+ * they are referenced by this driver, but aren't available in the Legato
+ * kernel.
+ */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0)
+typedef int (*pm_callback_t)(struct device *);
+static pm_callback_t __rpm_get_callback(struct device *dev, size_t cb_offset)
+{
+	pm_callback_t cb;
+	const struct dev_pm_ops *ops;
+
+	if (dev->pm_domain)
+		ops = &dev->pm_domain->ops;
+	else if (dev->type && dev->type->pm)
+		ops = dev->type->pm;
+	else if (dev->class && dev->class->pm)
+		ops = dev->class->pm;
+	else if (dev->bus && dev->bus->pm)
+		ops = dev->bus->pm;
+	else
+		ops = NULL;
+
+	if (ops)
+		cb = *(pm_callback_t *)((void *)ops + cb_offset);
+	else
+		cb = NULL;
+
+	if (!cb && dev->driver && dev->driver->pm)
+		cb = *(pm_callback_t *)((void *)dev->driver->pm + cb_offset);
+
+	return cb;
+}
+
+#define RPM_GET_CALLBACK(dev, callback)					\
+	__rpm_get_callback(dev, offsetof(struct dev_pm_ops, callback))
+
+/**
+ * pm_runtime_force_suspend - Force a device into suspend state if needed.
+ * @dev: Device to suspend.
+ *
+ * Disable runtime PM so we safely can check the device's runtime PM status and
+ * if it is active, invoke it's .runtime_suspend callback to bring it into
+ * suspend state. Keep runtime PM disabled to preserve the state unless we
+ * encounter errors.
+ *
+ * Typically this function may be invoked from a system suspend callback to make
+ * sure the device is put into low power state.
+ */
+static int pm_runtime_force_suspend(struct device *dev)
+{
+	int (*callback)(struct device *);
+	int ret = 0;
+
+	pm_runtime_disable(dev);
+	if (pm_runtime_status_suspended(dev))
+		return 0;
+
+	callback = RPM_GET_CALLBACK(dev, runtime_suspend);
+
+	if (!callback) {
+		ret = -ENOSYS;
+		goto err;
+	}
+
+	ret = callback(dev);
+	if (ret)
+		goto err;
+
+	/*
+	 * Increase the runtime PM usage count for the device's parent, in case
+	 * when we find the device being used when system suspend was invoked.
+	 * This informs pm_runtime_force_resume() to resume the parent
+	 * immediately, which is needed to be able to resume its children,
+	 * when not deferring the resume to be managed via runtime PM.
+	 */
+	if (dev->parent && atomic_read(&dev->power.usage_count) > 1)
+		pm_runtime_get_noresume(dev->parent);
+
+	pm_runtime_set_suspended(dev);
+	return 0;
+err:
+	pm_runtime_enable(dev);
+	return ret;
+}
+
+/**
+ * pm_runtime_force_resume - Force a device into resume state if needed.
+ * @dev: Device to resume.
+ *
+ * Prior invoking this function we expect the user to have brought the device
+ * into low power state by a call to pm_runtime_force_suspend(). Here we reverse
+ * those actions and brings the device into full power, if it is expected to be
+ * used on system resume. To distinguish that, we check whether the runtime PM
+ * usage count is greater than 1 (the PM core increases the usage count in the
+ * system PM prepare phase), as that indicates a real user (such as a subsystem,
+ * driver, userspace, etc.) is using it. If that is the case, the device is
+ * expected to be used on system resume as well, so then we resume it. In the
+ * other case, we defer the resume to be managed via runtime PM.
+ *
+ * Typically this function may be invoked from a system resume callback.
+ */
+static int pm_runtime_force_resume(struct device *dev)
+{
+	int (*callback)(struct device *);
+	int ret = 0;
+
+	callback = RPM_GET_CALLBACK(dev, runtime_resume);
+
+	if (!callback) {
+		ret = -ENOSYS;
+		goto out;
+	}
+
+	if (!pm_runtime_status_suspended(dev))
+		goto out;
+
+	/*
+	 * Decrease the parent's runtime PM usage count, if we increased it
+	 * during system suspend in pm_runtime_force_suspend().
+	*/
+	if (atomic_read(&dev->power.usage_count) > 1) {
+		if (dev->parent)
+			pm_runtime_put_noidle(dev->parent);
+	} else {
+		goto out;
+	}
+
+	ret = pm_runtime_set_active(dev);
+	if (ret)
+		goto out;
+
+	ret = callback(dev);
+	if (ret) {
+		pm_runtime_set_suspended(dev);
+		goto out;
+	}
+
+	pm_runtime_mark_last_busy(dev);
+out:
+	pm_runtime_enable(dev);
+	return ret;
+}
+#endif
 
 const struct dev_pm_ops bmp280_dev_pm_ops = {
 	SET_SYSTEM_SLEEP_PM_OPS(pm_runtime_force_suspend,
