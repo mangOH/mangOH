@@ -1,0 +1,12 @@
+cflags:
+{
+    // This driver depends on IIO
+    -DCONFIG_IIO
+}
+
+sources:
+{
+    bmp280-core.c
+    bmp280-regmap.c
+}
+
