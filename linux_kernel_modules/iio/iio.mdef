@@ -1,0 +1,19 @@
+cflags:
+{
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGER
+    -DCONFIG_IIO_CONSUMERS_PER_TRIGGER=2
+}
+
+sources:
+{
+    // IIO
+    industrialio-core.c
+    industrialio-event.c
+    inkern.c
+    // IIO_BUFFER
+    industrialio-buffer.c
+    // IIO_TRIGGER
+    industrialio-trigger.c
+}
