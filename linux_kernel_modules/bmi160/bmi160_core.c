@@ -21,6 +21,7 @@
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/buffer.h>
 #include <linux/iio/sysfs.h>
+#include <linux/version.h>
 
 #include "bmi160.h"
 
@@ -110,6 +111,13 @@ enum bmi160_sensor_type {
 
 struct bmi160_data {
 	struct regmap *regmap;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+	/*
+	 * This member is necessary in kernel versions < 3.16 because
+	 * regmap_get_device() is not defined.
+	 */
+	struct device *dev;
+#endif
 };
 
 const struct regmap_config bmi160_regmap_config = {
@@ -399,8 +407,11 @@ static irqreturn_t bmi160_trigger_handler(int irq, void *p)
 		buf[j++] = sample;
 	}
 
-	iio_push_to_buffers_with_timestamp(indio_dev, buf,
-					   iio_get_time_ns(indio_dev));
+	iio_push_to_buffers_with_timestamp(indio_dev, buf, iio_get_time_ns(
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+						   indio_dev
+#endif
+						   ));
 done:
 	iio_trigger_notify_done(indio_dev->trig);
 	return IRQ_HANDLED;
@@ -503,7 +514,11 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 {
 	int ret;
 	unsigned int val;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 
 	ret = regmap_write(data->regmap, BMI160_REG_CMD, BMI160_CMD_SOFTRESET);
 	if (ret < 0)
@@ -563,6 +578,9 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 	data = iio_priv(indio_dev);
 	dev_set_drvdata(dev, indio_dev);
 	data->regmap = regmap;
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+	data->dev = dev;
+#endif
 
 	ret = bmi160_chip_init(data, use_spi);
 	if (ret < 0)
