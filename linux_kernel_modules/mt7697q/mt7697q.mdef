@@ -1,0 +1,13 @@
+sources:
+{
+    io.c
+    interrupt.c
+    queue.c
+    spi.c
+}
+
+cflags:
+{
+    -DDEBUG
+}
+

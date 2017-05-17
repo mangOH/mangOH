@@ -1,0 +1,21 @@
+# /etc/network/interfaces -- configuration file for ifup(8), ifdown(8)
+
+# The loopback interface
+auto lo
+iface lo inet loopback
+
+# Wired or wireless interfaces
+auto eth0
+iface eth0 inet dhcp
+
+# Wireless interfaces
+#iface wlan0 inet manual
+#    pre-up /etc/init.d/tiwifi start
+#    post-down /etc/init.d/tiwifi stop
+
+iface wlan0 inet manual
+#    wpa-ssid SWI-MOBILE            
+#    wpa-psk 13811swi
+    pre-up /etc/init.d/mtwifi start
+    post-down /etc/init.d/mtwifi stop
+

@@ -1,0 +1,13 @@
+sources:
+{
+    wmi.c
+    cfg80211.c
+    main.c
+    txrx.c
+}
+
+cflags:
+{
+    -DDEBUG 
+    -I$MANGOH_ROOT/linux_kernel_modules/mt7697q
+}
