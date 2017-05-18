@@ -2,13 +2,9 @@
 # inclusion of these files, make needs to be invoked with a --include-dir=$LEGATO_ROOT parameter.
 TARGET:=wp85
 
-# Load default PA definitions from main Legato Makefile
-$(shell grep 'export PA_DIR .*' $(LEGATO_ROOT)/Makefile > legatoDefs.mk)
-$(shell grep 'export .*_PA_.* .*' $(LEGATO_ROOT)/Makefile >> legatoDefs.mk)
-include legatoDefs.mk
 
 # Default targets definitions from Framework
-include targetDefs.$(TARGET)
+include targetDefs
 
 .PHONY: all $(TARGET)
 all: $(TARGET)
@@ -47,4 +43,4 @@ $(TARGET):
 	#mangOH_Red.sdef
 
 clean:
-	rm -rf /tmp/mkbuild_* _build_* *.update legatoDefs.mk
+	rm -rf /tmp/mkbuild_* _build_* *.update

@@ -1,30 +1,13 @@
 //--------------------------------------------------------------------------------------------------
-// MangOH system definition that includes essential modem and positioning services
-// plus available MangOH apps
+// mangOH Red system definition that extends the wifi sdef from Legato.
 //
 // Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
 //--------------------------------------------------------------------------------------------------
 
+#include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
+
 apps:
 {
-    // Platform services.
-    $LEGATO_ROOT/apps/platformServices/airVantage/avcService
-    $LEGATO_ROOT/apps/platformServices/audioService
-    $LEGATO_ROOT/apps/platformServices/cellNetService
-    $LEGATO_ROOT/apps/platformServices/dataConnectionService
-    $LEGATO_ROOT/apps/platformServices/fwupdateService
-    $LEGATO_ROOT/apps/platformServices/modemService
-    $LEGATO_ROOT/apps/platformServices/positioningService
-    $LEGATO_ROOT/apps/platformServices/powerMgr
-    $LEGATO_ROOT/apps/platformServices/secStore
-    $LEGATO_ROOT/apps/platformServices/smsInboxService
-    $LEGATO_ROOT/apps/platformServices/voiceCallService
-    $LEGATO_ROOT/apps/platformServices/gpioService
-    $LEGATO_ROOT/apps/platformServices/atClient
-    $LEGATO_ROOT/apps/platformServices/atServer
-    $LEGATO_ROOT/apps/platformServices/spiService
-    $LEGATO_ROOT/apps/platformServices/devMode
-
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
     // TODO: MuxControl was written specifically for mangOH Green.  Perhaps mangOH Red needs a
@@ -33,37 +16,16 @@ apps:
     // $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    $MANGOH_ROOT/apps/DataRouter/dataRouter
-    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    // Data Router disabled until it can be updated
+    // $MANGOH_ROOT/apps/DataRouter/dataRouter
+    // $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
-
-    // Command-line tools.
-    $LEGATO_ROOT/apps/tools/tools
 }
 
 commands:
 {
-    cm = tools:/bin/cm
-    fwupdate = tools:/bin/fwupdate
-    secstore = tools:/bin/secstore
-    pmtool = tools:/bin/pmtool
-    gnss = tools:/bin/gnss
-    uartMode = tools:/bin/uartMode
-
     // mux = muxCtrlTools:/bin/mux
-
-    dr = drTool:/bin/dr
-
+    // dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
 }
 
-bindings:
-{
-    <root>.le_fwupdate -> fwupdateService.le_fwupdate
-}
-
-interfaceSearch:
-{
-    interfaces/modemServices
-    interfaces/positioning
-}
