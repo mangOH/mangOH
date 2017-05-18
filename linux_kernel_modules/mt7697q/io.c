@@ -205,7 +205,8 @@ int mt7697io_rd_s2m_mbx(struct mt7697q_info *qinfo)
        		goto cleanup;
     	}
 
-	dev_dbg(qinfo->dev, "%s(): s2m mbx(0x%02x)\n", 
+	qinfo->s2m_mbox = mt7697io_get_s2m_mbox(value);
+	dev_dbg(qinfo->dev, "%s(): s2m mbx(0x%04x)\n", 
 		__func__, qinfo->s2m_mbox);
 
 cleanup:
