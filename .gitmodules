@@ -29,3 +29,6 @@
 	path = linux_kernel_modules/cp2130
 	url = https://github.com/mangOH/cp2130
 	branch = development
+[submodule "apps/RedSensorToCloud"]
+	path = apps/RedSensorToCloud
+	url = https://github.com/mangOH/RedSensorToCloud
