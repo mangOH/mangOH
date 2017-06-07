@@ -23,7 +23,7 @@ apps:
     $LEGATO_ROOT/apps/platformServices/atClient
     $LEGATO_ROOT/apps/platformServices/atServer
     $LEGATO_ROOT/apps/platformServices/spiService
-    $LEGATO_ROOT/apps/platformServices/devMode
+    $LEGATO_ROOT/apps/tools/devMode
 
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 

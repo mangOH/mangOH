@@ -29,7 +29,7 @@ apps:
     $LEGATO_ROOT/apps/platformServices/atClient
     $LEGATO_ROOT/apps/platformServices/atServer
     $LEGATO_ROOT/apps/platformServices/spiService
-    $LEGATO_ROOT/apps/platformServices/devMode
+    $LEGATO_ROOT/apps/tools/devMode
 
     $LEGATO_WIFI_ROOT/service/wifiService
     $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest
