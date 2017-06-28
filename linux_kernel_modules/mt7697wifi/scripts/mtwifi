@@ -8,46 +8,49 @@
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp
 
 mt_wifi_start() {
+#    insmod /tmp/spisvc.ko || exit 127
     lsmod | grep spi-cp2130 >/dev/null                                            
     if [ $? -eq 1 ]; then
         insmod /tmp/spi-cp2130.ko || exit 127
         for f in `ls -d /sys/class/gpio/gpiochip*`; do echo $f `cat $f/label $f/base $f/ngpio` ; done
-        echo -n 0,2,6,0,0,1,2,0,0,0,0,mt7697 > /sys/devices/platform/msm_hsic_host/usb1/1-1/1-1.3/1-1.3:1.0/channel_config                                                                     
+        echo -n 0,2,6,0,0,1,2,0,0,0,0,mt7697 > /sys/devices/platform/msm_hsic_host/usb1/1-1/1-1.1/1-1.1:1.0/channel_config                                                                     
     fi
 
     lsmod | grep cfg80211 >/dev/null                                            
     if [ $? -eq 1 ]; then
-#        modprobe cfg80211 || exit 127
         insmod /tmp/cfg80211.ko || exit 127
     fi
 
-    lsmod | grep cfg80211 >/dev/null                                            
+    lsmod | grep mac80211 >/dev/null                                            
     if [ $? -eq 1 ]; then
-#        modprobe mac80211 || exit 127
         insmod /tmp/mac80211.ko || exit 127
     fi                                                                 
 
     lsmod | grep mt7697q >/dev/null                                            
     if [ $? -eq 1 ]; then
         insmod /tmp/mt7697q.ko || exit 127
-        echo "Initialized MT7697 queues"; exit 127 
+        echo "Initialized MT7697 queues"; 
     fi
                
     lsmod | grep mt7697wifi_core >/dev/null                                            
     if [ $? -eq 1 ]; then                         
         insmod /tmp/mt7697wifi_core.ko || exit 127
-        echo "Initialized MT7697 80211 core"; exit 127                                       
+        echo "Initialized MT7697 80211 core";                                       
         sleep 2
     fi
                                                                      
     ifconfig -a | grep wlan0 >/dev/null                                         
     if [ $? -ne 0 ] ; then                                                      
-        echo "Failed to init MT7697 80211 core"; exit 127                            
+        echo "Failed to init MT7697 80211 core"; 
+	exit 127                            
     fi                                                                          
     ifconfig wlan0 up >/dev/null                                                
     if [ $? -ne 0 ] ; then                                                      
-        echo "Failed to start MT7697 80211 core"; exit 127                            
-    fi                                                                          
+        echo "Failed to start MT7697 80211 core"; 
+	exit 127                            
+    fi
+
+    /tmp/wpa_supplicant -i wlan0 -D wext -c /etc/swi-mobile -B                                                                          
 } 
 
 mt_wifi_stop() {                                                                

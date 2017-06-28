@@ -144,7 +144,8 @@ void mt7697_irq_work(struct work_struct *irq_work)
 
 	ret = mt7697io_rd_s2m_mbx(qinfo);
     	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_rd_s2m_mbx() failed(%d)\n", __func__, ret);
+		dev_err(qinfo->dev, "%s(): mt7697io_rd_s2m_mbx() failed(%d)\n", 
+			__func__, ret);
        		goto cleanup;
     	}
 
@@ -154,7 +155,8 @@ void mt7697_irq_work(struct work_struct *irq_work)
     	ret = mt7697io_clr_s2m_mbx(qinfo);
     	if (ret < 0) {
 		dev_err(qinfo->dev, 
-			"%s(): mt7697io_clr_s2m_mbx() failed(%d)\n", __func__, ret);
+			"%s(): mt7697io_clr_s2m_mbx() failed(%d)\n", 
+			__func__, ret);
        		goto cleanup;
     	}
 
@@ -167,26 +169,31 @@ void mt7697_irq_work(struct work_struct *irq_work)
             		if (in_use && 
 			    (dir == MT7697_QUEUE_DIR_SLAVE_TO_MASTER)) {
 				WARN_ON(!qs->rx_fcn);
+				mutex_unlock(&qinfo->mutex);
 				ret = qs->rx_fcn(qs->priv);
 				if (ret < 0) {
 					dev_err(qinfo->dev, 
 						"%s(): rx_fcn() failed(%d)\n", 
 						__func__, ret);
     				}
+
+				mutex_lock(&qinfo->mutex);
             		}
             		else if (!in_use) {
 				dev_warn(qinfo->dev, 
-					"%s(): unused channel(%d)\n", __func__, ch);
+					"%s(): unused channel(%d)\n", 
+					__func__, ch);
             		}
         	}
     	}
 
 cleanup:
 	ret = queue_delayed_work(qinfo->irq_workq, &qinfo->irq_work, 
-		msecs_to_jiffies(1000));
+		msecs_to_jiffies(100));
 	if (ret < 0) {
 		dev_err(qinfo->dev, 
-			"%s(): queue_delayed_work() failed(%d)\n", __func__, ret);
+			"%s(): queue_delayed_work() failed(%d)\n", 
+			__func__, ret);
     	}
 
 	mutex_unlock(&qinfo->mutex);

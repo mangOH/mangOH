@@ -27,15 +27,17 @@
 #define MT7697_MAC80211_QUEUE_TX	0
 #define MT7697_MAC80211_QUEUE_RX	1
 
-#define MT7697_CH_MAX_2G_CHANNEL	14	/* Max channel in 2G band */
+#define MT7697_CH_MAX_2G_CHANNEL	14
 #define MT7697_CH_MIN_5G_CHANNEL	34
+#define MT7697_CH_MAX_5G_CHANNEL	216
 
 #define MT7697_SCAN_MAX_ITEMS		16
 #define MT7697_IFACE_MAX_CNT		2
 #define MT7697_MAX_MC_FILTERS_PER_LIST 	7
 #define MT7697_MAX_COOKIE_NUM		180
 #define MT7697_TX_TIMEOUT      		10
-#define MT7697_DISCON_TIMER_INTVAL      10000  /* in msec */
+/* TODO update below */
+#define MT7697_DISCON_TIMER_INTVAL_MSEC (300 * 1000)
 
 #define MT7697_KEY_SEQ_LEN 		8
 #define MT7697_MAX_KEY_INDEX   		3
@@ -97,19 +99,21 @@ struct mt7697_cfg80211_info {
 	struct mt7697_cookie cookie_mem[MT7697_MAX_COOKIE_NUM];
 
 	struct work_struct tx_work;
-	u8 tx_data[IEEE80211_MAX_DATA_LEN];
-	u8 rx_data[IEEE80211_MAX_DATA_LEN];
-	u8 probe_data[IEEE80211_MAX_DATA_LEN];
+	struct mt7697_tx_raw_packet tx_req;
+	u8 rx_data[MT7697_LEN32_ALIGNED(IEEE80211_MAX_FRAME_LEN)];
+	u8 probe_data[MT7697_LEN32_ALIGNED(IEEE80211_MAX_DATA_LEN)];
 
 	struct mt7697_rsp_hdr rsp;
 	
 	enum mt7697_radio_state radio_state;
 	enum mt7697_wifi_phy_mode_t wireless_mode;
+	enum mt7697_wifi_phy_mode_t hw_wireless_mode;
 	struct mac_address mac_addr;
 	struct mt7697_wifi_config_t wifi_config;
 	int listen_interval;
 	enum mt7697_wifi_rx_filter_t rx_filter;
-	u8 pmkid[MT7697_WIFI_LENGTH_PMK];
+	u8 smart_conn_filter;
+	u8 psk[MT7697_PASSPHRASE_LEN];
 
 	struct list_head vif_list;
 	spinlock_t vif_list_lock;
@@ -191,10 +195,12 @@ static inline struct mt7697_vif *mt7697_vif_from_wdev(struct wireless_dev *wdev)
 
 void mt7697_init_netdev(struct net_device*);
 
+struct mt7697_vif *mt7697_get_vif_by_idx(struct mt7697_cfg80211_info*, u8);
 struct wireless_dev *mt7697_interface_add(struct mt7697_cfg80211_info*, 
 	const char*, enum nl80211_iftype, u8 fw_vif_idx);
 void mt7697_tx_work(struct work_struct *);
 int mt7697_data_tx(struct sk_buff*, struct net_device*);
+int mt7697_rx_data(struct mt7697_cfg80211_info*, u32);
 
 void mt7697_disconnect_timer_hndlr(unsigned long);
 int mt7697_disconnect(struct mt7697_vif*);

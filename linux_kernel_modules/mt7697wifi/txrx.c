@@ -14,6 +14,7 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include <linux/etherdevice.h>
 #include "core.h"
 
 int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
@@ -81,4 +82,48 @@ void mt7697_tx_work(struct work_struct *work)
 
 cleanup:
 	return;
+}
+
+int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 if_idx)
+{
+	struct mt7697_vif *vif;
+	struct sk_buff *skb;
+	int ret = 0;
+
+	skb = alloc_skb(cfg->rsp.result, GFP_KERNEL);
+	if (!skb) {
+		dev_err(cfg->dev, "%s: alloc_skb() failed\n", __func__);
+		ret = -ENOMEM;
+		goto cleanup;
+	}
+
+	skb_put(skb, cfg->rsp.result);
+        memcpy(skb->data, cfg->rx_data, cfg->rsp.result);
+
+	vif = mt7697_get_vif_by_idx(cfg, if_idx);
+	if (!vif) {
+		dev_err(cfg->dev, "%s: mt7697_get_vif_by_idx(%u) failed\n",
+			    __func__, if_idx);
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
+	dev_dbg(cfg->dev, "%s: vif(%u)\n", __func__, vif->fw_vif_idx);
+
+	skb->dev = vif->ndev;
+
+	if (!(skb->dev->flags & IFF_UP)) {
+		dev_warn(cfg->dev, "%s: net device NOT up\n", __func__);
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
+	skb->protocol = eth_type_trans(skb, skb->dev);
+	dev_dbg(cfg->dev, "%s: protocol(%u)\n", __func__, skb->protocol);
+
+	netif_rx_ni(skb);
+
+cleanup:
+	if (ret && skb) dev_kfree_skb(skb);
+	return ret;
 }

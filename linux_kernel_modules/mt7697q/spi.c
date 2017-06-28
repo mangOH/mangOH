@@ -53,10 +53,35 @@ static const struct mt7697spi_hw_ops hw_ops =
 	.disable_irq		= mt7697spi_disable_irq,
 };
 
-static int mt7697spi_probe(struct spi_device *spi)
+static int __init mt7697spi_init(void)
 {
+	char str[32];
+	struct spi_master *master;
+	struct device *dev;
+	struct spi_device *spi;
 	struct mt7697q_info *qinfo;
 	int ret = 0;
+
+	master = spi_busnum_to_master(MT7697_SPI_BUS_NUM);
+	if (!master) {
+		pr_err(DRVNAME" spi_busnum_to_master(%d) failed\n",
+			MT7697_SPI_BUS_NUM);
+		goto cleanup;
+	}
+
+	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev), MT7697_SPI_CS);
+	pr_info(DRVNAME" find SPI device('%s')\n", str);
+	dev = bus_find_device_by_name(&spi_bus_type, NULL, str);
+	if (!dev) {
+		pr_err(DRVNAME" '%s' bus_find_device_by_name() failed\n", str);
+		goto cleanup;
+	}
+
+	spi = container_of(dev, struct spi_device, dev);
+	if (!spi) {
+		pr_err(DRVNAME" get SPI device failed\n");
+		goto cleanup;
+	}
 
 	pr_info(DRVNAME" init dev('%s') mode(%d) max speed(%d) "
 		"CS(%d) GPIO(%d) bits/word(%d)\n", 
@@ -85,11 +110,11 @@ static int mt7697spi_probe(struct spi_device *spi)
 		goto cleanup;
 	}
 
+	/* TODO: revove after CP2130 working */
 	INIT_DELAYED_WORK(&qinfo->irq_work, mt7697_irq_work);
 //	INIT_WORK(&qinfo->irq_work, mt7697_irq_work);
 	qinfo->irq = spi->irq;
-	dev_info(qinfo->dev, "%s(): '%s' request irq(%d)\n", 
-		__func__, spi->modalias, spi->irq);
+	dev_info(qinfo->dev, "'%s' request irq(%d)\n", spi->modalias, spi->irq);
 /*	ret = request_irq(spi->irq, mt7697_irq,
         	IRQF_SHARED| IRQF_NO_SUSPEND, spi->modalias, qinfo);
         if (ret < 0) {
@@ -99,12 +124,12 @@ static int mt7697spi_probe(struct spi_device *spi)
 */
 	spi_set_drvdata(spi, qinfo);
 
+	/* TODO: revove after CP2130 working */
 	ret = queue_delayed_work(qinfo->irq_workq, &qinfo->irq_work, 
 		msecs_to_jiffies(1000));
 	if (ret < 0) {
 		dev_err(qinfo->dev, 
-			"%s(): queue_delayed_work() failed(%d)\n", 
-			__func__, ret);
+			"queue_delayed_work() failed(%d)\n", ret);
     	}
 	return 0;
 
@@ -116,37 +141,50 @@ cleanup:
 	return ret;
 }
 
-static int mt7697spi_remove(struct spi_device *spi)
+static void __exit mt7697spi_exit(void)
 {
-	struct mt7697q_info *qinfo = spi_get_drvdata(spi);
+	char str[32];
+	struct spi_master *master;
+	struct device *dev;
+	struct spi_device *spi;
+	struct mt7697q_info *qinfo;
+
+	master = spi_busnum_to_master(MT7697_SPI_BUS_NUM);
+	if (!master) {
+		pr_err(DRVNAME" spi_busnum_to_master(%d) failed\n",
+			MT7697_SPI_BUS_NUM);
+		goto cleanup;
+	}
+
+	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev), MT7697_SPI_CS);
+	pr_info(DRVNAME" find SPI device('%s')\n", str);
+	dev = bus_find_device_by_name(&spi_bus_type, NULL, str);
+	if (!dev) {
+		pr_err(DRVNAME" '%s' bus_find_device_by_name() failed\n", str);
+		goto cleanup;
+	}
+
+	spi = container_of(dev, struct spi_device, dev);
+	if (!spi) {
+		pr_err(DRVNAME" get SPI device failed\n");
+		goto cleanup;
+	}
+
+	qinfo = spi_get_drvdata(spi);
 	if (qinfo) {
-		dev_info(qinfo->dev, "%s(): remove\n", __func__);
-		free_irq(spi->irq, qinfo);
+		dev_info(qinfo->dev, "remove\n");
+		flush_workqueue(qinfo->irq_workq);
+		destroy_workqueue(qinfo->irq_workq);
+//		free_irq(spi->irq, qinfo);
 		kfree(qinfo);
 	}
 
-	return 0;
+cleanup:
+	return;
 }
 
-static const struct of_device_id dt_ids[] = {
-        { .compatible = "MediaTek,mt7697" },
-        {},
-};
-
-MODULE_DEVICE_TABLE(of, dt_ids);
-
-static struct spi_driver mt7697spi_driver = {
-	.driver = {
-		.name = DRVNAME,
-		.owner = THIS_MODULE,
-		.of_match_table = of_match_ptr(dt_ids),
-	},
-
-	.probe = mt7697spi_probe,
-	.remove	= mt7697spi_remove,
-};
-
-module_spi_driver(mt7697spi_driver)
+module_init(mt7697spi_init);
+module_exit(mt7697spi_exit);
 
 MODULE_AUTHOR( "Sierra Wireless Corporation" );
 MODULE_LICENSE( "GPL" );

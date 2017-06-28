@@ -5,10 +5,14 @@
 // Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
 //--------------------------------------------------------------------------------------------------
 
+#include "$LEGATO_ROOT/legatoTargetConfig.sinc"
+
+#include "$LEGATO_ROOT/apps/platformServices/defaultAirVantage.sinc"
+
 apps:
 {
     // Platform services.
-    $LEGATO_ROOT/apps/platformServices/airVantage/avcService
+//    $LEGATO_ROOT/apps/platformServices/airVantage/avcService
     $LEGATO_ROOT/apps/platformServices/audioService
     $LEGATO_ROOT/apps/platformServices/cellNetService
     $LEGATO_ROOT/apps/platformServices/dataConnectionService
@@ -20,10 +24,10 @@ apps:
     $LEGATO_ROOT/apps/platformServices/smsInboxService
     $LEGATO_ROOT/apps/platformServices/voiceCallService
     $LEGATO_ROOT/apps/platformServices/gpioService
-    $LEGATO_ROOT/apps/platformServices/atClient
-    $LEGATO_ROOT/apps/platformServices/atServer
+//    $LEGATO_ROOT/apps/platformServices/atClient
+//    $LEGATO_ROOT/apps/platformServices/atServer
     $LEGATO_ROOT/apps/platformServices/spiService
-    $LEGATO_ROOT/apps/platformServices/devMode
+    $LEGATO_ROOT/apps/tools/devMode
 
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
@@ -33,12 +37,25 @@ apps:
     // $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    $MANGOH_ROOT/apps/DataRouter/dataRouter
-    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+//    $MANGOH_ROOT/apps/DataRouter/dataRouter
+//    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
 
     // Command-line tools.
     $LEGATO_ROOT/apps/tools/tools
+}
+
+kernelModules:
+{
+    $MANGOH_ROOT/linux_kernel_modules/cp2130/spi-cp2130.mdef
+    $MANGOH_ROOT/linux_kernel_modules/spisvc/spisvc.mdef
+    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/mt7697wifi_core.mdef
+    $MANGOH_ROOT/linux_kernel_modules/mt7697q/mt7697q.mdef
+}
+
+buildVars:
+{
+    LEGATO_KERNELROOT = /home/david/kernel
 }
 
 commands:
@@ -52,7 +69,7 @@ commands:
 
     // mux = muxCtrlTools:/bin/mux
 
-    dr = drTool:/bin/dr
+    // dr = drTool:/bin/dr
 
     twitter = socialService:/bin/twitter
 }

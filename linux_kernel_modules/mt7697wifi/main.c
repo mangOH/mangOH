@@ -146,6 +146,14 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		goto failed;
 	}
 
+	err = mt7697_send_get_smart_conn_filter_req(cfg);
+	if (err < 0) {
+		dev_err(cfg->dev, 
+			"%s: mt7697_send_get_smart_conn_filter_req() failed(%d)\n", 
+			__func__, err);
+		goto failed;
+	}
+
 	err = mt7697_send_get_listen_interval_req(cfg);
 	if (err < 0) {
 		dev_err(cfg->dev, 
@@ -162,9 +170,9 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		goto failed;
 	}
 
-	err = mt7697_send_get_pmk_req(cfg, MT7697_PORT_STA);
+	err = mt7697_send_get_psk_req(cfg, MT7697_PORT_STA);
 	if (err < 0) {
-		dev_err(cfg->dev, "%s: mt7697_send_get_pmk_req() failed(%d)\n", 
+		dev_err(cfg->dev, "%s: mt7697_send_get_psk_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
@@ -369,8 +377,8 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 			NULL);
 		if (ret < 0) {
 			dev_err(vif->cfg->dev, 
-				"mt7697_send_disconnect_req() failed(%d)\n", 
-				ret);
+				"%s: mt7697_send_disconnect_req() failed(%d)\n", 
+				__func__, ret);
 			goto failed;
 		}
 
@@ -402,7 +410,6 @@ struct mt7697_cookie *mt7697_alloc_cookie(struct mt7697_cfg80211_info *cfg)
 void mt7697_free_cookie(struct mt7697_cfg80211_info *cfg, struct mt7697_cookie *cookie)
 {
 	/* Insert first */
-
 	if (!cfg || !cookie)
 		return;
 
@@ -411,7 +418,7 @@ void mt7697_free_cookie(struct mt7697_cfg80211_info *cfg, struct mt7697_cookie *
 	cfg->cookie_count++;
 }
 
-MODULE_AUTHOR( "Sierra Wireless Corporation" );
-MODULE_LICENSE( "GPL" );
-MODULE_DESCRIPTION( "MediaTek7697 WiFi 80211" );
+MODULE_AUTHOR("Sierra Wireless Corporation");
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("MediaTek7697 WiFi 80211");
 

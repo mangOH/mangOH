@@ -121,29 +121,34 @@ void* mt7697q_init(u8 ch, void *priv, rx_hndlr rx_fcn)
 	}
 
 	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev), MT7697_SPI_CS);
-	pr_info(DRVNAME" find SPI device('%s')\n", str);
+	dev_dbg(&master->dev, "%s(): find SPI device('%s')\n", __func__, str);
 	dev = bus_find_device_by_name(&spi_bus_type, NULL, str);
 	if (!dev) {
-		pr_err(DRVNAME" '%s' bus_find_device_by_name() failed\n", str);
+		dev_err(&master->dev, 
+			"%s(): '%s' bus_find_device_by_name() failed\n", 
+			__func__, str);
 		goto cleanup;
 	}
 
 	spi = container_of(dev, struct spi_device, dev);
 	if (!spi) {
-		pr_err(DRVNAME" get SPI device failed\n");
+		dev_err(&master->dev, "%s(): get SPI device failed\n", 
+			__func__);
 		goto cleanup;
 	}
 
 	qinfo = spi_get_drvdata(spi);
 	if (!qinfo) {
-		pr_err(DRVNAME" spi_get_drvdata() failed\n");
+		dev_dbg(&master->dev, "%s(): spi_get_drvdata() failed\n", 
+			__func__);
 		goto cleanup;
 	}
 
-	pr_info(DRVNAME" init queue(%u)\n", ch);
+	dev_dbg(&master->dev, "%s(): init queue(%u)\n", __func__, ch);
 
 	if (ch >= MT7697_NUM_QUEUES) {
-		pr_err(DRVNAME" invalid queue(%u)\n", ch);
+		dev_err(&master->dev, "%s():  invalid queue(%u)\n", 
+			__func__, ch);
 		goto cleanup;
 	}
     	
@@ -155,47 +160,38 @@ void* mt7697q_init(u8 ch, void *priv, rx_hndlr rx_fcn)
 
 	mutex_lock(&qinfo->mutex);
 
-	/* TODO: Remove when CP2130 working */
-	while (1) {
-		pr_info(DRVNAME" base(0x%08x)\n", MT7697_IO_SLAVE_BUFFER_ADDRESS + ch * sizeof(struct mt7697q_data));
-		ret = mt7697io_rd(qinfo, 
-			MT7697_IO_SLAVE_BUFFER_ADDRESS + ch * sizeof(struct mt7697q_data), 
-			(u32*)&qs->data, 
-			MT7697_QUEUE_LEN_TO_WORD(sizeof(struct mt7697q_data)));
-		if (ret < 0) {
-			pr_err(DRVNAME" mt7697io_rd() failed(%d)\n", ret);
-       			goto failed_rd;
-    		}
+	ret = mt7697io_rd(qinfo, 
+		MT7697_IO_SLAVE_BUFFER_ADDRESS + ch * sizeof(struct mt7697q_data), 
+		(u32*)&qs->data, 
+		MT7697_QUEUE_LEN_TO_WORD(sizeof(struct mt7697q_data)));
+	if (ret < 0) {
+		dev_err(&master->dev, "%s(): mt7697io_rd() failed(%d)\n", 
+			__func__, ret);
+       		goto failed_rd;
+    	}
 
-		if ((ch == 0) &&
-		    (qs->data.flags == 0x04000001) &&
-		    !qs->data.rd_offset &&
-		    !qs->data.wr_offset &&
-		    (qs->data.base_addr == 0x20005ec4)) break;
-		else if ((ch == 1) && 
-		    (qs->data.flags == 0x04000002) &&
-		    !qs->data.rd_offset &&
-		    !qs->data.wr_offset &&
-		    (qs->data.base_addr == 0x20006ed4)) break;
-	}
-
-	pr_info(DRVNAME" flags(0x%08x)\n", qs->data.flags);
-	pr_info(DRVNAME" base_addr(0x%08x)\n", qs->data.base_addr);
-	pr_info(DRVNAME" rd_offset(0x%08x)\n", qs->data.rd_offset);
-	pr_info(DRVNAME" wr_offset(0x%08x)\n", qs->data.wr_offset);
+	dev_dbg(&master->dev, "%s(): flags(0x%08x)\n", 
+		__func__, qs->data.flags);
+	dev_dbg(&master->dev, "%s(): base_addr(0x%08x)\n", 
+		__func__, qs->data.base_addr);
+	dev_dbg(&master->dev, "%s(): rd_offset(0x%08x)\n", 
+		__func__, qs->data.rd_offset);
+	dev_dbg(&master->dev, "%s(): wr_offset(0x%08x)\n", 
+		__func__, qs->data.wr_offset);
 	if (!qs->data.base_addr) {
-		pr_err(DRVNAME" invalid base address(0x%08x)\n", 
-			qs->data.base_addr);
+		dev_err(&master->dev, "%s(): invalid base address(0x%08x)\n", 
+			__func__, qs->data.base_addr);
        		goto failed_rd;
     	}
 	else if (!qs->data.flags) {
-		pr_err(DRVNAME" invalid flags(0x%08x)\n", 
-			qs->data.flags);
+		dev_err(&master->dev, "%s(): invalid flags(0x%08x)\n", 
+			__func__, qs->data.flags);
        		goto failed_rd;
     	}
 	else if (qs->data.rd_offset || qs->data.wr_offset) {
-		pr_err(DRVNAME" invalid rd/wr offset(0x%08x/0x%08x)\n", 
-			qs->data.rd_offset, qs->data.wr_offset);
+		dev_err(&master->dev, 
+			"%s(): invalid rd/wr offset(0x%08x/0x%08x)\n", 
+			__func__, qs->data.rd_offset, qs->data.wr_offset);
        		goto failed_rd;
     	}
 
@@ -389,7 +385,8 @@ size_t mt7697q_write(void *hndl, const u32 *buff, size_t num)
     	ret = mt7697q_push_wr_ptr(qs);
 	if (ret < 0) {
 		dev_err(qs->qinfo->dev, 
-			"%s(): mt7697q_push_wr_ptr() failed(%d)\n", ret);
+			"%s(): mt7697q_push_wr_ptr() failed(%d)\n", 
+			__func__, ret);
        		goto cleanup;
     	}
 

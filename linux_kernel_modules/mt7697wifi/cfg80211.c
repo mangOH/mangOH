@@ -19,28 +19,28 @@
 #include "core.h"
 #include "cfg80211.h"
 
-#define RATETAB_ENT(_rate, _rateid, _flags) {   \
-	.bitrate    = (_rate),                  \
-	.flags      = (_flags),                 \
-	.hw_value   = (_rateid),                \
+#define RATETAB_ENT(_rate, _rateid, _flags) {   		\
+	.bitrate    = (_rate),                  		\
+	.flags      = (_flags),                 		\
+	.hw_value   = (_rateid),                		\
 }
 
-#define CHAN2G(_channel, _freq, _flags) {   	\
-	.band           = IEEE80211_BAND_2GHZ,  \
-	.hw_value       = (_channel),           \
-	.center_freq    = (_freq),              \
-	.flags          = (_flags),             \
-	.max_antenna_gain   = 0,                \
-	.max_power      = 30,                   \
+#define CHAN2G(_channel, _freq, _flags) {   			\
+	.band           	= IEEE80211_BAND_2GHZ,  	\
+	.hw_value       	= (_channel),           	\
+	.center_freq    	= (_freq),              	\
+	.flags          	= (_flags),             	\
+	.max_antenna_gain   	= 0,                		\
+	.max_power      	= 30,                   	\
 }
 
-#define CHAN5G(_channel, _flags) {		    \
-	.band           = IEEE80211_BAND_5GHZ,      \
-	.hw_value       = (_channel),               \
-	.center_freq    = 5000 + (5 * (_channel)),  \
-	.flags          = (_flags),                 \
-	.max_antenna_gain   = 0,                    \
-	.max_power      = 30,                       \
+#define CHAN5G(_channel, _freq, _flags) {			\
+	.band           	= IEEE80211_BAND_5GHZ,      	\
+	.hw_value       	= (_channel),               	\
+	.center_freq    	= (_freq),              	\
+	.flags          	= (_flags),                 	\
+	.max_antenna_gain   	= 0,                    	\
+	.max_power      	= 30,                       	\
 }
 
 static struct ieee80211_rate mt7697_rates[] = {
@@ -68,6 +68,11 @@ static struct ieee80211_rate mt7697_rates[] = {
 			IEEE80211_HT_CAP_SGI_20		 | \
 			IEEE80211_HT_CAP_SGI_40)
 
+/* 
+ * MT7697 supports 2400-2497MHz 
+ * See Section 2.7.3 MT76x7 Technical Reference Manual
+ * https://docs.labs.mediatek.com/resource/mt7687-mt7697/en/documentation
+ */
 static struct ieee80211_channel mt7697_2ghz_channels[] = {
 	CHAN2G(1, 2412, 0),
 	CHAN2G(2, 2417, 0),
@@ -85,26 +90,40 @@ static struct ieee80211_channel mt7697_2ghz_channels[] = {
 	CHAN2G(14, 2484, 0),
 };
 
+/* 
+ * MT7697 supports:
+ *  - 5150-5350MHz
+ *  - 5470-5725MHz
+ *  - 5725-5850MHz
+ *  - 5850-5925MHz
+ * See Section 2.7.3 MT76x7 Technical Reference Manual
+ * https://docs.labs.mediatek.com/resource/mt7687-mt7697/en/documentation
+ */
 static struct ieee80211_channel mt7697_5ghz_a_channels[] = {
-	CHAN5G(34, 0), CHAN5G(36, 0),
-	CHAN5G(38, 0), CHAN5G(40, 0),
-	CHAN5G(42, 0), CHAN5G(44, 0),
-	CHAN5G(46, 0), CHAN5G(48, 0),
-	CHAN5G(52, 0), CHAN5G(56, 0),
-	CHAN5G(60, 0), CHAN5G(64, 0),
-	CHAN5G(100, 0), CHAN5G(104, 0),
-	CHAN5G(108, 0), CHAN5G(112, 0),
-	CHAN5G(116, 0), CHAN5G(120, 0),
-	CHAN5G(124, 0), CHAN5G(128, 0),
-	CHAN5G(132, 0), CHAN5G(136, 0),
-	CHAN5G(140, 0), CHAN5G(149, 0),
-	CHAN5G(153, 0), CHAN5G(157, 0),
-	CHAN5G(161, 0), CHAN5G(165, 0),
-	CHAN5G(184, 0), CHAN5G(188, 0),
-	CHAN5G(192, 0), CHAN5G(196, 0),
-	CHAN5G(200, 0), CHAN5G(204, 0),
-	CHAN5G(208, 0), CHAN5G(212, 0),
-	CHAN5G(216, 0),
+        CHAN5G(36, 5180, 0),
+        CHAN5G(40, 5200, 0),
+        CHAN5G(44, 5220, 0),
+        CHAN5G(48, 5240, 0),
+        CHAN5G(52, 5260, 0),
+        CHAN5G(56, 5280, 0),
+        CHAN5G(60, 5300, 0),
+        CHAN5G(64, 5320, 0),
+        CHAN5G(100, 5500, 0),
+        CHAN5G(104, 5520, 0),
+        CHAN5G(108, 5540, 0),
+        CHAN5G(112, 5560, 0),
+        CHAN5G(116, 5580, 0),
+        CHAN5G(120, 5600, 0),
+        CHAN5G(124, 5620, 0),
+        CHAN5G(128, 5640, 0),
+        CHAN5G(132, 5660, 0),
+        CHAN5G(136, 5680, 0),
+        CHAN5G(140, 5700, 0),
+        CHAN5G(149, 5745, 0),
+        CHAN5G(153, 5765, 0),
+        CHAN5G(157, 5785, 0),
+        CHAN5G(161, 5805, 0),
+        CHAN5G(165, 5825, 0),
 };
 
 static struct ieee80211_supported_band mt7697_band_2ghz = {
@@ -380,15 +399,13 @@ static bool mt7697_is_valid_iftype(struct mt7697_cfg80211_info *cfg,
 	return false;
 }
 
-static struct cfg80211_bss *mt7697_add_bss_if_needed(struct mt7697_vif *vif, 
+static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif, 
 						     const u8* bssid, 
 						     u32 freq)
 {
 	struct ieee80211_channel *chan;
 	struct mt7697_cfg80211_info *cfg = vif->cfg;
 	struct cfg80211_bss *bss = NULL;
-	u16 cap_mask = WLAN_CAPABILITY_ESS;
-	u16 cap_val = WLAN_CAPABILITY_ESS;
 	u8 *ie = NULL;
 	
 	chan = ieee80211_get_channel(cfg->wiphy, freq);
@@ -400,7 +417,7 @@ static struct cfg80211_bss *mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 
 	bss = cfg80211_get_bss(cfg->wiphy, chan, vif->req_bssid,
 			       vif->ssid, vif->ssid_len,
-			       cap_mask, cap_val);
+			       WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
 	if (!bss) {
 		/*
 		 * Since cfg80211 may not yet know about the BSS,
@@ -421,8 +438,11 @@ static struct cfg80211_bss *mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 
 		dev_dbg(cfg->dev, "%s: inform bss ssid(%u/'%s')\n",
 			__func__, vif->ssid_len, vif->ssid);
+		print_hex_dump(KERN_DEBUG, DRVNAME" inform bss BSSID ", 
+			DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
+
 		bss = cfg80211_inform_bss(cfg->wiphy, chan,
-					  bssid, 0, cap_val, 100,
+					  bssid, 0, WLAN_CAPABILITY_ESS, 100,
 					  ie, 2 + vif->ssid_len,
 					  0, GFP_KERNEL);
 		if (!bss) {
@@ -539,6 +559,23 @@ static int mt7697_cfg80211_scan(struct wiphy *wiphy,
 	int ret;
 
 	dev_dbg(cfg->dev, "%s: START SCAN\n", __func__);
+	
+	if (test_bit(CONNECTED, &vif->flags)) {
+		dev_warn(cfg->dev, 
+			"%s: connected scan not allowed\n", __func__);
+		ret = -EINVAL;
+		goto out;
+	}
+
+	if (test_bit(CONNECT_PEND, &vif->flags)) {
+		dev_dbg(cfg->dev, "%s: pending connection t/o\n", __func__);
+		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+			DUMP_PREFIX_OFFSET, 16, 1, vif->req_bssid, ETH_ALEN, 0);
+		cfg80211_connect_result(vif->ndev, vif->req_bssid,
+					NULL, 0,
+					NULL, 0, 
+					WLAN_STATUS_UNSPECIFIED_FAILURE, GFP_KERNEL);
+	}
 
         vif->scan_req = request;
         ret = mt7697_send_scan_req(cfg, vif->fw_vif_idx, request);
@@ -561,7 +598,13 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 	u32 interval;
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: ssid(%u/'%s')\n", __func__, sme->ssid_len, sme->ssid);
+	dev_dbg(cfg->dev, "%s: ssid(%u/'%s')\n", 
+		__func__, sme->ssid_len, sme->ssid);
+
+	if (test_bit(CONNECTED, &vif->flags)) {
+		dev_dbg(cfg->dev, "%s: already connected\n", __func__);
+		goto cleanup;
+	}
 
 	vif->sme_state = SME_CONNECTING;
 
@@ -576,6 +619,15 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 		ret = -EBUSY;
 		goto cleanup;
 	}
+
+	if (sme->bssid && !is_broadcast_ether_addr(sme->bssid)) {
+		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+			DUMP_PREFIX_OFFSET, 16, 1, sme->bssid, ETH_ALEN, 0);
+
+		memcpy(vif->req_bssid, sme->bssid, ETH_ALEN);
+	}
+	else
+		memset(vif->req_bssid, 0xFF, ETH_ALEN);
 
 	ret = mt7697_set_assoc_req_ies(vif, sme->ie, sme->ie_len);
 	if (ret < 0) {
@@ -594,19 +646,10 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 
 	if (sme->channel) {
 		vif->ch_hint = sme->channel->center_freq;
-		dev_dbg(cfg->dev, 
-			"%s: channel(%u)\n", __func__, vif->ch_hint);
+		dev_dbg(cfg->dev, "%s: ch_hint(%u)\n", __func__, vif->ch_hint);
 	}
-
-	memset(vif->req_bssid, 0, sizeof(vif->req_bssid));
-	if (sme->bssid && !is_broadcast_ether_addr(sme->bssid)) {
-		dev_dbg(cfg->dev, 
-			"%s: BSSID(%02x:%02x:%02x:%02x:%02x:%02x)\n",
-			__func__, sme->bssid[0], sme->bssid[1], sme->bssid[2], 
-			sme->bssid[3], sme->bssid[4], sme->bssid[5]);
-
-		memcpy(vif->req_bssid, sme->bssid, sizeof(vif->req_bssid));
-	}
+	else
+		vif->ch_hint = 0;
 
 	ret = mt7697_set_wpa_version(vif, sme->crypto.wpa_versions);
 	if (ret < 0) {
@@ -654,6 +697,19 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 				__func__, ret);
                 	goto cleanup;
 		}
+	}
+
+	if (cfg->hw_wireless_mode != cfg->wireless_mode) {
+		ret = mt7697_send_set_wireless_mode_req(cfg, MT7697_PORT_STA, 
+			MT7697_WIFI_PHY_11ABGN_MIXED);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s: mt7697_send_set_wireless_mode_req() failed(%d)\n", 
+				__func__, ret);
+                	goto cleanup;
+		}
+
+		cfg->hw_wireless_mode = cfg->wireless_mode;
 	}
 
 	ret = mt7697_send_set_security_mode_req(cfg, MT7697_PORT_STA, 
@@ -734,7 +790,7 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 	    ((vif->auth_mode == MT7697_WIFI_AUTH_MODE_WPA_PSK) ||
 	     (vif->auth_mode == MT7697_WIFI_AUTH_MODE_WPA2_PSK))) {
 		mod_timer(&vif->disconnect_timer,
-			  jiffies + msecs_to_jiffies(MT7697_DISCON_TIMER_INTVAL));
+			  jiffies + msecs_to_jiffies(MT7697_DISCON_TIMER_INTVAL_MSEC));
 	}
 
 	cfg->connect_ctrl_flags &= ~MT7697_CONNECT_DO_WPA_OFFLOAD;
@@ -785,7 +841,8 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_cfg80211_add_key(struct wiphy *wiphy, struct net_device *ndev,
+static int mt7697_cfg80211_add_key(struct wiphy *wiphy, 
+				   struct net_device *ndev,
 				   u8 key_index, bool pairwise,
 				   const u8 *mac_addr,
 				   struct key_params *params)
@@ -795,7 +852,8 @@ static int mt7697_cfg80211_add_key(struct wiphy *wiphy, struct net_device *ndev,
 	return 0;
 }
 
-static int mt7697_cfg80211_get_key(struct wiphy *wiphy, struct net_device *ndev,
+static int mt7697_cfg80211_get_key(struct wiphy *wiphy, 
+				   struct net_device *ndev,
                                    u8 key_index, bool pairwise,
                                    const u8 *mac_addr, void *cookie,
                                    void (*callback) (void *cookie,
@@ -866,33 +924,29 @@ static int mt7697_cfg80211_set_pmksa(struct wiphy *wiphy,
 
 	dev_dbg(cfg->dev, "%s: SET PMKSA\n", __func__);
 
-	if (pmksa->bssid == NULL) {
-		dev_err(cfg->dev, "%s: NULL BSSID\n", __func__);
-		ret = -EINVAL;
-		goto cleanup;
+	if (pmksa->bssid) {
+		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+			DUMP_PREFIX_OFFSET, 16, 1, pmksa->bssid, ETH_ALEN, 0);
 	}
 
 	if (pmksa->pmkid == NULL) {
-		dev_err(cfg->dev, "%s: NULL PMKID\n", __func__);
+		dev_err(cfg->dev, "%s: NULL PSK\n", __func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
+	
+	dev_dbg(cfg->dev, "%s: PSK('%s')\n", __func__, pmksa->pmkid);
 
-	dev_dbg(cfg->dev, "%s: BSSID(%02x:%02x:%02x:%02x:%02x:%02x)\n",
-		__func__,
-		pmksa->bssid[0], pmksa->bssid[1], pmksa->bssid[2], 
-		pmksa->bssid[3], pmksa->bssid[4], pmksa->bssid[5]);
-
-	if (memcmp(pmksa->pmkid, cfg->pmkid, MT7697_WIFI_LENGTH_PMK)) {
-		ret = mt7697_send_set_pmk_req(cfg, MT7697_PORT_STA, pmksa->pmkid);
+	if (memcmp(pmksa->pmkid, cfg->psk, WLAN_MAX_KEY_LEN)) {
+		ret = mt7697_send_set_psk_req(cfg, MT7697_PORT_STA, pmksa->pmkid);
 		if (ret) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_pmk_req() failed(%d)\n", 
+				"%s: mt7697_send_set_psk_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
 
-		memcpy(cfg->pmkid, pmksa->pmkid, MT7697_WIFI_LENGTH_PMK);
+		memcpy(cfg->psk, pmksa->pmkid, WLAN_MAX_KEY_LEN);
 	}
 
 cleanup:
@@ -903,27 +957,25 @@ static int mt7697_cfg80211_del_pmksa(struct wiphy *wiphy,
 				     struct net_device *ndev,
                             	     struct cfg80211_pmksa *pmksa)
 {
-	u8 pmkid[MT7697_WIFI_LENGTH_PMK] = {0};
+	u8 psk[WLAN_MAX_KEY_LEN] = {0};
         struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	int ret;
 
 	dev_dbg(cfg->dev, "%s: DEL PMKSA\n", __func__);
 
-	dev_dbg(cfg->dev, "%s: BSSID(%02x:%02x:%02x:%02x:%02x:%02x)\n",
-		__func__,
-		pmksa->bssid[0], pmksa->bssid[1], pmksa->bssid[2], 
-		pmksa->bssid[3], pmksa->bssid[4], pmksa->bssid[5]);
+	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+		DUMP_PREFIX_OFFSET, 16, 1, pmksa->bssid, ETH_ALEN, 0);
 
-	if (memcmp(pmkid, cfg->pmkid, MT7697_WIFI_LENGTH_PMK)) {
-		ret = mt7697_send_set_pmk_req(cfg, MT7697_PORT_STA, pmkid);
+	if (memcmp(psk, cfg->psk, WLAN_MAX_KEY_LEN)) {
+		ret = mt7697_send_set_psk_req(cfg, MT7697_PORT_STA, psk);
 		if (ret) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_pmk_req() failed(%d)\n", 
+				"%s: mt7697_send_set_psk_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
 
-		memset(cfg->pmkid, 0, MT7697_WIFI_LENGTH_PMK);
+		memset(cfg->psk, 0, WLAN_MAX_KEY_LEN);
 	}
 
 cleanup:
@@ -933,7 +985,7 @@ cleanup:
 static int mt7697_cfg80211_flush_pmksa(struct wiphy *wiphy, 
 				       struct net_device *ndev)
 {
-	u8 pmk[MT7697_WIFI_LENGTH_PMK] = {0};
+	u8 psk[WLAN_MAX_KEY_LEN] = {0};
         struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int ret = 0;
@@ -941,15 +993,15 @@ static int mt7697_cfg80211_flush_pmksa(struct wiphy *wiphy,
 	dev_dbg(cfg->dev, "%s: FLUSH PMKSA\n", __func__);
 
 	if (test_bit(CONNECTED, &vif->flags)) {
-		ret = mt7697_send_set_pmk_req(cfg, MT7697_PORT_STA, pmk);
+		ret = mt7697_send_set_psk_req(cfg, MT7697_PORT_STA, psk);
 		if (ret) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_pmk_req() failed(%d)\n", 
+				"%s: mt7697_send_set_psk_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
 
-		memset(cfg->pmkid, 0, MT7697_WIFI_LENGTH_PMK);
+		memset(cfg->psk, 0, WLAN_MAX_KEY_LEN);
 	}
 
 cleanup:
@@ -974,10 +1026,11 @@ static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int err = 0;
 
-	dev_dbg(cfg->dev, "%s: CHANGE STATION\n\t"
-		"mac(%02x:%02x:%02x:%02x:%02x:%02x)\n\tsta flags(0x%08x)\n",
-		__func__, mac[0], mac[1], mac[2], mac[3], mac[4], mac[5],
-		params->sta_flags_set);
+	dev_dbg(cfg->dev, "%s: CHANGE STATION flags(0x%08x)\n",
+		__func__, params->sta_flags_set);
+
+	print_hex_dump(KERN_DEBUG, DRVNAME" MAC ", 
+		DUMP_PREFIX_OFFSET, 16, 1, mac, ETH_ALEN, 0);
 
 	if ((vif->wdev.iftype != NL80211_IFTYPE_STATION)) {
 		dev_err(cfg->dev, "%s: iftype(%u) not supported\n", 
@@ -1129,8 +1182,10 @@ void mt7697_cfg80211_stop(struct mt7697_vif *vif)
 		ath6kl_warn("failed to disable scan during stop\n");
 */
 //	ath6kl_cfg80211_scan_complete_event(vif, true);
-	cfg80211_scan_done(vif->scan_req, true);
-	vif->scan_req = NULL;
+	if (vif->scan_req) {
+		cfg80211_scan_done(vif->scan_req, true);
+		vif->scan_req = NULL;
+	}
 }
 
 static const struct ieee80211_txrx_stypes
@@ -1176,6 +1231,29 @@ static void mt7697_cfg80211_disconnect_work(struct work_struct *work)
 
 cleanup:
 	return;
+}
+
+struct mt7697_vif* mt7697_get_vif_by_idx(struct mt7697_cfg80211_info *cfg, 
+					 u8 if_idx)
+{
+	struct mt7697_vif *vif, *found = NULL;
+
+	if (WARN_ON(if_idx > (cfg->vif_max - 1))) {
+		dev_err(cfg->dev, "%s: invalid if idx(%u > %u)\n", 
+			__func__, if_idx, cfg->vif_max - 1);
+		return NULL;
+	}
+
+	spin_lock_bh(&cfg->vif_list_lock);
+	list_for_each_entry(vif, &cfg->vif_list, list) {
+		if (vif->fw_vif_idx == if_idx) {
+			found = vif;
+			break;
+		}
+	}
+
+	spin_unlock_bh(&cfg->vif_list_lock);
+	return found;
 }
 
 struct wireless_dev *mt7697_interface_add(
@@ -1246,50 +1324,71 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 	u32 freq;
 	int ret = 0;
 
-	if (channel <= MT7697_CH_MAX_2G_CHANNEL)
+	spin_lock_bh(&vif->if_lock);
+
+	if ((channel > 0) && (channel <= MT7697_CH_MAX_2G_CHANNEL))
 		band = wiphy->bands[IEEE80211_BAND_2GHZ];
-	else
+	else if ((channel >= MT7697_CH_MIN_5G_CHANNEL) && 
+		 (channel <= MT7697_CH_MAX_5G_CHANNEL))
 		band = wiphy->bands[IEEE80211_BAND_5GHZ];
+	else {
+		dev_err(cfg->dev, "%s: invalid channel(%u)\n",
+			__func__, channel);
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
+	if (!band) {
+		dev_err(cfg->dev, "%s: channel(%u) NULL band\n",
+			__func__, channel);
+		ret = -EINVAL;
+		goto cleanup;
+	}
 
 	freq = ieee80211_channel_to_frequency(channel, band->band);
-
-	bss = mt7697_add_bss_if_needed(vif, bssid, freq);
-	if (!bss) {
-		dev_err(cfg->dev, "%s: could not add cfg80211 bss entry\n",
+	if (!freq) {
+		dev_err(cfg->dev, 
+			"%s: ieee80211_channel_to_frequency() failed\n", 
 			__func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
 
-	if (vif->sme_state == SME_CONNECTING) {
+	bss = mt7697_add_bss_if_needed(vif, bssid, freq);
+	if (!bss) {
+		dev_err(cfg->dev, "%s: mt7697_add_bss_if_needed() failed\n",
+			__func__);
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
+	WARN_ON(!vif->ndev);
+	dev_dbg(cfg->dev, "%s: vif sme_state(%u)\n", __func__, vif->sme_state);
+	if ((vif->sme_state == SME_CONNECTING) ||
+	    (vif->sme_state == SME_DISCONNECTED)) {
 		vif->sme_state = SME_CONNECTED;
 		cfg80211_connect_result(vif->ndev, bssid,
 					NULL, 0,
 					NULL, 0, 
-//					assoc_req_ie, assoc_req_len,
-//					assoc_resp_ie, assoc_resp_len,
 					WLAN_STATUS_SUCCESS, GFP_KERNEL);
 		cfg80211_put_bss(cfg->wiphy, bss);
 	} else if (vif->sme_state == SME_CONNECTED) {
-		/* inform roam event to cfg80211 */
+		/* inform roam event to cfg80211 */		
 		cfg80211_roamed_bss(vif->ndev, bss,
 				    NULL, 0,
 				    NULL, 0,  
-//				    assoc_req_ie, assoc_req_len,
-//				    assoc_resp_ie, assoc_resp_len, 
 				    GFP_KERNEL);
 	}
 
-	netif_wake_queue(vif->ndev);
-
-	/* Update connect & link status atomically */
-	spin_lock_bh(&vif->if_lock);
 	set_bit(CONNECTED, &vif->flags);
 	clear_bit(CONNECT_PEND, &vif->flags);
+	dev_dbg(cfg->dev, "%s: vif flags(0x%08lx)\n", __func__, vif->flags);
+
+	netif_wake_queue(vif->ndev);
 	netif_carrier_on(vif->ndev);
-	spin_unlock_bh(&vif->if_lock);
 
 cleanup:
+	spin_unlock_bh(&vif->if_lock);
 	return ret;
 }
 
@@ -1312,6 +1411,11 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 	struct wiphy *wiphy = cfg->wiphy;
 	bool band_2gig = false, band_5gig = false, ht = false;
 	s32 err = 0;
+
+	cfg->tx_req.cmd.grp = MT7697_CMD_GRP_80211;
+	cfg->tx_req.cmd.type = MT7697_CMD_TX_RAW;
+
+	cfg->wireless_mode = MT7697_WIFI_PHY_11ABGN_MIXED;
 
 	wiphy->mgmt_stypes = mt7697_txrx_stypes;
         wiphy->max_remain_on_channel_duration = 5000;
@@ -1368,10 +1472,8 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 		mt7697_band_5ghz.ht_cap.ht_supported = false;
 	}
 
-	if (band_2gig)
-        	wiphy->bands[IEEE80211_BAND_2GHZ] = &mt7697_band_2ghz;
-	if (band_5gig)
-		wiphy->bands[IEEE80211_BAND_5GHZ] = &mt7697_band_5ghz;
+	wiphy->bands[IEEE80211_BAND_2GHZ] = band_2gig ? &mt7697_band_2ghz:NULL;
+	wiphy->bands[IEEE80211_BAND_5GHZ] = band_5gig ? &mt7697_band_5ghz:NULL;
 
 	wiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
         wiphy->cipher_suites = mt7697_cipher_suites;

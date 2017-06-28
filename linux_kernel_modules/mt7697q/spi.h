@@ -24,7 +24,7 @@
 
 #include <linux/spi/spi.h>
 
-#define DRVNAME			"mt7697"
+#define DRVNAME			"mt7697q"
 #define MT7697_SPI_BUS_NUM	32766
 #define MT7697_SPI_CS		0
 
