@@ -10,22 +10,44 @@ apps:
 {
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
-    // TODO: MuxControl was written specifically for mangOH Green.  Perhaps mangOH Red needs a
-    // similar facility to manage uart routing.
-    // $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
-    // $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
-
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    // Data Router disabled until it can be updated
+    // Data Router is disabled because the published version doesn't build against Legato 17.05
     // $MANGOH_ROOT/apps/DataRouter/dataRouter
     // $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
+
+    $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+    $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
 }
 
 commands:
 {
-    // mux = muxCtrlTools:/bin/mux
     // dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
 }
 
+
+kernelModules:
+{
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
+
+    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
+
+    // Required for bmp280 & bmi160
+    $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
+    $MANGOH_ROOT/linux_kernel_modules/iio/1-iio-kfifo-buf
+    // Required for bmi160
+    $MANGOH_ROOT/linux_kernel_modules/iio/2-iio-triggered-buffer
+
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/2-bmp280
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/3-bmp280-i2c
+
+    // Only on mangOH Red DV2
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+
+    // Only on mangOH Red DV3
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+}

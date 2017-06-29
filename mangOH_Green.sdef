@@ -14,11 +14,13 @@ apps:
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    // Data Router disabled until it can be updated
+    // Data Router is disabled because the published version doesn't build against Legato 17.05
     // $MANGOH_ROOT/apps/DataRouter/dataRouter
     // $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     // $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
     $MANGOH_ROOT/apps/SocialService/socialService
+
+    $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
 }
 
 commands:
@@ -28,3 +30,10 @@ commands:
     twitter = socialService:/bin/twitter
 }
 
+kernelModules:
+{
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_green_dv4
+
+    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
+    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+}
