@@ -32,3 +32,6 @@
 [submodule "apps/RedSensorToCloud"]
 	path = apps/RedSensorToCloud
 	url = https://github.com/mangOH/RedSensorToCloud
+[submodule "apps/Heartbeat"]
+	path = apps/Heartbeat
+	url = https://github.com/mangOH/Heartbeat
