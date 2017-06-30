@@ -18,6 +18,8 @@ apps:
 
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
     $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
+
+    $LEGATO_ROOT/apps/tools/devMode
 }
 
 commands:

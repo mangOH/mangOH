@@ -21,6 +21,8 @@ apps:
     $MANGOH_ROOT/apps/SocialService/socialService
 
     $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
+
+    $LEGATO_ROOT/apps/tools/devMode
 }
 
 commands:
