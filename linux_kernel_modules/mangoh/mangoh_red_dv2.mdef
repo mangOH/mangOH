@@ -1,0 +1,18 @@
+cflags:
+{
+    // Needed for lsm6ds3 platform data type definition
+    -I${LSM6DS3_DRIVER_DIR}
+}
+
+sources:
+{
+    mangoh_module.c
+    board_green_dv4.c
+    board_red_dv2.c
+    board_red_dv3.c
+}
+
+params:
+{
+    board = "red dv2"
+}
