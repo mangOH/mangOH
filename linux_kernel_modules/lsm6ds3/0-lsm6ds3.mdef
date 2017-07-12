@@ -1,1 +1,4 @@
-lsm6ds3.mdef
+sources:
+{
+    lsm6ds3_core.c
+}

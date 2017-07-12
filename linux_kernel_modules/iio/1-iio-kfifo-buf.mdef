@@ -1,1 +1,14 @@
-iio-kfifo-buf.mdef
+cflags:
+{
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGER
+    -DCONFIG_IIO_KFIFO_BUF
+}
+
+sources:
+{
+    // IIO_KFIFO_BUF
+    kfifo_buf.c
+}
+

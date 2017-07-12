@@ -1,1 +1,16 @@
-bmi160.mdef
+cflags:
+{
+    -DCONFIG_BMI160
+    -DCONFIG_BMI160_I2C
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGERED_BUFFER
+    -DREGMAP
+}
+
+sources:
+{
+    bmi160_core.c
+}
+
+

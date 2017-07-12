@@ -1,1 +1,17 @@
-bmi160-i2c.mdef
+cflags:
+{
+    -DCONFIG_BMI160
+    -DCONFIG_BMI160_I2C
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGERED_BUFFER
+    // TODO: I don't think REGMAP is buildable as a module so our kernel will need to change.
+    -DREGMAP
+    -DREGMAP_I2C
+}
+
+sources:
+{
+    bmi160_i2c.c
+}
+

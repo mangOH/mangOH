@@ -1,1 +1,5 @@
-bmp280-i2c.mdef
+sources:
+{
+    bmp280-i2c.c
+}
+
