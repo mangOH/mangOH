@@ -15,7 +15,8 @@ MANGOH_ROOT=$(shell pwd)
 
 # The comment below is for Developer Studio integration.  Do not remove it.
 # DS_CUSTOM_OPTIONS(EXTRA_OPTS)
-EXTRA_OPTS = -s "$(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService"
+EXTRA_OPTS = -s "$(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService" \
+             -s "$(MANGOH_ROOT)/apps/RedSensorToCloud"
 
 $(TARGET):
 	export MANGOH_ROOT=$(MANGOH_ROOT) && \
