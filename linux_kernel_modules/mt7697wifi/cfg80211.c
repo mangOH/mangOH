@@ -169,6 +169,9 @@ static int mt7697_cfg80211_vif_stop(struct mt7697_vif *vif, bool wmi_ready)
 		}
 
 		del_timer(&vif->disconnect_timer);
+
+		memset(vif->ssid, 0, sizeof(vif->ssid));
+		vif->ssid_len = 0;
 	}
 
 	if (vif->scan_req) {
@@ -214,7 +217,7 @@ static int mt7697_set_assoc_req_ies(struct mt7697_vif *vif, const u8 *ies,
 	if (ies && ies_len) {
 		buf = kmalloc(ies_len, GFP_KERNEL);
 		if (buf == NULL) {
-			dev_err(cfg->dev, "%s: kmalloc() failed\n", __func__);
+			dev_err(cfg->dev, "%s(): kmalloc() failed\n", __func__);
 			ret = -ENOMEM;
 			goto cleanup;
 		}
@@ -251,7 +254,7 @@ static int mt7697_set_key_mgmt(struct mt7697_vif *vif, u32 key_mgmt)
 {
 	int ret = 0;
 
-	dev_dbg(vif->cfg->dev, "%s: key mgmt(0x%08x)\n", __func__, key_mgmt);
+	dev_dbg(vif->cfg->dev, "%s(): key mgmt(0x%08x)\n", __func__, key_mgmt);
 
 	if (key_mgmt == WLAN_AKM_SUITE_PSK) {
 		if (vif->auth_mode == MT7697_WIFI_AUTH_MODE_WPA)
@@ -259,7 +262,7 @@ static int mt7697_set_key_mgmt(struct mt7697_vif *vif, u32 key_mgmt)
 		else if (vif->auth_mode == MT7697_WIFI_AUTH_MODE_WPA2)
 			vif->auth_mode = MT7697_WIFI_AUTH_MODE_WPA2_PSK;
 	} else if (key_mgmt == 0x00409600) {
-		dev_err(vif->cfg->dev, "%s: key mgmt(0x%08x) not supported\n", 
+		dev_err(vif->cfg->dev, "%s(): key mgmt(0x%08x) not supported\n", 
 			__func__, key_mgmt);
 		ret = -ENOTSUPP;
 		goto cleanup;
@@ -267,7 +270,7 @@ static int mt7697_set_key_mgmt(struct mt7697_vif *vif, u32 key_mgmt)
 		vif->auth_mode = MT7697_WIFI_AUTH_MODE_OPEN;
 	}
 
-	dev_dbg(vif->cfg->dev, "%s: auth mode(%u)\n", 
+	dev_dbg(vif->cfg->dev, "%s(): auth mode(%u)\n", 
 		__func__, vif->auth_mode);
 
 cleanup:
@@ -282,7 +285,7 @@ static int mt7697_set_cipher(struct mt7697_vif *vif, u32 cipher, bool ucast)
 		&vif->grp_crypto_len;
 	int ret = 0;
 
-	dev_dbg(vif->cfg->dev, "%s: cipher(0x%08x), ucast(%u)\n",
+	dev_dbg(vif->cfg->dev, "%s(): cipher(0x%08x), ucast(%u)\n",
 		   __func__, cipher, ucast);
 
 	switch (cipher) {
@@ -303,12 +306,13 @@ static int mt7697_set_cipher(struct mt7697_vif *vif, u32 cipher, bool ucast)
 	case WLAN_CIPHER_SUITE_WEP40:
 	case WLAN_CIPHER_SUITE_SMS4:
 	default:
-		dev_err(vif->cfg->dev, "cipher(0x%08x) not supported\n", cipher);
+		dev_err(vif->cfg->dev, "cipher(0x%08x) not supported\n", 
+			cipher);
 		ret = -ENOTSUPP;
 		goto cleanup;
 	}
 
-	dev_dbg(vif->cfg->dev, "%s: set cipher(%u)\n", __func__, *_cipher);
+	dev_dbg(vif->cfg->dev, "%s(): set cipher(%u)\n", __func__, *_cipher);
 
 cleanup:
 	return ret;
@@ -319,7 +323,7 @@ static int mt7697_set_auth_type(struct mt7697_vif *vif,
 {
 	int ret = 0;
 
-	dev_dbg(vif->cfg->dev, "%s: type(%u)\n", __func__, auth_type);
+	dev_dbg(vif->cfg->dev, "%s(): type(%u)\n", __func__, auth_type);
 
 	switch (auth_type) {
 	case NL80211_AUTHTYPE_OPEN_SYSTEM:
@@ -333,7 +337,7 @@ static int mt7697_set_auth_type(struct mt7697_vif *vif,
 		break;
 
 	default:
-		dev_err(vif->cfg->dev, "%s: type(%u) not supported\n", 
+		dev_err(vif->cfg->dev, "%s(): type(%u) not supported\n", 
 			__func__, auth_type);
 		ret = -ENOTSUPP;
 		goto cleanup;
@@ -348,7 +352,8 @@ static int mt7697_set_wpa_version(struct mt7697_vif *vif,
 {
 	int ret = 0;
 
-	dev_dbg(vif->cfg->dev, "%s: WPA version(%u)\n", __func__, wpa_version);
+	dev_dbg(vif->cfg->dev, "%s(): WPA version(%u)\n", 
+		__func__, wpa_version);
 
 	if (!wpa_version) {
 		vif->auth_mode = MT7697_WIFI_AUTH_MODE_OPEN;
@@ -357,7 +362,7 @@ static int mt7697_set_wpa_version(struct mt7697_vif *vif,
 	} else if (wpa_version & NL80211_WPA_VERSION_1) {
 		vif->auth_mode = MT7697_WIFI_AUTH_MODE_WPA;
 	} else {
-		dev_err(vif->cfg->dev, "%s: WPA version(%u) not supported\n", 
+		dev_err(vif->cfg->dev, "%s(): WPA version(%u) not supported\n", 
 			__func__, wpa_version);
 		ret = -ENOTSUPP;
 		goto cleanup;
@@ -410,7 +415,7 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 	
 	chan = ieee80211_get_channel(cfg->wiphy, freq);
 	if (!chan) {
-		dev_err(cfg->dev, "%s: ieee80211_get_channel(%u) failed\n", 
+		dev_err(cfg->dev, "%s(): ieee80211_get_channel(%u) failed\n", 
 			__func__, freq);
 		goto cleanup;
 	}
@@ -427,7 +432,7 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 		 */
 		ie = kmalloc(2 + vif->ssid_len, GFP_KERNEL);
 		if (ie == NULL) {
-			dev_err(cfg->dev, "%s: kmalloc() failed\n", 
+			dev_err(cfg->dev, "%s(): kmalloc() failed\n", 
 				__func__);
 			goto cleanup;
 		}
@@ -436,7 +441,7 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 		ie[1] = vif->ssid_len;
 		memcpy(ie + 2, vif->ssid, vif->ssid_len);
 
-		dev_dbg(cfg->dev, "%s: inform bss ssid(%u/'%s')\n",
+		dev_dbg(cfg->dev, "%s(): inform bss ssid(%u/'%s')\n",
 			__func__, vif->ssid_len, vif->ssid);
 		print_hex_dump(KERN_DEBUG, DRVNAME" inform bss BSSID ", 
 			DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
@@ -446,15 +451,16 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 					  ie, 2 + vif->ssid_len,
 					  0, GFP_KERNEL);
 		if (!bss) {
-			dev_err(cfg->dev, "%s: cfg80211_inform_bss() failed\n", 
+			dev_err(cfg->dev, "%s(): cfg80211_inform_bss() failed\n", 
 				__func__);
 			goto cleanup;
 		}
 			
-		dev_dbg(cfg->dev, "%s: added bss %pM to cfg80211\n", 
+		dev_dbg(cfg->dev, "%s(): added bss %pM to cfg80211\n", 
 			__func__, bssid);
 	} else
-		dev_dbg(cfg->dev, "%s: cfg80211 already has a bss\n", __func__);
+		dev_dbg(cfg->dev, "%s(): cfg80211 already has a bss\n", 
+			__func__);
 
 cleanup:
 	if (ie) kfree(ie);
@@ -471,22 +477,24 @@ static struct wireless_dev *mt7697_cfg80211_add_iface(struct wiphy *wiphy,
 	struct wireless_dev *wdev = NULL;
 	u8 if_idx;
 
-	dev_dbg(cfg->dev, "%s: iface('%s') type(%u)\n", __func__, name, type);
+	dev_dbg(cfg->dev, "%s(): iface('%s') type(%u)\n", 
+		__func__, name, type);
 	if (cfg->num_vif == cfg->vif_max) {
-		dev_err(cfg->dev, "maximum number of supported vif(%u)\n", 
+		dev_err(cfg->dev, "max # of supported vif(%u)\n", 
 			cfg->num_vif);
 		goto cleanup;
 	}
 
 	if (!mt7697_is_valid_iftype(cfg, type, &if_idx)) {
-		dev_err(cfg->dev, "%s: unsupported interface type(%d)\n", 
+		dev_err(cfg->dev, "%s(): unsupported interface type(%d)\n", 
 			__func__, type);
 		goto cleanup;
 	}
 
 	wdev = mt7697_interface_add(cfg, name, type, if_idx);
 	if (!wdev) {
-		dev_err(cfg->dev, "%s: mt7697_interface_add() failed\n", __func__);
+		dev_err(cfg->dev, "%s(): mt7697_interface_add() failed\n", 
+			__func__);
 		goto cleanup;
 	}
 
@@ -503,7 +511,7 @@ static int mt7697_cfg80211_del_iface(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(wdev->netdev);
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: DEL IFACE\n", __func__);
+	dev_dbg(cfg->dev, "%s(): DEL IFACE\n", __func__);
 
 	spin_lock_bh(&cfg->vif_list_lock);
 	list_del(&vif->list);
@@ -511,7 +519,7 @@ static int mt7697_cfg80211_del_iface(struct wiphy *wiphy,
 
 	ret = mt7697_cfg80211_vif_stop(vif, test_bit(WMI_READY, &cfg->flag));
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s: mt7697_cfg80211_vif_stop() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_cfg80211_vif_stop() failed(%d)\n", 
 			__func__, ret);
                 goto cleanup;
 	}
@@ -529,7 +537,7 @@ static int mt7697_cfg80211_change_iface(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s: iface type(%u)\n", __func__, type);
+	dev_dbg(cfg->dev, "%s(): iface type(%u)\n", __func__, type);
 
 	switch (type) {
 	case NL80211_IFTYPE_AP:
@@ -539,7 +547,7 @@ static int mt7697_cfg80211_change_iface(struct wiphy *wiphy,
 	case NL80211_IFTYPE_P2P_GO:
 	case NL80211_IFTYPE_P2P_CLIENT:
 	default:
-		dev_err(cfg->dev, "%s: invalid interface type %u\n", 
+		dev_err(cfg->dev, "%s(): invalid interface type %u\n", 
 			__func__, type);
 		ret = -EOPNOTSUPP;
 		goto cleanup;
@@ -558,29 +566,40 @@ static int mt7697_cfg80211_scan(struct wiphy *wiphy,
 	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: START SCAN\n", __func__);
+	dev_dbg(cfg->dev, "%s(): START SCAN\n", __func__);
 	
 	if (test_bit(CONNECTED, &vif->flags)) {
 		dev_warn(cfg->dev, 
-			"%s: connected scan not allowed\n", __func__);
+			"%s(): connected scan not allowed\n", __func__);
 		ret = -EINVAL;
 		goto out;
 	}
 
 	if (test_bit(CONNECT_PEND, &vif->flags)) {
-		dev_dbg(cfg->dev, "%s: pending connection t/o\n", __func__);
+		dev_dbg(cfg->dev, "%s(): pending connection t/o\n", __func__);
 		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
 			DUMP_PREFIX_OFFSET, 16, 1, vif->req_bssid, ETH_ALEN, 0);
 		cfg80211_connect_result(vif->ndev, vif->req_bssid,
 					NULL, 0,
 					NULL, 0, 
-					WLAN_STATUS_UNSPECIFIED_FAILURE, GFP_KERNEL);
+					WLAN_STATUS_UNSPECIFIED_FAILURE, 
+					GFP_KERNEL);
+	}
+
+	if (cfg->reg_rx_hndlr) {
+		ret = mt7697_wr_unreg_rx_hndlr_req(cfg);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_wr_unreg_rx_hndlr_req() failed(%d)\n", 
+				__func__, ret);
+       			goto out;
+    		}
 	}
 
         vif->scan_req = request;
-        ret = mt7697_send_scan_req(cfg, vif->fw_vif_idx, request);
+        ret = mt7697_wr_scan_req(cfg, vif->fw_vif_idx, request);
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s: mt7697_send_scan_req() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_wr_scan_req() failed(%d)\n", 
 			__func__, ret);
                 goto out;
 	}
@@ -590,7 +609,8 @@ out:
 	return ret;
 }
 
-static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
+static int mt7697_cfg80211_connect(struct wiphy *wiphy, 
+				   struct net_device *ndev,
 				   struct cfg80211_connect_params *sme)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -598,24 +618,27 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 	u32 interval;
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: ssid(%u/'%s')\n", 
+	dev_dbg(cfg->dev, "%s(): ssid(%u/'%s')\n", 
 		__func__, sme->ssid_len, sme->ssid);
 
 	if (test_bit(CONNECTED, &vif->flags)) {
-		dev_dbg(cfg->dev, "%s: already connected\n", __func__);
+		dev_dbg(cfg->dev, "%s(): already connected\n", __func__);
 		goto cleanup;
 	}
+	
 
 	vif->sme_state = SME_CONNECTING;
 
 	if (down_interruptible(&cfg->sem)) {
-		dev_err(cfg->dev, "%s: busy, couldn't get access\n", __func__);
+		dev_err(cfg->dev, "%s(): busy, couldn't get access\n", 
+			__func__);
 		ret = -ERESTARTSYS;
 		goto cleanup;
 	}
 
 	if (test_bit(DESTROY_IN_PROGRESS, &cfg->flag)) {
-		dev_err(cfg->dev, "%s: busy, destroy in progress\n", __func__);
+		dev_err(cfg->dev, "%s(): busy, destroy in progress\n", 
+			__func__);
 		ret = -EBUSY;
 		goto cleanup;
 	}
@@ -632,7 +655,7 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 	ret = mt7697_set_assoc_req_ies(vif, sme->ie, sme->ie_len);
 	if (ret < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_set_assoc_req_ies() failed(%d)\n", 
+			"%s(): mt7697_set_assoc_req_ies() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
@@ -646,26 +669,26 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 
 	if (sme->channel) {
 		vif->ch_hint = sme->channel->center_freq;
-		dev_dbg(cfg->dev, "%s: ch_hint(%u)\n", __func__, vif->ch_hint);
+		dev_dbg(cfg->dev, "%s(): ch_hint(%u)\n", __func__, vif->ch_hint);
 	}
 	else
 		vif->ch_hint = 0;
 
 	ret = mt7697_set_wpa_version(vif, sme->crypto.wpa_versions);
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s: mt7697_set_wpa_version() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_set_wpa_version() failed(%d)\n", 
 			__func__, ret);
                 goto cleanup;
 	}
 
 	ret = mt7697_set_auth_type(vif, sme->auth_type);
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s: mt7697_set_auth_type() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_set_auth_type() failed(%d)\n", 
 			__func__, ret);
                 goto cleanup;
 	}
 
-	dev_dbg(cfg->dev, "%s: WEP key len/idx(%u/%u)\n", 
+	dev_dbg(cfg->dev, "%s(): WEP key len/idx(%u/%u)\n", 
 		__func__, sme->key_len, sme->key_idx);
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" key ", 
@@ -685,7 +708,7 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 
 	ret = mt7697_set_cipher(vif, sme->crypto.cipher_group, false);
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s: mt7697_set_cipher() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_set_cipher() failed(%d)\n", 
 			__func__, ret);
                 goto cleanup;
 	}
@@ -693,18 +716,18 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 	if (sme->crypto.n_akm_suites) {
 		ret = mt7697_set_key_mgmt(vif, sme->crypto.akm_suites[0]);
 		if (ret < 0) {
-			dev_err(cfg->dev, "%s: mt7697_set_key_mgmt() failed(%d)\n", 
+			dev_err(cfg->dev, "%s(): mt7697_set_key_mgmt() failed(%d)\n", 
 				__func__, ret);
                 	goto cleanup;
 		}
 	}
 
 	if (cfg->hw_wireless_mode != cfg->wireless_mode) {
-		ret = mt7697_send_set_wireless_mode_req(cfg, MT7697_PORT_STA, 
+		ret = mt7697_wr_set_wireless_mode_req(cfg, MT7697_PORT_STA, 
 			MT7697_WIFI_PHY_11ABGN_MIXED);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_wireless_mode_req() failed(%d)\n", 
+				"%s(): mt7697_wr_set_wireless_mode_req() failed(%d)\n", 
 				__func__, ret);
                 	goto cleanup;
 		}
@@ -712,11 +735,11 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 		cfg->hw_wireless_mode = cfg->wireless_mode;
 	}
 
-	ret = mt7697_send_set_security_mode_req(cfg, MT7697_PORT_STA, 
+	ret = mt7697_wr_set_security_mode_req(cfg, MT7697_PORT_STA, 
 		vif->auth_mode, vif->prwise_crypto);
 	if (ret < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_set_security_mode_req() failed(%d)\n", 
+			"%s(): mt7697_wr_set_security_mode_req() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
@@ -727,7 +750,7 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 		struct mt7697_key *key = NULL;
 
 		if (sme->key_idx > MT7697_MAX_KEY_INDEX) {
-			dev_err(cfg->dev, "%s: key index(%d) out of bounds\n",
+			dev_err(cfg->dev, "%s(): key index(%d) out of bounds\n",
 				   __func__, sme->key_idx);
 			ret = -ENOENT;
 			goto cleanup;
@@ -748,7 +771,7 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 				      NO_SYNC_WMIFLAG);*/
 	}
 
-	dev_dbg(cfg->dev, "%s: connect auth mode(%d) auto connect(%d) "
+	dev_dbg(cfg->dev, "%s(): connect auth mode(%d) auto connect(%d) "
 		"PW crypto/len(%d/%d) GRP crypto/len(%d/%d) "
 		"channel hint(%u)\n",
 		__func__, 
@@ -759,21 +782,21 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 	if (cfg->wifi_config.opmode == MT7697_WIFI_MODE_AP_ONLY) {
 		interval = max_t(u8, vif->listen_intvl_t,
 				 MT7697_MAX_WOW_LISTEN_INTL);
-		ret = mt7697_send_set_listen_interval_req(cfg, interval);
+		ret = mt7697_wr_set_listen_interval_req(cfg, interval);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_listen_interval_req() failed(%d)\n", 
+				"%s(): mt7697_wr_set_listen_interval_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
 	}
 
-	ret = mt7697_send_connect_req(cfg, MT7697_PORT_STA, vif->fw_vif_idx, 
+	ret = mt7697_wr_connect_req(cfg, MT7697_PORT_STA, vif->fw_vif_idx, 
 		vif->req_bssid, vif->ssid, vif->ssid_len, vif->ch_hint);
 	if (ret < 0) {
 		memset(vif->ssid, 0, sizeof(vif->ssid));
 		vif->ssid_len = 0;
-		dev_err(cfg->dev,"%s: mt7697_send_connect_req() failed(%d)\n", 
+		dev_err(cfg->dev,"%s(): mt7697_wr_connect_req() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
@@ -785,14 +808,14 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy, struct net_device *ndev,
 		/* configure default value if not specified */
 		sme->bg_scan_period = MT7697_DEFAULT_BG_SCAN_PERIOD;
 	}
-
+/*
 	if ((!(cfg->connect_ctrl_flags & MT7697_CONNECT_DO_WPA_OFFLOAD)) &&
 	    ((vif->auth_mode == MT7697_WIFI_AUTH_MODE_WPA_PSK) ||
 	     (vif->auth_mode == MT7697_WIFI_AUTH_MODE_WPA2_PSK))) {
 		mod_timer(&vif->disconnect_timer,
 			  jiffies + msecs_to_jiffies(MT7697_DISCON_TIMER_INTVAL_MSEC));
 	}
-
+*/
 	cfg->connect_ctrl_flags &= ~MT7697_CONNECT_DO_WPA_OFFLOAD;
 	set_bit(CONNECT_PEND, &vif->flags);
 
@@ -808,16 +831,16 @@ static int mt7697_cfg80211_disconnect(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: DISCONNECT\n", __func__);
+	dev_dbg(cfg->dev, "%s(): DISCONNECT\n", __func__);
 
 	if (down_interruptible(&cfg->sem)) {
-		dev_err(cfg->dev, "%s: down_interruptible() failed\n", __func__);
+		dev_err(cfg->dev, "%s(): down_interruptible() failed\n", __func__);
 		ret = -ERESTARTSYS;
 		goto cleanup;
 	}
 
 	if (test_bit(DESTROY_IN_PROGRESS, &cfg->flag)) {
-		dev_err(cfg->dev, "%s: busy, destroy in progress\n", __func__);
+		dev_err(cfg->dev, "%s(): busy, destroy in progress\n", __func__);
 		ret = -EBUSY;
 		goto cleanup;
 	}
@@ -827,14 +850,12 @@ static int mt7697_cfg80211_disconnect(struct wiphy *wiphy,
 	ret = mt7697_disconnect(vif);
 	if (ret < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_disconnect() failed(%d)\n", __func__, ret);
+			"%s(): mt7697_disconnect() failed(%d)\n", __func__, ret);
 		goto cleanup;
 	}
 
 	memset(vif->ssid, 0, sizeof(vif->ssid));
 	vif->ssid_len = 0;
-
-	vif->sme_state = SME_DISCONNECTED;
 
 cleanup:
 	up(&cfg->sem);
@@ -848,7 +869,7 @@ static int mt7697_cfg80211_add_key(struct wiphy *wiphy,
 				   struct key_params *params)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	dev_dbg(cfg->dev, "%s: ADD KEY\n", __func__);
+	dev_dbg(cfg->dev, "%s(): ADD KEY\n", __func__);
 	return 0;
 }
 
@@ -860,16 +881,17 @@ static int mt7697_cfg80211_get_key(struct wiphy *wiphy,
                                                      struct key_params *))
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	dev_dbg(cfg->dev, "%s: GET KEY\n", __func__);
+	dev_dbg(cfg->dev, "%s(): GET KEY\n", __func__);
 	return 0;
 }
 
-static int mt7697_cfg80211_del_key(struct wiphy *wiphy, struct net_device *ndev,
+static int mt7697_cfg80211_del_key(struct wiphy *wiphy, 
+				   struct net_device *ndev,
 				   u8 key_index, bool pairwise,
 				   const u8 *mac_addr)
 {
 	struct mt7697_vif *vif = netdev_priv(ndev);
-	dev_dbg(vif->cfg->dev, "%s: DEL KEY\n", __func__);
+	dev_dbg(vif->cfg->dev, "%s(): DEL KEY\n", __func__);
 	return 0;
 }
 
@@ -879,7 +901,7 @@ static int mt7697_cfg80211_set_default_key(struct wiphy *wiphy,
 					   bool multicast)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	dev_dbg(cfg->dev, "%s: SET DEFAULT KEY\n", __func__);
+	dev_dbg(cfg->dev, "%s(): SET DEFAULT KEY\n", __func__);
 	return 0;
 }
 
@@ -891,7 +913,8 @@ static int mt7697_cfg80211_join_ibss(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s: JOIN IBSS('%s')\n", __func__, ibss_param->ssid);
+	dev_dbg(cfg->dev, "%s(): JOIN IBSS('%s')\n", 
+		__func__, ibss_param->ssid);
 
 	vif->ssid_len = ibss_param->ssid_len;
 	memcpy(vif->ssid, ibss_param->ssid, vif->ssid_len);
@@ -906,7 +929,7 @@ static int mt7697_cfg80211_leave_ibss(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s: LEAVE IBSS\n", __func__);
+	dev_dbg(cfg->dev, "%s(): LEAVE IBSS\n", __func__);
 
 	mt7697_disconnect(vif);
 	memset(vif->ssid, 0, sizeof(vif->ssid));
@@ -922,7 +945,7 @@ static int mt7697_cfg80211_set_pmksa(struct wiphy *wiphy,
         struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: SET PMKSA\n", __func__);
+	dev_dbg(cfg->dev, "%s(): SET PMKSA\n", __func__);
 
 	if (pmksa->bssid) {
 		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
@@ -930,18 +953,18 @@ static int mt7697_cfg80211_set_pmksa(struct wiphy *wiphy,
 	}
 
 	if (pmksa->pmkid == NULL) {
-		dev_err(cfg->dev, "%s: NULL PSK\n", __func__);
+		dev_err(cfg->dev, "%s(): NULL PSK\n", __func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
 	
-	dev_dbg(cfg->dev, "%s: PSK('%s')\n", __func__, pmksa->pmkid);
+	dev_dbg(cfg->dev, "%s(): PSK('%s')\n", __func__, pmksa->pmkid);
 
 	if (memcmp(pmksa->pmkid, cfg->psk, WLAN_MAX_KEY_LEN)) {
-		ret = mt7697_send_set_psk_req(cfg, MT7697_PORT_STA, pmksa->pmkid);
+		ret = mt7697_wr_set_psk_req(cfg, MT7697_PORT_STA, pmksa->pmkid);
 		if (ret) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_psk_req() failed(%d)\n", 
+				"%s(): mt7697_wr_set_psk_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
@@ -961,16 +984,16 @@ static int mt7697_cfg80211_del_pmksa(struct wiphy *wiphy,
         struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	int ret;
 
-	dev_dbg(cfg->dev, "%s: DEL PMKSA\n", __func__);
+	dev_dbg(cfg->dev, "%s(): DEL PMKSA\n", __func__);
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
 		DUMP_PREFIX_OFFSET, 16, 1, pmksa->bssid, ETH_ALEN, 0);
 
 	if (memcmp(psk, cfg->psk, WLAN_MAX_KEY_LEN)) {
-		ret = mt7697_send_set_psk_req(cfg, MT7697_PORT_STA, psk);
+		ret = mt7697_wr_set_psk_req(cfg, MT7697_PORT_STA, psk);
 		if (ret) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_psk_req() failed(%d)\n", 
+				"%s(): mt7697_wr_set_psk_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
@@ -990,13 +1013,13 @@ static int mt7697_cfg80211_flush_pmksa(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s: FLUSH PMKSA\n", __func__);
+	dev_dbg(cfg->dev, "%s(): FLUSH PMKSA\n", __func__);
 
 	if (test_bit(CONNECTED, &vif->flags)) {
-		ret = mt7697_send_set_psk_req(cfg, MT7697_PORT_STA, psk);
+		ret = mt7697_wr_set_psk_req(cfg, MT7697_PORT_STA, psk);
 		if (ret) {
 			dev_err(cfg->dev, 
-				"%s: mt7697_send_set_psk_req() failed(%d)\n", 
+				"%s(): mt7697_wr_set_psk_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
@@ -1013,7 +1036,7 @@ static int mt7697_cfg80211_del_station(struct wiphy *wiphy,
                                        u8 *mac)
 {
         struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	dev_dbg(cfg->dev, "%s: DEL STATION\n", __func__);
+	dev_dbg(cfg->dev, "%s(): DEL STATION\n", __func__);
 	return 0;
 }
 
@@ -1026,14 +1049,14 @@ static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	int err = 0;
 
-	dev_dbg(cfg->dev, "%s: CHANGE STATION flags(0x%08x)\n",
+	dev_dbg(cfg->dev, "%s(): CHANGE STATION flags(0x%08x)\n",
 		__func__, params->sta_flags_set);
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" MAC ", 
 		DUMP_PREFIX_OFFSET, 16, 1, mac, ETH_ALEN, 0);
 
 	if ((vif->wdev.iftype != NL80211_IFTYPE_STATION)) {
-		dev_err(cfg->dev, "%s: iftype(%u) not supported\n", 
+		dev_err(cfg->dev, "%s(): iftype(%u) not supported\n", 
 			__func__, vif->wdev.iftype);
 		err = -EOPNOTSUPP;
 		goto cleanup;
@@ -1043,12 +1066,12 @@ static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
 					    CFG80211_STA_AP_MLME_CLIENT);
 	if (err) {
 		dev_err(cfg->dev, 
-			"%s: cfg80211_check_station_change() failed(%d)\n", 
+			"%s(): cfg80211_check_station_change() failed(%d)\n", 
 			__func__, err);
 		goto cleanup;
 	}
 
-	dev_dbg(cfg->dev, "%s: set mlme('%s')\n",
+	dev_dbg(cfg->dev, "%s(): set mlme('%s')\n",
 		__func__,  
 		params->sta_flags_set & BIT(NL80211_STA_FLAG_AUTHORIZED) ?
 		"AUTHORIZED":"UNAUTHORIZE");
@@ -1073,7 +1096,7 @@ static int mt7697_cfg80211_remain_on_channel(struct wiphy *wiphy,
                                     	     u64 *cookie)
 {
         struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
-	dev_dbg(cfg->dev, "%s: REMAIN ON CH\n", __func__);
+	dev_dbg(cfg->dev, "%s(): REMAIN ON CH\n", __func__);
 	return 0;
 }
 
@@ -1082,7 +1105,7 @@ static int mt7697_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
                                            	    u64 cookie)
 {
         struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
-	dev_dbg(cfg->dev, "%s: CANCEL REMAIN ON CH\n", __func__);
+	dev_dbg(cfg->dev, "%s(): CANCEL REMAIN ON CH\n", __func__);
 	return 0;
 }
 
@@ -1092,7 +1115,7 @@ static int mt7697_cfg80211_mgmt_tx(struct wiphy *wiphy,
 				   u64 *cookie)
 {
         struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
-	dev_dbg(cfg->dev, "%s: MGMT TX len(%u)\n", __func__, params->len);
+	dev_dbg(cfg->dev, "%s(): MGMT TX len(%u)\n", __func__, params->len);
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" MGMT Tx ", DUMP_PREFIX_OFFSET, 
 		16, 1, params->buf, params->len, 0);
@@ -1106,7 +1129,7 @@ static void mt7697_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
 {
 	struct mt7697_vif *vif = mt7697_vif_from_wdev(wdev);
         struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
-	dev_dbg(cfg->dev, "%s: MGMT FRAME REG type(0x%04x) reg(%u)\n", 
+	dev_dbg(cfg->dev, "%s(): MGMT FRAME REG type(0x%04x) reg(%u)\n", 
 		__func__, frame_type, reg);
 
 	if (frame_type == IEEE80211_STYPE_PROBE_REQ) {
@@ -1224,10 +1247,13 @@ static void mt7697_cfg80211_disconnect_work(struct work_struct *work)
 
 	ret = mt7697_disconnect(vif);
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s: mt7697_disconnect() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_disconnect() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
+
+	memset(vif->ssid, 0, sizeof(vif->ssid));
+	vif->ssid_len = 0;
 
 cleanup:
 	return;
@@ -1239,7 +1265,7 @@ struct mt7697_vif* mt7697_get_vif_by_idx(struct mt7697_cfg80211_info *cfg,
 	struct mt7697_vif *vif, *found = NULL;
 
 	if (WARN_ON(if_idx > (cfg->vif_max - 1))) {
-		dev_err(cfg->dev, "%s: invalid if idx(%u > %u)\n", 
+		dev_err(cfg->dev, "%s(): invalid if idx(%u > %u)\n", 
 			__func__, if_idx, cfg->vif_max - 1);
 		return NULL;
 	}
@@ -1263,12 +1289,12 @@ struct wireless_dev *mt7697_interface_add(
 	struct net_device *ndev;
 	struct mt7697_vif *vif;
 
-	dev_err(cfg->dev, "%s: add interface('%s') type(%u)\n", 
+	dev_err(cfg->dev, "%s(): add interface('%s') type(%u)\n", 
 		__func__, name, type);
 
 	ndev = alloc_netdev(sizeof(struct mt7697_vif), name, ether_setup);
 	if (!ndev) {
-		dev_err(cfg->dev, "%s: alloc_netdev() failed\n", __func__);
+		dev_err(cfg->dev, "%s(): alloc_netdev() failed\n", __func__);
 		return NULL;
 	}
 
@@ -1289,13 +1315,13 @@ struct wireless_dev *mt7697_interface_add(
 	mt7697_init_netdev(ndev);
 
 	if (mt7697_cfg80211_vif_init(vif)) {
-		dev_err(cfg->dev, "%s: mt7697_cfg80211_vif_init() failed\n", 
+		dev_err(cfg->dev, "%s(): mt7697_cfg80211_vif_init() failed\n", 
 			__func__);
 		goto err;
 	}
 
 	if (register_netdevice(ndev)) {
-		dev_err(cfg->dev, "%s: register_netdevice() failed\n", 
+		dev_err(cfg->dev, "%s(): register_netdevice() failed\n", 
 			__func__);
 		goto err;
 	}
@@ -1332,14 +1358,14 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 		 (channel <= MT7697_CH_MAX_5G_CHANNEL))
 		band = wiphy->bands[IEEE80211_BAND_5GHZ];
 	else {
-		dev_err(cfg->dev, "%s: invalid channel(%u)\n",
+		dev_err(cfg->dev, "%s(): invalid channel(%u)\n",
 			__func__, channel);
 		ret = -EINVAL;
 		goto cleanup;
 	}
 
 	if (!band) {
-		dev_err(cfg->dev, "%s: channel(%u) NULL band\n",
+		dev_err(cfg->dev, "%s(): channel(%u) NULL band\n",
 			__func__, channel);
 		ret = -EINVAL;
 		goto cleanup;
@@ -1348,7 +1374,7 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 	freq = ieee80211_channel_to_frequency(channel, band->band);
 	if (!freq) {
 		dev_err(cfg->dev, 
-			"%s: ieee80211_channel_to_frequency() failed\n", 
+			"%s(): ieee80211_channel_to_frequency() failed\n", 
 			__func__);
 		ret = -EINVAL;
 		goto cleanup;
@@ -1356,17 +1382,19 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 
 	bss = mt7697_add_bss_if_needed(vif, bssid, freq);
 	if (!bss) {
-		dev_err(cfg->dev, "%s: mt7697_add_bss_if_needed() failed\n",
+		dev_err(cfg->dev, "%s(): mt7697_add_bss_if_needed() failed\n",
 			__func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
 
 	WARN_ON(!vif->ndev);
-	dev_dbg(cfg->dev, "%s: vif sme_state(%u)\n", __func__, vif->sme_state);
+	dev_dbg(cfg->dev, "%s(): vif sme_state(%u)\n", 
+		__func__, vif->sme_state);
 	if ((vif->sme_state == SME_CONNECTING) ||
 	    (vif->sme_state == SME_DISCONNECTED)) {
 		vif->sme_state = SME_CONNECTED;
+		memcpy(vif->bssid, bssid, ETH_ALEN);
 		cfg80211_connect_result(vif->ndev, bssid,
 					NULL, 0,
 					NULL, 0, 
@@ -1382,7 +1410,7 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 
 	set_bit(CONNECTED, &vif->flags);
 	clear_bit(CONNECT_PEND, &vif->flags);
-	dev_dbg(cfg->dev, "%s: vif flags(0x%08lx)\n", __func__, vif->flags);
+	dev_dbg(cfg->dev, "%s(): vif flags(0x%08lx)\n", __func__, vif->flags);
 
 	netif_wake_queue(vif->ndev);
 	netif_carrier_on(vif->ndev);
@@ -1412,6 +1440,7 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 	bool band_2gig = false, band_5gig = false, ht = false;
 	s32 err = 0;
 
+	dev_dbg(cfg->dev, "%s(): init mt7697 cfg80211\n", __func__);
 	cfg->tx_req.cmd.grp = MT7697_CMD_GRP_80211;
 	cfg->tx_req.cmd.type = MT7697_CMD_TX_RAW;
 
@@ -1453,7 +1482,8 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 		band_5gig = true;
 		break;
 	default:
-		dev_err(cfg->dev, "%s: invalid phy capability!\n", __func__);
+		dev_err(cfg->dev, "%s(): invalid phy capability(%d)\n", 
+			__func__, cfg->wireless_mode);
 		err = -EINVAL;
 		goto cleanup;
 	}
@@ -1495,12 +1525,13 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 
         err = wiphy_register(wiphy);
         if (err < 0) {
-                dev_err(cfg->dev, "%s: wiphy_register() failed(%d)\n", 
+                dev_err(cfg->dev, "%s(): wiphy_register() failed(%d)\n", 
 			__func__, err);               
                 goto cleanup;
         }
 
 	cfg->wiphy_registered = true;
+	dev_dbg(cfg->dev, "%s(): wiphy registered\n", __func__);
 
 cleanup:
         return err;

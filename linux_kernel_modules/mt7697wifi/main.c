@@ -19,6 +19,7 @@
 #include <linux/platform_device.h>
 #include <net/cfg80211.h>
 #include "queue_i.h"
+#include "common.h"
 #include "core.h"
 #include "cfg80211.h"
 
@@ -29,7 +30,7 @@ static int mt7697_open(struct net_device *ndev)
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
 
-	dev_dbg(cfg->dev, "%s: open net device\n", __func__);
+	dev_dbg(cfg->dev, "%s(): open net device\n", __func__);
 
 	set_bit(WLAN_ENABLED, &vif->flags);
 
@@ -47,7 +48,7 @@ static int mt7697_stop(struct net_device *ndev)
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
 
-	dev_dbg(cfg->dev, "%s: stop net device\n", __func__);
+	dev_dbg(cfg->dev, "%s(): stop net device\n", __func__);
 
 	netif_stop_queue(ndev);
 	mt7697_cfg80211_stop(vif);
@@ -56,11 +57,17 @@ static int mt7697_stop(struct net_device *ndev)
 	return 0;
 }
 
+static struct net_device_stats *mt7697_get_stats(struct net_device *dev)
+{
+	struct mt7697_vif *vif = netdev_priv(dev);
+	return &vif->net_stats;
+}
+
 static int mt7697_set_features(struct net_device *ndev,
 			       netdev_features_t features)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	dev_dbg(cfg->dev, "%s: net device set features\n", __func__);
+	dev_dbg(cfg->dev, "%s(): net device set features\n", __func__);
 	return 0;
 }
 
@@ -71,7 +78,7 @@ static void mt7697_set_multicast_list(struct net_device *ndev)
 	bool mc_all_on = false;
 	int mc_count = netdev_mc_count(ndev);
 
-	dev_dbg(cfg->dev, "%s: net device set multicast\n", __func__);
+	dev_dbg(cfg->dev, "%s(): net device set multicast\n", __func__);
 
 	/* Enable multicast-all filter. */
 	mc_all_on = !!(ndev->flags & IFF_PROMISC) ||
@@ -91,7 +98,7 @@ static void mt7697_set_multicast_list(struct net_device *ndev)
 	}
 
 	/* Enable/disable "multicast-all" filter*/
-	dev_dbg(cfg->dev, "%s: %s multicast-all filter\n",
+	dev_dbg(cfg->dev, "%s(): %s multicast-all filter\n",
 		__func__, mc_all_on ? "enable" : "disable");
 }
 
@@ -101,86 +108,76 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		struct mt7697_cfg80211_info, init_work);
 	int err;
 
-	cfg->txq_hdl = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, cfg, NULL);
-	if (!cfg->txq_hdl) {
-		dev_err(cfg->dev, "%s: queue(%u) init() failed()\n",
-			__func__, MT7697_MAC80211_QUEUE_TX);
-		goto failed;
-	}
-
-	cfg->rxq_hdl = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_RX, cfg, 
-		mt7697_proc_data);
-	if (!cfg->rxq_hdl) {
-		dev_err(cfg->dev, "%s: queue(%u) init() failed()\n",
-			__func__, MT7697_MAC80211_QUEUE_RX);
-		goto failed;
-	}
-
-	err = mt7697_send_init(cfg);
+	dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n", 
+		__func__, MT7697_MAC80211_QUEUE_TX, MT7697_MAC80211_QUEUE_RX);
+	err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, 
+		MT7697_MAC80211_QUEUE_RX, cfg, mt7697_proc_80211cmd, 
+		&cfg->txq_hdl, &cfg->rxq_hdl);
 	if (err < 0) {
-		dev_err(cfg->dev, "%s: mt7697_send_init() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): queue(%u) init() failed(%d)\n",
+			__func__, MT7697_MAC80211_QUEUE_TX, err);
+		goto failed;
+	}
+
+	err = mt7697_wr_cfg_req(cfg);
+	if (err < 0) {
+		dev_err(cfg->dev, "%s(): mt7697_wr_cfg_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
 
-	err = mt7697_send_cfg_req(cfg);
-	if (err < 0) {
-		dev_err(cfg->dev, "%s: mt7697_send_cfg_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_send_get_wireless_mode_req(cfg, MT7697_PORT_STA);
+	err = mt7697_wr_get_wireless_mode_req(cfg, MT7697_PORT_STA);
 	if (err < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_get_wireless_mode_req() failed(%d)\n", 
+			"%s(): mt7697_wr_get_wireless_mode_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
 
-	err = mt7697_send_get_rx_filter_req(cfg);
+	err = mt7697_wr_get_rx_filter_req(cfg);
 	if (err < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_get_rx_filter_req() failed(%d)\n", 
+			"%s(): mt7697_wr_get_rx_filter_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
 
-	err = mt7697_send_get_smart_conn_filter_req(cfg);
+	err = mt7697_wr_get_smart_conn_filter_req(cfg);
 	if (err < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_get_smart_conn_filter_req() failed(%d)\n", 
+			"%s(): mt7697_wr_get_smart_conn_filter_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
 
-	err = mt7697_send_get_listen_interval_req(cfg);
+	err = mt7697_wr_get_listen_interval_req(cfg);
 	if (err < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_get_listen_interval_req() failed(%d)\n", 
+			"%s(): mt7697_wr_get_listen_interval_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
 
-	err = mt7697_send_get_radio_state_req(cfg);
+	err = mt7697_wr_get_radio_state_req(cfg);
 	if (err < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_get_radio_state_req() failed(%d)\n", 
+			"%s(): mt7697_wr_get_radio_state_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
 
-	err = mt7697_send_get_psk_req(cfg, MT7697_PORT_STA);
-	if (err < 0) {
-		dev_err(cfg->dev, "%s: mt7697_send_get_psk_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_send_mac_addr_req(cfg, MT7697_PORT_STA);
+	err = mt7697_wr_get_psk_req(cfg, MT7697_PORT_STA);
 	if (err < 0) {
 		dev_err(cfg->dev, 
-			"%s: mt7697_send_mac_addr_req() failed(%d)\n", 
+			"%s(): mt7697_wr_get_psk_req() failed(%d)\n", 
+			__func__, err);
+		goto failed;
+	}
+
+	err = mt7697_wr_mac_addr_req(cfg, MT7697_PORT_STA);
+	if (err < 0) {
+		dev_err(cfg->dev, 
+			"%s(): mt7697_wr_mac_addr_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}
@@ -193,6 +190,7 @@ static const struct net_device_ops mt7697_netdev_ops = {
         .ndo_open               = mt7697_open,
         .ndo_stop               = mt7697_stop,
         .ndo_start_xmit         = mt7697_data_tx,
+	.ndo_get_stats          = mt7697_get_stats,
         .ndo_set_features       = mt7697_set_features,
         .ndo_set_rx_mode        = mt7697_set_multicast_list,
 };
@@ -202,19 +200,14 @@ void mt7697_init_netdev(struct net_device *dev)
         dev->netdev_ops = &mt7697_netdev_ops;
         dev->destructor = free_netdev;
         dev->watchdog_timeo = MT7697_TX_TIMEOUT;
-        dev->needed_headroom = ETH_HLEN;
-        dev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
+        dev->needed_headroom = sizeof(struct ieee80211_hdr) + sizeof(struct mt7697_llc_snap_hdr);
+        dev->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
 }
 
 static const struct mt7697q_if_ops if_ops = {
 	.init		= mt7697q_init,
 	.read		= mt7697q_read,
 	.write		= mt7697q_write,
-	.pull_rd_ptr	= mt7697q_pull_rd_ptr,
-	.pull_wr_ptr	= mt7697q_pull_wr_ptr,
-	.capacity	= mt7697q_get_capacity,
-	.num_rd		= mt7697q_get_num_words,
-	.num_wr		= mt7697q_get_free_words,
 };
 
 static void mt7697_cookie_init(struct mt7697_cfg80211_info *cfg)
@@ -242,9 +235,11 @@ static int mt7697_probe(struct platform_device *pdev)
 	struct mt7697_cfg80211_info *cfg;
 	int err = 0;
 
+	dev_dbg(&pdev->dev, "%s(): probe\n", __func__);
 	cfg = mt7697_cfg80211_create();
 	if (!cfg) {
-                dev_err(&pdev->dev, "%s: mt7697_cfg80211_create() failed()\n",
+                dev_err(&pdev->dev, 
+			"%s(): mt7697_cfg80211_create() failed()\n",
 			__func__);
 		err = -ENOMEM;
 		goto failed;
@@ -263,7 +258,8 @@ static int mt7697_probe(struct platform_device *pdev)
 
 	err = mt7697_cfg80211_init(cfg);
 	if (err < 0) {
-                dev_err(&pdev->dev, "%s: mt7697_cfg80211_init() failed(%d)\n", 
+                dev_err(&pdev->dev, 
+			"%s(): mt7697_cfg80211_init() failed(%d)\n", 
 			__func__, err);
 		goto failed;
         }
@@ -285,9 +281,9 @@ static int mt7697_remove(struct platform_device *pdev)
 	struct mt7697_cfg80211_info *cfg = platform_get_drvdata(pdev);
 	int ret;
 
-	ret = mt7697_send_reset(cfg);
+	ret = mt7697q_send_reset(cfg->txq_hdl, cfg->rxq_hdl);
 	if (ret < 0) {
-                dev_err(&pdev->dev, "%s: mt7697_send_reset() failed(%d)\n", 
+                dev_err(&pdev->dev, "%s(): mt7697q_send_reset() failed(%d)\n", 
 			__func__, ret);
 		goto failed;
         }
@@ -295,7 +291,7 @@ static int mt7697_remove(struct platform_device *pdev)
 	mt7697_cfg80211_cleanup(cfg);
 	mt7697_cfg80211_destroy(cfg);
 	mt7697_cookie_cleanup(cfg);
-	dev_dbg(&pdev->dev, "%s: removed.\n", __func__);
+	dev_dbg(&pdev->dev, "%s(): removed.\n", __func__);
 
 	platform_set_drvdata(pdev, NULL);
 
@@ -318,18 +314,18 @@ static int __init mt7697_init(void)
 {
 	int ret;
 
-	pr_info(DRVNAME" init\n");
+	pr_info(DRVNAME" initialize\n");
 	ret = platform_driver_register(&mt7697_platform_driver);
 	if (ret) {
-		pr_err(DRVNAME" %s: platform_driver_register() failed(%d)\n", 
+		pr_err(DRVNAME" %s(): platform_driver_register() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
 
 	pdev = platform_device_alloc(DRVNAME, -1);
 	if (!pdev) {
-		pr_err(DRVNAME" %s: platform_device_alloc() failed(%d)\n", 
-			__func__, ret);
+		pr_err(DRVNAME" %s(): platform_device_alloc() failed\n", 
+			__func__);
 		platform_driver_unregister(&mt7697_platform_driver);
 		ret = -ENOMEM;
 		goto cleanup;
@@ -337,7 +333,7 @@ static int __init mt7697_init(void)
 
 	ret = platform_device_add(pdev);
 	if (ret) {
-		pr_err(DRVNAME" %s: platform_device_add() failed(%d)\n", 
+		pr_err(DRVNAME" %s(): platform_device_add() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
@@ -371,13 +367,33 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 {
 	int ret = 0;
 
+	dev_dbg(vif->cfg->dev, "%s(): disconnect\n", __func__);
 	if (test_bit(CONNECTED, &vif->flags) ||
 	    test_bit(CONNECT_PEND, &vif->flags)) {
-		ret = mt7697_send_disconnect_req(vif->cfg, vif->fw_vif_idx, 
+		if (vif->cfg->reg_rx_hndlr) {
+			ret = mt7697_wr_set_op_mode_req(vif->cfg, 
+				vif->cfg->wifi_config.opmode);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
+					__func__, ret);
+       				goto failed;
+    			}
+
+			ret = mt7697_wr_unreg_rx_hndlr_req(vif->cfg);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_unreg_rx_hndlr_req() failed(%d)\n", 
+					__func__, ret);
+       				goto failed;
+    			}
+		}
+
+		ret = mt7697_wr_disconnect_req(vif->cfg, vif->fw_vif_idx, 
 			NULL);
 		if (ret < 0) {
 			dev_err(vif->cfg->dev, 
-				"%s: mt7697_send_disconnect_req() failed(%d)\n", 
+				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
 				__func__, ret);
 			goto failed;
 		}
@@ -407,12 +423,14 @@ struct mt7697_cookie *mt7697_alloc_cookie(struct mt7697_cfg80211_info *cfg)
 	return cookie;
 }
 
-void mt7697_free_cookie(struct mt7697_cfg80211_info *cfg, struct mt7697_cookie *cookie)
+void mt7697_free_cookie(struct mt7697_cfg80211_info *cfg, 
+                        struct mt7697_cookie *cookie)
 {
 	/* Insert first */
 	if (!cfg || !cookie)
 		return;
 
+	cookie->skb = NULL;
 	cookie->arc_list_next = cfg->cookie_list;
 	cfg->cookie_list = cookie;
 	cfg->cookie_count++;

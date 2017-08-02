@@ -18,9 +18,10 @@
 #define _MT7697_QUEUE_H_
 
 #include <linux/types.h>
+#include <linux/interrupt.h>
 #include "queue_i.h"
 
-#define MT7697_NUM_QUEUES			7
+#define MT7697_NUM_QUEUES			6
 
 #define MT7697_QUEUE_FLAGS_IN_USE_OFFSET     	0
 #define MT7697_QUEUE_FLAGS_IN_USE_WIDTH      	1
@@ -33,14 +34,14 @@
 
 #define MT7697_QUEUE_DEBUG_DUMP_LIMIT 		1024
 
-typedef int (*rx_hndlr)(void*);
-
 struct mt7697q_data {
 	u32 				flags;
     	u32 				base_addr;
-    	u32 				rd_offset;
-    	u32 				wr_offset;
-} __attribute__((packed));
+	u16 				rd_offset;
+	u16				reserved1;
+	u16 				wr_offset;
+	u16 				reserved2; 		
+};
 
 struct mt7697q_spec {
 	struct mt7697q_data		data;
@@ -52,6 +53,7 @@ struct mt7697q_spec {
 
 struct mt7697q_info {
 	struct mt7697q_spec 		queues[MT7697_NUM_QUEUES];
+	struct mt7697q_rsp_hdr 		rsp;
 	u8 				txBuffer[sizeof(u32)];
 	u8 				rxBuffer[sizeof(u16)];
 	
@@ -62,30 +64,18 @@ struct mt7697q_info {
 	struct mutex                    mutex;
 	struct workqueue_struct 	*irq_workq;
 	
-//	struct work_struct              irq_work;
-	struct delayed_work		irq_work;
+	struct work_struct              irq_work;
+	struct delayed_work		irq_delayed_work;
 	int 				irq;
 	u8 				s2m_mbox;
 	bool				slave_busy;
 };
 
-u8 mt7697q_busy(u16);
-u8 mt7697q_get_s2m_mbox(u16);
-u16 mt7697q_set_s2m_mbox(u8);
-u8 mt7697q_get_m2s_mbox(u16);
-u32 mt7697q_flags_get_in_use(u32);
-u32 mt7697q_flags_get_dir(u32);
+void mt7697_irq_delayed_work(struct work_struct*);
+void mt7697_irq_work(struct work_struct*);
+irqreturn_t mt7697_isr(int, void*);
 
-void* mt7697q_init(u8, void*, rx_hndlr);
-
-size_t mt7697q_read(void*, u32*, size_t);
-size_t mt7697q_write(void*, const u32*, size_t);
-
-int mt7697q_pull_rd_ptr(void*);
-int mt7697q_pull_wr_ptr(void*);
-
-size_t mt7697q_get_capacity(const void*);
-size_t mt7697q_get_num_words(const void*);
-size_t mt7697q_get_free_words(const void*);
+int mt7697q_proc_data(struct mt7697q_spec*);
+int mt7697q_get_s2m_mbx(struct mt7697q_info*, u8*);
 
 #endif

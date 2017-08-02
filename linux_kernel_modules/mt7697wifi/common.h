@@ -14,12 +14,15 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _MT7697_INTERRUPT_H_
-#define _MT7697_INTERRUPT_H_
+#ifndef _MT7697_COMMON_H_
+#define _MT7697_COMMON_H_
 
-#include <linux/interrupt.h>
-
-irqreturn_t mt7697_isr(int, void*);
-void mt7697_irq_work(struct work_struct*);
+struct mt7697_llc_snap_hdr {
+	u8 dsap;
+	u8 ssap;
+	u8 cntl;
+	u8 org_code[3];
+	__be16 eth_type;
+} __packed;
 
 #endif

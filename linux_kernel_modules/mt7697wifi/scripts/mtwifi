@@ -13,7 +13,7 @@ mt_wifi_start() {
     if [ $? -eq 1 ]; then
         insmod /tmp/spi-cp2130.ko || exit 127
         for f in `ls -d /sys/class/gpio/gpiochip*`; do echo $f `cat $f/label $f/base $f/ngpio` ; done
-        echo -n 0,2,6,0,0,1,2,0,0,0,0,mt7697 > /sys/devices/platform/msm_hsic_host/usb1/1-1/1-1.1/1-1.1:1.0/channel_config                                                                     
+        echo -n 0,2,-1,0,0,1,0,0,0,0,0,mt7697 > /sys/devices/platform/msm_hsic_host/usb1/1-1/1-1.1/1-1.1:1.0/channel_config                                                                     
     fi
 
     lsmod | grep cfg80211 >/dev/null                                            

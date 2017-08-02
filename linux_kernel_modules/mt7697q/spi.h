@@ -24,9 +24,12 @@
 
 #include <linux/spi/spi.h>
 
-#define DRVNAME			"mt7697q"
-#define MT7697_SPI_BUS_NUM	32766
-#define MT7697_SPI_CS		0
+#define DRVNAME				"mt7697q"
+#define MT7697_GPIO_IRQ_NAME		"mt7697q irq"
+
+#define MT7697_SPI_INTR_GPIO_PIN	50//21
+#define MT7697_SPI_BUS_NUM		32766
+#define MT7697_SPI_CS			0
 
 struct mt7697spi_hw_ops {
 	int (*write)(struct spi_device*, const void*, size_t);

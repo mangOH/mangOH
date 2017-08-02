@@ -100,10 +100,8 @@ struct mt7697_cfg80211_info {
 
 	struct work_struct tx_work;
 	struct mt7697_tx_raw_packet tx_req;
-	u8 rx_data[MT7697_LEN32_ALIGNED(IEEE80211_MAX_FRAME_LEN)];
-	u8 probe_data[MT7697_LEN32_ALIGNED(IEEE80211_MAX_DATA_LEN)];
-
-	struct mt7697_rsp_hdr rsp;
+	u8 rx_data[LEN32_ALIGNED(IEEE80211_MAX_FRAME_LEN)];
+	u8 probe_data[LEN32_ALIGNED(IEEE80211_MAX_DATA_LEN)];
 	
 	enum mt7697_radio_state radio_state;
 	enum mt7697_wifi_phy_mode_t wireless_mode;
@@ -113,6 +111,7 @@ struct mt7697_cfg80211_info {
 	int listen_interval;
 	enum mt7697_wifi_rx_filter_t rx_filter;
 	u8 smart_conn_filter;
+	u8 reg_rx_hndlr;
 	u8 psk[MT7697_PASSPHRASE_LEN];
 
 	struct list_head vif_list;
@@ -171,6 +170,8 @@ struct mt7697_vif {
 	enum mt7697_sme_state sme_state;
 	int reconnect_flag;
 	u8 listen_intvl_t;
+
+	struct net_device_stats net_stats;
 };
 
 static inline struct wiphy *cfg_to_wiphy(struct mt7697_cfg80211_info *cfg)
@@ -200,7 +201,8 @@ struct wireless_dev *mt7697_interface_add(struct mt7697_cfg80211_info*,
 	const char*, enum nl80211_iftype, u8 fw_vif_idx);
 void mt7697_tx_work(struct work_struct *);
 int mt7697_data_tx(struct sk_buff*, struct net_device*);
-int mt7697_rx_data(struct mt7697_cfg80211_info*, u32);
+int mt7697_rx_data(struct mt7697_cfg80211_info*, u32, u32);
+int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr*, void*);
 
 void mt7697_disconnect_timer_hndlr(unsigned long);
 int mt7697_disconnect(struct mt7697_vif*);

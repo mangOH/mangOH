@@ -21,6 +21,12 @@
 #include "io.h"
 #include "spi.h"
 
+static __inline u8 mt7697io_busy(u16 value)
+{
+	return BF_GET(value, MT7697_IO_STATUS_REG_BUSY_OFFSET, 
+		MT7697_IO_STATUS_REG_BUSY_WIDTH);
+}
+
 static int mt7697io_write16(struct mt7697q_info *qinfo, u8 reg, u16 value)
 {
 	int ret;
@@ -131,7 +137,7 @@ static int mt7697io_chk_slave_busy(struct mt7697q_info *qinfo)
        		goto cleanup;
     	}
 
-	qinfo->slave_busy = mt7697q_busy(value) == MT7697_IO_STATUS_REG_BUSY_VAL_BUSY;
+	qinfo->slave_busy = mt7697io_busy(value) == MT7697_IO_STATUS_REG_BUSY_VAL_BUSY;
 
 cleanup:
     	return ret;
@@ -206,7 +212,7 @@ int mt7697io_rd_s2m_mbx(struct mt7697q_info *qinfo)
     	}
 
 	qinfo->s2m_mbox = mt7697io_get_s2m_mbox(value);
-	dev_dbg(qinfo->dev, "%s(): s2m mbx(0x%04x)\n", 
+	dev_dbg(qinfo->dev, "%s(): s2m mbx(0x%02x)\n", 
 		__func__, qinfo->s2m_mbox);
 
 cleanup:
@@ -346,9 +352,7 @@ cleanup:
 
 int mt7697io_trigger_intr(struct mt7697q_info *qinfo)
 {
-	int ret;
-
-    	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_IRQ, 
+	int ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_IRQ, 
         	BF_DEFINE(MT7697_IO_IRQ_REG_IRQ_STATUS_VAL_ACTIVE,
             		  MT7697_IO_IRQ_REG_IRQ_STATUS_OFFSET,
             		  MT7697_IO_IRQ_REG_IRQ_STATUS_WIDTH));
