@@ -17,7 +17,11 @@ apps:
     $MANGOH_ROOT/apps/SocialService/socialService
 
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
-    $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
+
+    // The heartbeat app is disabled on mangOH Red because the logging messages
+    // from the low power microcontroller make it very difficult to use the
+    // console port.
+    // $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
 
     $LEGATO_ROOT/apps/tools/devMode
 }
