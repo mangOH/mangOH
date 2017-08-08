@@ -8,11 +8,10 @@
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp
 
 mt_wifi_start() {
-#    insmod /tmp/spisvc.ko || exit 127
-    lsmod | grep spi-cp2130 >/dev/null                                            
+    # TODO figure way to only call echo command once
+    lsmod | grep 0-cp2130 >/dev/null                                            
     if [ $? -eq 1 ]; then
-        insmod /tmp/spi-cp2130.ko || exit 127
-        for f in `ls -d /sys/class/gpio/gpiochip*`; do echo $f `cat $f/label $f/base $f/ngpio` ; done
+        insmod /tmp/0-cp2130.ko || exit 127
         echo -n 0,2,-1,0,0,1,0,0,0,0,0,mt7697 > /sys/devices/platform/msm_hsic_host/usb1/1-1/1-1.1/1-1.1:1.0/channel_config                                                                     
     fi
 

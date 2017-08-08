@@ -18,7 +18,7 @@
 #define _MT7697_CORE_H_
 
 #include <net/cfg80211.h>
-
+#include <net/iw_handler.h>     /* New driver API */
 #include "wifi_api.h"
 #include "wmi.h"
 
@@ -107,12 +107,11 @@ struct mt7697_cfg80211_info {
 	enum mt7697_wifi_phy_mode_t wireless_mode;
 	enum mt7697_wifi_phy_mode_t hw_wireless_mode;
 	struct mac_address mac_addr;
-	struct mt7697_wifi_config_t wifi_config;
+	struct mt7697_wifi_config_t wifi_cfg;
 	int listen_interval;
 	enum mt7697_wifi_rx_filter_t rx_filter;
 	u8 smart_conn_filter;
 	u8 reg_rx_hndlr;
-	u8 psk[MT7697_PASSPHRASE_LEN];
 
 	struct list_head vif_list;
 	spinlock_t vif_list_lock;
@@ -140,6 +139,7 @@ struct mt7697_vif {
 	struct wireless_dev wdev;
 	struct net_device *ndev;
 	struct mt7697_cfg80211_info *cfg;
+	struct iw_public_data wireless_data;
 
 	/* Lock to protect vif specific net_stats and flags */
 	spinlock_t if_lock;
@@ -150,6 +150,7 @@ struct mt7697_vif {
 	u8 ssid[IEEE80211_MAX_SSID_LEN];
 	u8 bssid[ETH_ALEN];
 	u8 req_bssid[ETH_ALEN];
+	u8 pmk[MT7697_WIFI_LENGTH_PMK];
 	u16 ch_hint;
  
 	struct work_struct disconnect_work;

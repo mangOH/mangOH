@@ -20,6 +20,7 @@
 #include <net/cfg80211.h>
 #include "queue_i.h"
 #include "common.h"
+#include "ioctl.h"
 #include "core.h"
 #include "cfg80211.h"
 
@@ -166,14 +167,6 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		goto failed;
 	}
 
-	err = mt7697_wr_get_psk_req(cfg, MT7697_PORT_STA);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_psk_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
 	err = mt7697_wr_mac_addr_req(cfg, MT7697_PORT_STA);
 	if (err < 0) {
 		dev_err(cfg->dev, 
@@ -195,13 +188,15 @@ static const struct net_device_ops mt7697_netdev_ops = {
         .ndo_set_rx_mode        = mt7697_set_multicast_list,
 };
 
-void mt7697_init_netdev(struct net_device *dev)
+void mt7697_init_netdev(struct net_device *ndev)
 {
-        dev->netdev_ops = &mt7697_netdev_ops;
-        dev->destructor = free_netdev;
-        dev->watchdog_timeo = MT7697_TX_TIMEOUT;
-        dev->needed_headroom = sizeof(struct ieee80211_hdr) + sizeof(struct mt7697_llc_snap_hdr);
-        dev->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+        ndev->netdev_ops = &mt7697_netdev_ops;
+	ndev->wireless_handlers = &mt7697_wireless_hndlrs;
+        ndev->destructor = free_netdev;
+        ndev->watchdog_timeo = MT7697_TX_TIMEOUT;
+        ndev->needed_headroom = sizeof(struct ieee80211_hdr) + 
+			        sizeof(struct mt7697_llc_snap_hdr);
+        ndev->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
 }
 
 static const struct mt7697q_if_ops if_ops = {
@@ -371,15 +366,15 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 	if (test_bit(CONNECTED, &vif->flags) ||
 	    test_bit(CONNECT_PEND, &vif->flags)) {
 		if (vif->cfg->reg_rx_hndlr) {
-			ret = mt7697_wr_set_op_mode_req(vif->cfg, 
-				vif->cfg->wifi_config.opmode);
+/*			ret = mt7697_wr_set_op_mode_req(vif->cfg, 
+				vif->cfg->wifi_cfg.opmode);
 			if (ret < 0) {
 				dev_err(vif->cfg->dev, 
 					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
 					__func__, ret);
        				goto failed;
     			}
-
+*/
 			ret = mt7697_wr_unreg_rx_hndlr_req(vif->cfg);
 			if (ret < 0) {
 				dev_err(vif->cfg->dev, 

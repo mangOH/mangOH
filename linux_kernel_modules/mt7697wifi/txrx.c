@@ -82,7 +82,7 @@ cleanup:
 }
 
 static void mt7697_ethernet_to_80211(struct sk_buff *skb, 
-                                    struct net_device *ndev)
+                                     struct net_device *ndev)
 {
 	struct ieee80211_hdr hdr;
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -94,26 +94,26 @@ static void mt7697_ethernet_to_80211(struct sk_buff *skb,
 	__le16 fc;
 	u16 hdrlen;
 
-	dev_dbg(cfg->dev, "%s(): Tx 802.3 Frame len(%u)\n", __func__, skb->len);
+	dev_dbg(cfg->dev, "%s(): Tx 802.3 Frame len(%u)\n", 
+		__func__, skb->len);
 	print_hex_dump(KERN_DEBUG, DRVNAME" 802.3 Frame ", DUMP_PREFIX_OFFSET, 
 			16, 1, skb->data, skb->len, 0);
 
 	fc = cpu_to_le16(IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA);
-//	fc |= cpu_to_le16(IEEE80211_FCTL_FROMDS);
-fc |= cpu_to_le16(IEEE80211_FCTL_TODS);
+        fc |= cpu_to_le16(IEEE80211_FCTL_TODS);
+
 	/* DA BSSID SA */
 	hdr.frame_control = fc;
 	hdr.duration_id = 0;
-//	memcpy(hdr.addr1, eth_hdr->h_dest, ETH_ALEN);
-//	memcpy(hdr.addr2, vif->bssid, ETH_ALEN);
-//	memcpy(hdr.addr3, eth_hdr->h_source, ETH_ALEN);
-memcpy(hdr.addr1, vif->bssid, ETH_ALEN);
-memcpy(hdr.addr2, eth_hdr->h_source, ETH_ALEN);
-memcpy(hdr.addr3, eth_hdr->h_dest, ETH_ALEN);
+	memcpy(hdr.addr1, vif->bssid, ETH_ALEN);
+	memcpy(hdr.addr2, eth_hdr->h_source, ETH_ALEN);
+	memcpy(hdr.addr3, eth_hdr->h_dest, ETH_ALEN);
 	hdr.seq_ctrl = 0;
 	hdrlen = sizeof(struct ieee80211_hdr_3addr);
 
-	datap = skb_push(skb, hdrlen + sizeof(struct mt7697_llc_snap_hdr) - sizeof(struct ethhdr));
+	datap = skb_push(skb, hdrlen + 
+			      sizeof(struct mt7697_llc_snap_hdr) - 
+			      sizeof(struct ethhdr));
 	memcpy(datap, &hdr, hdrlen);
 
 	llc_hdr = (struct mt7697_llc_snap_hdr*)(datap + hdrlen);
@@ -127,8 +127,8 @@ memcpy(hdr.addr3, eth_hdr->h_dest, ETH_ALEN);
 
 	dev_dbg(cfg->dev, "%s(): Tx 802.11 Frame len(%u)\n", 
 		__func__, skb->len);
-	print_hex_dump(KERN_DEBUG, DRVNAME" <-- Tx 802.11 Frame ", DUMP_PREFIX_OFFSET, 
-		16, 1, skb->data, skb->len, 0);
+	print_hex_dump(KERN_DEBUG, DRVNAME" <-- Tx 802.11 Frame ", 
+		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
 }
 
 int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)

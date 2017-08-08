@@ -4,10 +4,13 @@ sources:
     cfg80211.c
     main.c
     txrx.c
+    ioctl.c
 }
 
 cflags:
 {
     -DDEBUG 
+    -DCONFIG_WIRELESS_EXT
+    -DCONFIG_CFG80211_WEXT
     -I$MANGOH_ROOT/linux_kernel_modules/mt7697q
 }
