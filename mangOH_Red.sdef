@@ -38,7 +38,8 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
 
-    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
+    // Disable the cp2130 for now until the lockup issue is resolved
+    // $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
 
     // Required for bmp280 & bmi160
     $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
