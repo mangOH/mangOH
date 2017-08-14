@@ -14,9 +14,8 @@ apps:
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    // Data Router is disabled because the published version doesn't build against Legato 17.05
-    // $MANGOH_ROOT/apps/DataRouter/dataRouter
-    // $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    $MANGOH_ROOT/apps/DataRouter/dataRouter
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     // $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
     $MANGOH_ROOT/apps/SocialService/socialService
 
@@ -28,7 +27,7 @@ apps:
 commands:
 {
     mux = muxCtrlTools:/bin/mux
-    // dr = drTool:/bin/dr
+    dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
 }
 

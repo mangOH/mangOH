@@ -11,9 +11,8 @@ apps:
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    // Data Router is disabled because the published version doesn't build against Legato 17.05
-    // $MANGOH_ROOT/apps/DataRouter/dataRouter
-    // $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    $MANGOH_ROOT/apps/DataRouter/dataRouter
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
 
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
@@ -28,7 +27,7 @@ apps:
 
 commands:
 {
-    // dr = drTool:/bin/dr
+    dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
 }
 
