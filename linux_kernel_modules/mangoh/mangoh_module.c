@@ -4,6 +4,7 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <asm/irq.h>
+#include <linux/delay.h>
 
 #include "mangoh.h"
 #include "board_green_dv4.h"
@@ -129,6 +130,9 @@ static int mangoh_probe(struct platform_device* pdev)
 		platform_get_device_id(pdev)->driver_data;
 	platform_set_drvdata(pdev, desc);
 
+	/* Work around USB issues at boot time by delaying device installation */
+	dev_info(&pdev->dev, "Probing mangOH platform device\n");
+	msleep(5000);
 	return desc->map(pdev);
 }
 
