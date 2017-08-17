@@ -16,7 +16,7 @@ apps:
     $MANGOH_ROOT/apps/MqttClient/mqttClient
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
-    // $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
+    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
     $MANGOH_ROOT/apps/SocialService/socialService
 
     $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
