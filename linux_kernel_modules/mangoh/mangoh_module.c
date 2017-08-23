@@ -1,4 +1,3 @@
-#define DEBUG
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
@@ -66,10 +65,8 @@ static struct platform_driver mangoh_driver = {
  */
 static int __init mangoh_init(void)
 {
-    printk(KERN_DEBUG "Called %s\n", __func__);
 	if (strcmp(board, "green dv4") == 0) {
 		int rc = green_dv4_create_device(&mangoh_device);
-        printk(KERN_DEBUG "mangoh: created green_dv4 device\n");
 		if (rc != 0) {
 			pr_err(
 				"%s: Couldn't create device for '%s'.\n",
@@ -102,21 +99,21 @@ static int __init mangoh_init(void)
 			board);
 		return -ENODEV;
 	}
+	printk(KERN_INFO "mangoh: created device for board %s\n", board);
 
 	platform_driver_register(&mangoh_driver);
-    printk(KERN_DEBUG "mangoh: registered platform driver\n");
+	printk(KERN_DEBUG "mangoh: registered platform driver\n");
 	if (platform_device_register(mangoh_device)) {
 		platform_driver_unregister(&mangoh_driver);
 		return -ENODEV;
 	}
-    printk(KERN_DEBUG "mangoh: registered platform device\n");
+	printk(KERN_DEBUG "mangoh: registered platform device\n");
 
 	return 0;
 }
 
 static void __exit mangoh_exit(void)
 {
-	printk(KERN_DEBUG "Called %s\n", __func__);
 	if (mangoh_device != NULL)
 		platform_device_unregister(mangoh_device);
 

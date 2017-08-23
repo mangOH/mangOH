@@ -1,12 +1,9 @@
-#define DEBUG
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/i2c.h>
 #include <linux/i2c/pca954x.h>
-#include <linux/i2c/sx150x.h>
-#include <linux/gpio.h>
 
 #include "mangoh.h"
 #include "lsm6ds3_platform_data.h"
@@ -18,7 +15,6 @@
  */
 struct red_dv2_platform_data {
 	struct i2c_client* i2c_switch;
-	struct i2c_client* gpio_expander;
 	struct i2c_client* accelerometer;
 	struct i2c_client* pressure;
 };
@@ -46,6 +42,7 @@ static void red_dv2_release_device(struct device* dev);
  */
 #define RED_DV2_I2C_SW_BASE_ADAPTER_ID		(1)
 #define RED_DV2_I2C_SW_PORT_IOT0		(0)
+#define RED_DV2_I2C_SW_PORT_BATTERY_CHARGER	(1)
 #define RED_DV2_I2C_SW_PORT_USB_HUB		(1)
 #define RED_DV2_I2C_SW_PORT_GPIO_EXPANDER	(2)
 #define RED_DV2_I2C_SW_PORT_EXP			(3)	/* expansion header */
@@ -74,22 +71,6 @@ static struct pca954x_platform_data red_dv2_pca954x_pdata = {
 static const struct i2c_board_info red_dv2_pca954x_device_info = {
 	I2C_BOARD_INFO("pca9546", 0x71),
 	.platform_data = &red_dv2_pca954x_pdata,
-};
-
-static struct sx150x_platform_data red_dv2_expander_platform_data = {
-	.gpio_base         = -1,
-	.oscio_is_gpo      = false,
-	.io_pullup_ena     = 0,
-	.io_pulldn_ena     = 0,
-	.io_open_drain_ena = 0,
-	.io_polarity       = 0,
-	.irq_summary       = -1,
-	.irq_base          = -1,
-};
-static const struct i2c_board_info red_dv2_expander_devinfo = {
-	I2C_BOARD_INFO("sx1509q", 0x3e),
-	.platform_data = &red_dv2_expander_platform_data,
-	.irq = 0,
 };
 
 static struct lsm6ds3_platform_data red_dv2_accelerometer_platform_data = {
@@ -132,19 +113,6 @@ int red_dv2_create_device(struct platform_device** d)
  * Static function definitions
  *-----------------------------------------------------------------------------
  */
-static int get_sx150x_gpio_base(struct i2c_client *client)
-{
-	/*
-	 * This is kind of a hack. It depends on the fact that we know
-	 * that the clientdata of the gpio expander is a struct
-	 * sx150x_chip (type is private to the sx150x driver) and
-	 * knowing that the first element of that struct is a struct
-	 * gpio_chip.
-	 */
-	struct gpio_chip *expander = i2c_get_clientdata(client);
-	return expander->base;
-}
-
 static int red_dv2_map(struct platform_device *pdev)
 {
 	struct red_dv2_platform_data* pdata = dev_get_platdata(&pdev->dev);
@@ -167,36 +135,13 @@ static int red_dv2_map(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-	/* Map GPIO expander */
-	dev_dbg(&pdev->dev, "mapping gpio expander\n");
-	/*
-	 * GPIOEXP_INT1 goes to GPIO32 on the CF3 inner ring which maps to
-	 * GPIO30 in the WP85.
-	 */
-	red_dv2_expander_platform_data.irq_summary = gpio_to_irq(30);
-	/*
-	 * Currently we just hard code an IRQ base that was tested to have a
-	 * contiguous set of 16 available IRQs. TODO: Is there a better way to
-	 * find a contiguous set of IRQs?
-	 */
-	red_dv2_expander_platform_data.irq_base = 347;
-	adapter = i2c_get_adapter(RED_DV2_I2C_SW_BASE_ADAPTER_ID +
-				  RED_DV2_I2C_SW_PORT_GPIO_EXPANDER);
-	if (!adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n", RED_DV2_I2C_SW_PORT_GPIO_EXPANDER);
-		return -ENODEV;
-	}
-	pdata->gpio_expander = i2c_new_device(adapter, &red_dv2_expander_devinfo);
-	if (!pdata->gpio_expander) {
-		dev_err(&pdev->dev, "GPIO expander is missing\n");
-		return -ENODEV;
-	}
-
 	/* Map the I2C LSM6DS3 accelerometer */
 	dev_dbg(&pdev->dev, "mapping lsm6ds3 accelerometer\n");
 	/* Pin 12 of the gpio expander is connected to INT2 of the lsm6ds3 */
+	/* Can't use the irq because the GPIO expander isn't controlled by a kernel driver
 	red_dv2_accelerometer_devinfo.irq =
 		gpio_to_irq(get_sx150x_gpio_base(pdata->gpio_expander) + 12);
+	*/
 	adapter = i2c_get_adapter(0);
 	if (!adapter) {
 		dev_err(&pdev->dev, "No I2C bus %d.\n", RED_DV2_I2C_SW_BASE_ADAPTER_ID);
@@ -222,6 +167,10 @@ static int red_dv2_map(struct platform_device *pdev)
 	}
 	/*
 	 * TODO:
+	 * SX1509 GPIO expander: 0x3E
+	 *    There is a driver in the WP85 kernel, but the gpiolib
+	 *    infrastructure of the WP85 kernel does not allow the expander
+	 *    GPIOs to be used in sysfs due to a hardcoded translation table.
 	 * Pressure Sensor: 0x76
 	 *    chip is bmp280 by Bosch which has a driver in the mainline kernel
 	 * 3503 USB Hub: 0x08
@@ -245,9 +194,6 @@ static int red_dv2_unmap(struct platform_device* pdev)
 
 	i2c_unregister_device(pdata->accelerometer);
 	i2c_put_adapter(pdata->accelerometer->adapter);
-
-	i2c_unregister_device(pdata->gpio_expander);
-	i2c_put_adapter(pdata->gpio_expander->adapter);
 
 	i2c_unregister_device(pdata->i2c_switch);
 	i2c_put_adapter(pdata->i2c_switch->adapter);

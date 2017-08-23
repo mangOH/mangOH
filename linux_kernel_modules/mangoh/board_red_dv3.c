@@ -1,12 +1,9 @@
-#define DEBUG
 #include <linux/module.h>
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <linux/slab.h>
 #include <linux/i2c.h>
 #include <linux/i2c/pca954x.h>
-#include <linux/i2c/sx150x.h>
-#include <linux/gpio.h>
 
 #include "mangoh.h"
 #include "lsm6ds3_platform_data.h"
@@ -18,7 +15,6 @@
  */
 struct red_dv3_platform_data {
 	struct i2c_client* i2c_switch;
-	struct i2c_client* gpio_expander;
 	struct i2c_client* accelerometer;
 	struct i2c_client* pressure;
 };
@@ -46,6 +42,7 @@ static void red_dv3_release_device(struct device* dev);
  */
 #define RED_DV3_I2C_SW_BASE_ADAPTER_ID		(1)
 #define RED_DV3_I2C_SW_PORT_IOT0		(0)
+#define GREEN_DV4_I2C_SW_PORT_BATTERY_CHARGER	(1)
 #define RED_DV3_I2C_SW_PORT_USB_HUB		(1)
 #define RED_DV3_I2C_SW_PORT_GPIO_EXPANDER	(2)
 #define RED_DV3_I2C_SW_PORT_EXP			(3)	/* expansion header */
@@ -74,22 +71,6 @@ static struct pca954x_platform_data red_dv3_pca954x_pdata = {
 static const struct i2c_board_info red_dv3_pca954x_device_info = {
 	I2C_BOARD_INFO("pca9546", 0x71),
 	.platform_data = &red_dv3_pca954x_pdata,
-};
-
-static struct sx150x_platform_data red_dv3_expander_platform_data = {
-	.gpio_base         = -1,
-	.oscio_is_gpo      = false,
-	.io_pullup_ena     = 0,
-	.io_pulldn_ena     = 0,
-	.io_open_drain_ena = 0,
-	.io_polarity       = 0,
-	.irq_summary       = -1,
-	.irq_base          = -1,
-};
-static const struct i2c_board_info red_dv3_expander_devinfo = {
-	I2C_BOARD_INFO("sx1509q", 0x3e),
-	.platform_data = &red_dv3_expander_platform_data,
-	.irq = 0,
 };
 
 static struct i2c_board_info red_dv3_accelerometer_devinfo = {
@@ -150,35 +131,6 @@ static int red_dv3_map(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#if 0
-	/* Map GPIO expander */
-	dev_dbg(&pdev->dev, "mapping gpio expander\n");
-	/*
-	 * GPIOEXP_INT1 goes to GPIO32 on the CF3 inner ring which maps to
-	 * GPIO30 in the WP85.
-	 */
-	red_dv3_expander_platform_data.irq_summary = gpio_to_irq(30);
-	/*
-	 * Currently we just hard code an IRQ base that was tested to have a
-	 * contiguous set of 16 available IRQs. TODO: Is there a better way to
-	 * find a contiguous set of IRQs?
-	 */
-	red_dv3_expander_platform_data.irq_base = 347;
-	adapter = i2c_get_adapter(RED_DV3_I2C_SW_BASE_ADAPTER_ID +
-				  RED_DV3_I2C_SW_PORT_GPIO_EXPANDER);
-	if (!adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n",
-			RED_DV3_I2C_SW_BASE_ADAPTER_ID +
-			RED_DV3_I2C_SW_PORT_GPIO_EXPANDER);
-		return -ENODEV;
-	}
-	pdata->gpio_expander = i2c_new_device(adapter, &red_dv3_expander_devinfo);
-	if (!pdata->gpio_expander) {
-		dev_err(&pdev->dev, "GPIO expander is missing\n");
-		return -ENODEV;
-	}
-#endif // GPIO expander not properly supported
-
 	/* Map the I2C BMI160 accelerometer */
 	dev_dbg(&pdev->dev, "mapping bmi160 accelerometer\n");
 	/*
@@ -232,11 +184,6 @@ static int red_dv3_unmap(struct platform_device* pdev)
 
 	i2c_unregister_device(pdata->accelerometer);
 	i2c_put_adapter(pdata->accelerometer->adapter);
-
-#if 0
-	i2c_unregister_device(pdata->gpio_expander);
-	i2c_put_adapter(pdata->gpio_expander->adapter);
-#endif // GPIO expander not properly supported
 
 	i2c_unregister_device(pdata->i2c_switch);
 	i2c_put_adapter(pdata->i2c_switch->adapter);
