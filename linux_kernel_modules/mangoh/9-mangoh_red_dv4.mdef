@@ -15,5 +15,5 @@ sources:
 
 params:
 {
-    board = "green dv4"
+    board = "red dv4"
 }

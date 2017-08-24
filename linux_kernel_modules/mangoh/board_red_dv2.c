@@ -171,14 +171,13 @@ static int red_dv2_map(struct platform_device *pdev)
 	 *    There is a driver in the WP85 kernel, but the gpiolib
 	 *    infrastructure of the WP85 kernel does not allow the expander
 	 *    GPIOs to be used in sysfs due to a hardcoded translation table.
-	 * Pressure Sensor: 0x76
-	 *    chip is bmp280 by Bosch which has a driver in the mainline kernel
 	 * 3503 USB Hub: 0x08
 	 *    Looks like there is a driver in the wp85 kernel source at drivers/usb/misc/usb3503.c
 	 *    I'm not really sure what benefit is achieved through using this driver.
 	 * Battery Gauge: 0x64
-	 *    chip is LTC29421 which is made by linear technologies (now Analog
-	 *    Devices). I haven't found a linux kernel driver.
+	 *    chip is LTC2942 which is made by linear technologies (now Analog
+	 *    Devices). There is a kernel driver in the linux-power-supply
+	 *    repository in the for-next branch.
 	 * Buck & Battery Charger: 0x6B
 	 *    chip is BQ24296RGER
 	 */

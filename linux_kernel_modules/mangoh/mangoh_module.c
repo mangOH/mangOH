@@ -9,6 +9,7 @@
 #include "board_green_dv4.h"
 #include "board_red_dv2.h"
 #include "board_red_dv3.h"
+#include "board_red_dv4.h"
 
 /*
  *-----------------------------------------------------------------------------
@@ -42,6 +43,7 @@ static const struct platform_device_id mangoh_ids[] = {
 	{.name="mangoh green dv4", .driver_data=(kernel_ulong_t)&green_dv4_descriptor},
 	{.name="mangoh red dv2", .driver_data=(kernel_ulong_t)&red_dv2_descriptor},
 	{.name="mangoh red dv3", .driver_data=(kernel_ulong_t)&red_dv3_descriptor},
+	{.name="mangoh red dv4", .driver_data=(kernel_ulong_t)&red_dv4_descriptor},
 	{},
 };
 MODULE_DEVICE_TABLE(platform, mangoh_ids);
@@ -85,6 +87,15 @@ static int __init mangoh_init(void)
 		}
 	} else if (strcmp(board, "red dv3") == 0) {
 		int rc = red_dv3_create_device(&mangoh_device);
+		if (rc != 0) {
+			pr_err(
+				"%s: Couldn't create device for '%s'.\n",
+				__func__,
+				board);
+			return rc;
+		}
+	} else if (strcmp(board, "red dv4") == 0) {
+		int rc = red_dv4_create_device(&mangoh_device);
 		if (rc != 0) {
 			pr_err(
 				"%s: Couldn't create device for '%s'.\n",
@@ -147,5 +158,5 @@ module_exit(mangoh_exit);
 MODULE_ALIAS(PLATFORM_MODULE_PREFIX "mangoh");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Sierra Wireless");
-MODULE_DESCRIPTION("Add devices on mangOH green hardware board");
+MODULE_DESCRIPTION("Add devices on mangOH hardware boards");
 MODULE_VERSION("1.0");

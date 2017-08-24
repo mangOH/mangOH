@@ -34,8 +34,9 @@ commands:
 
 kernelModules:
 {
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv4
 
     // Disable the cp2130 for now until the lockup issue is resolved
     // $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
@@ -49,11 +50,11 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmp280/2-bmp280
     $MANGOH_ROOT/linux_kernel_modules/bmp280/3-bmp280-i2c
 
-    // Only on mangOH Red DV2
+    // Used on mangOH Red DV2
     // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
     // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
 
-    // Only on mangOH Red DV3
+    // Used on mangOH Red DV3 and later
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 }
