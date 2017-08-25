@@ -10,6 +10,10 @@ MKSYS_ARGS_RED = -s $(MANGOH_ROOT)/apps/RedSensorToCloud
 # DS_CUSTOM_OPTIONS(MKSYS_ARGS_GREEN)
 # DS_CUSTOM_OPTIONS(MKSYS_ARGS_RED)
 
+# This is a temporary workaround for bug LE-7850. Once Legato 17.08.0 or 17.07.2 is released, this
+# should no longer be necessary.
+export TARGET := wp85
+
 .PHONY: all
 all: green_wp85 green_wp750x red_wp85 red_wp750x
 
