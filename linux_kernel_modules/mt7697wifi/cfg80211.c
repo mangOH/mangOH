@@ -1007,7 +1007,7 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 			print_hex_dump(KERN_DEBUG, DRVNAME" DISCONNECT STA BSSID ", 
 				DUMP_PREFIX_OFFSET, 16, 1, sta->bssid, ETH_ALEN, 0);
 
-			ret = mt7697_wr_disconnect_req(vif->cfg, vif->fw_vif_idx, sta->bssid);
+			ret = mt7697_wr_disconnect_req(vif->cfg, sta->bssid);
 			if (ret < 0) {
 				dev_err(vif->cfg->dev, 
 					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
@@ -1240,7 +1240,7 @@ int mt7697_cfg80211_del_sta(struct mt7697_vif *vif, const u8* bssid)
 			print_hex_dump(KERN_DEBUG, DRVNAME" DISCONNECT STA BSSID ", 
 				DUMP_PREFIX_OFFSET, 16, 1, sta->bssid, ETH_ALEN, 0);
 
-			ret = mt7697_wr_disconnect_req(vif->cfg, vif->fw_vif_idx, sta->bssid);
+			ret = mt7697_wr_disconnect_req(vif->cfg, sta->bssid);
 			if (ret < 0) {
 				dev_err(vif->cfg->dev, 
 					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 

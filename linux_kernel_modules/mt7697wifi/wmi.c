@@ -699,13 +699,30 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 		}
 
 		dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
-		if (vif->sme_state == SME_CONNECTING)
+		if (vif->sme_state == SME_CONNECTING) {
+			ret = mt7697_wr_disconnect_req(vif->cfg, bssid);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+					__func__, ret);
+				goto cleanup;
+			}
+
 			cfg80211_connect_result(vif->ndev, bssid, 
 						NULL, 0,
 						NULL, 0,
 						WLAN_STATUS_UNSPECIFIED_FAILURE,
 						GFP_KERNEL);
+		}
 		else if (vif->sme_state == SME_CONNECTED) {
+			ret = mt7697_wr_disconnect_req(vif->cfg, bssid);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+					__func__, ret);
+				goto cleanup;
+			}
+
 			cfg80211_disconnected(vif->ndev, proto_reason,
 				      	      NULL, 0, GFP_KERNEL);
 		}
@@ -778,6 +795,11 @@ static int mt7697_rx_raw(const struct mt7697q_rsp_hdr* rsp,
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET, 
 		16, 1, cfg->rx_data, rsp->result, 0);
+
+	if (list_empty(&cfg->vif_list)) {
+		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
+       		goto cleanup;
+	}
 
 	/* TODO: interface index come from MT7697 */
 	ret = mt7697_rx_data(cfg, rsp->result, 0);
@@ -1485,7 +1507,7 @@ cleanup:
 }
 
 int mt7697_wr_disconnect_req(const struct mt7697_cfg80211_info *cfg, 
-                             u32 if_idx, const u8 *addr)
+                             const u8 *addr)
 {
 	struct mt7697_disconnect_req req;
 	int ret;
@@ -1494,7 +1516,6 @@ int mt7697_wr_disconnect_req(const struct mt7697_cfg80211_info *cfg,
 	req.cmd.len = sizeof(struct mt7697_disconnect_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_DISCONNECT_REQ;
-	req.if_idx = if_idx;
 
 	if (addr) {
 		req.port = MT7697_PORT_AP;

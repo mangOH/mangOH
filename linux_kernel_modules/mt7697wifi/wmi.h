@@ -253,7 +253,6 @@ struct mt7697_connect_ind {
 
 struct mt7697_disconnect_req {
 	struct mt7697q_cmd_hdr		cmd;
-	__be32 				if_idx;
 	__be32				port;
 	u8				addr[LEN32_ALIGNED(ETH_ALEN)];
 } __attribute__((packed, aligned(4)));
@@ -295,7 +294,7 @@ int mt7697_wr_scan_req(const struct mt7697_cfg80211_info*, u32,
 int mt7697_wr_set_security_mode_req(const struct mt7697_cfg80211_info*, u8, u8);
 int mt7697_wr_get_security_mode_req(const struct mt7697_cfg80211_info*, u32);
 int mt7697_wr_scan_stop_req(const struct mt7697_cfg80211_info*); 
-int mt7697_wr_disconnect_req(const struct mt7697_cfg80211_info*, u32, const u8*);
+int mt7697_wr_disconnect_req(const struct mt7697_cfg80211_info*, const u8*);
 int mt7697_wr_tx_raw_packet(struct mt7697_cfg80211_info*, const u8*, u32);
 int mt7697_proc_data(void*);
 

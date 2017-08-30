@@ -324,8 +324,7 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 				      	      NULL, 0, GFP_KERNEL);
 		}
 
-		ret = mt7697_wr_disconnect_req(vif->cfg, vif->fw_vif_idx, 
-			NULL);
+		ret = mt7697_wr_disconnect_req(vif->cfg, NULL);
 		if (ret < 0) {
 			dev_err(vif->cfg->dev, 
 				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
