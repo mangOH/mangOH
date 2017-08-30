@@ -24,6 +24,10 @@
 #include "core.h"
 #include "cfg80211.h"
 
+static int itf_idx_start = 1;
+module_param(itf_idx_start, int, S_IRUGO);
+MODULE_PARM_DESC(itf_idx_start, "MT7697 interface start index");
+
 static struct platform_device *pdev = NULL;
 
 static int mt7697_open(struct net_device *ndev)
@@ -51,10 +55,8 @@ static int mt7697_stop(struct net_device *ndev)
 
 	dev_dbg(cfg->dev, "%s(): stop net device\n", __func__);
 
-	netif_stop_queue(ndev);
 	mt7697_cfg80211_stop(vif);
 	clear_bit(WLAN_ENABLED, &vif->flags);
-
 	return 0;
 }
 
@@ -62,14 +64,6 @@ static struct net_device_stats *mt7697_get_stats(struct net_device *dev)
 {
 	struct mt7697_vif *vif = netdev_priv(dev);
 	return &vif->net_stats;
-}
-
-static int mt7697_set_features(struct net_device *ndev,
-			       netdev_features_t features)
-{
-	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	dev_dbg(cfg->dev, "%s(): net device set features\n", __func__);
-	return 0;
 }
 
 static void mt7697_set_multicast_list(struct net_device *ndev)
@@ -112,8 +106,9 @@ static void mt7697_init_hw_start(struct work_struct *work)
 	dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n", 
 		__func__, MT7697_MAC80211_QUEUE_TX, MT7697_MAC80211_QUEUE_RX);
 	err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, 
-		MT7697_MAC80211_QUEUE_RX, cfg, mt7697_proc_80211cmd, 
-		&cfg->txq_hdl, &cfg->rxq_hdl);
+		                 MT7697_MAC80211_QUEUE_RX, cfg, 
+                                 mt7697_proc_80211cmd, 
+		                 &cfg->txq_hdl, &cfg->rxq_hdl);
 	if (err < 0) {
 		dev_err(cfg->dev, "%s(): queue(%u) init() failed(%d)\n",
 			__func__, MT7697_MAC80211_QUEUE_TX, err);
@@ -127,54 +122,6 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		goto failed;
 	}
 
-	err = mt7697_wr_get_wireless_mode_req(cfg, MT7697_PORT_STA);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_wireless_mode_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_wr_get_rx_filter_req(cfg);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_rx_filter_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_wr_get_smart_conn_filter_req(cfg);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_smart_conn_filter_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_wr_get_listen_interval_req(cfg);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_listen_interval_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_wr_get_radio_state_req(cfg);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_radio_state_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_wr_mac_addr_req(cfg, MT7697_PORT_STA);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_mac_addr_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
 failed:
 	return;
 }
@@ -184,7 +131,6 @@ static const struct net_device_ops mt7697_netdev_ops = {
         .ndo_stop               = mt7697_stop,
         .ndo_start_xmit         = mt7697_data_tx,
 	.ndo_get_stats          = mt7697_get_stats,
-        .ndo_set_features       = mt7697_set_features,
         .ndo_set_rx_mode        = mt7697_set_multicast_list,
 };
 
@@ -196,7 +142,7 @@ void mt7697_init_netdev(struct net_device *ndev)
         ndev->watchdog_timeo = MT7697_TX_TIMEOUT;
         ndev->needed_headroom = sizeof(struct ieee80211_hdr) + 
 			        sizeof(struct mt7697_llc_snap_hdr);
-        ndev->hw_features |= NETIF_F_HW_CSUM | NETIF_F_RXCSUM;
+        ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
 }
 
 static const struct mt7697q_if_ops if_ops = {
@@ -224,7 +170,7 @@ static void mt7697_cookie_cleanup(struct mt7697_cfg80211_info *cfg)
 	cfg->cookie_count = 0;
 }
 
-static int mt7697_probe(struct platform_device *pdev)
+static int __init mt7697_probe(struct platform_device *pdev)
 {	
 	struct wiphy *wiphy;
 	struct mt7697_cfg80211_info *cfg;
@@ -241,6 +187,15 @@ static int mt7697_probe(struct platform_device *pdev)
         }
 
 	sema_init(&cfg->sem, 1);
+	cfg->tx_workq = create_singlethread_workqueue(DRVNAME);
+	if (!cfg->tx_workq) {
+                dev_err(&pdev->dev, 
+			"%s(): mt7697_cfg80211_create() failed()\n",
+			__func__);
+		err = -ENOMEM;
+		goto failed;
+        }
+
 	INIT_WORK(&cfg->init_work, mt7697_init_hw_start);
 	INIT_WORK(&cfg->tx_work, mt7697_tx_work);
 
@@ -250,6 +205,9 @@ static int mt7697_probe(struct platform_device *pdev)
 	cfg->hif_ops = &if_ops;
 	cfg->dev = &pdev->dev;
 	mt7697_cookie_init(cfg);
+
+	cfg->vif_start = itf_idx_start;
+	cfg->vif_max = MT7697_MAX_STA;
 
 	err = mt7697_cfg80211_init(cfg);
 	if (err < 0) {
@@ -274,31 +232,32 @@ failed:
 static int mt7697_remove(struct platform_device *pdev)
 {
 	struct mt7697_cfg80211_info *cfg = platform_get_drvdata(pdev);
-	int ret;
 
-	ret = mt7697q_send_reset(cfg->txq_hdl, cfg->rxq_hdl);
-	if (ret < 0) {
-                dev_err(&pdev->dev, "%s(): mt7697q_send_reset() failed(%d)\n", 
-			__func__, ret);
-		goto failed;
-        }
-
+	mt7697_cookie_cleanup(cfg);
 	mt7697_cfg80211_cleanup(cfg);
 	mt7697_cfg80211_destroy(cfg);
-	mt7697_cookie_cleanup(cfg);
-	dev_dbg(&pdev->dev, "%s(): removed.\n", __func__);
-
-	platform_set_drvdata(pdev, NULL);
-
-failed:
-	return ret;
+	pr_info(DRVNAME" %s(): removed.\n", __func__);
+	return 0;
 }
+
+static int mt7697_release(struct platform_device *pdev)
+{
+	pr_info(DRVNAME" %s(): released.\n", __func__);
+	return 0;
+}
+
+static struct platform_device mt7697_platform_device = {
+    	.name		= DRVNAME,
+    	.id		= PLATFORM_DEVID_NONE,
+    	.dev 		= {
+		.release	= mt7697_release,
+	},
+};
 
 static struct platform_driver mt7697_platform_driver = {
 	.driver = {
 		.name = DRVNAME,
 		.owner = THIS_MODULE,
-		.bus = &platform_bus_type,
 	},
 
 	.probe = mt7697_probe,
@@ -309,31 +268,21 @@ static int __init mt7697_init(void)
 {
 	int ret;
 
-	pr_info(DRVNAME" initialize\n");
+	pr_info(DRVNAME" init\n");
+	ret = platform_device_register(&mt7697_platform_device);
+	if (ret) {
+		pr_err(DRVNAME" %s(): platform_device_register() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
 	ret = platform_driver_register(&mt7697_platform_driver);
 	if (ret) {
 		pr_err(DRVNAME" %s(): platform_driver_register() failed(%d)\n", 
 			__func__, ret);
+		platform_device_del(pdev);
 		goto cleanup;
 	}
-
-	pdev = platform_device_alloc(DRVNAME, -1);
-	if (!pdev) {
-		pr_err(DRVNAME" %s(): platform_device_alloc() failed\n", 
-			__func__);
-		platform_driver_unregister(&mt7697_platform_driver);
-		ret = -ENOMEM;
-		goto cleanup;
-	}
-
-	ret = platform_device_add(pdev);
-	if (ret) {
-		pr_err(DRVNAME" %s(): platform_device_add() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
-	}
-
-	platform_device_put(pdev);
 
 cleanup:
 	return ret;
@@ -341,9 +290,9 @@ cleanup:
 
 static void __exit mt7697_exit(void)
 {
-	pr_info(DRVNAME" exit\n");
-	platform_device_del(pdev);
 	platform_driver_unregister(&mt7697_platform_driver);
+	platform_device_unregister(&mt7697_platform_device);
+	pr_info(DRVNAME" exit\n");
 }
 
 module_init(mt7697_init);
@@ -354,7 +303,6 @@ void mt7697_disconnect_timer_hndlr(unsigned long ptr)
 	struct net_device *ndev = (struct net_device *)ptr;
 	struct mt7697_vif *vif = netdev_priv(ndev);
 
-//	ath6kl_init_profile_info(vif);
 	schedule_work(&vif->disconnect_work);
 }
 
@@ -365,23 +313,15 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 	dev_dbg(vif->cfg->dev, "%s(): disconnect\n", __func__);
 	if (test_bit(CONNECTED, &vif->flags) ||
 	    test_bit(CONNECT_PEND, &vif->flags)) {
-		if (vif->cfg->reg_rx_hndlr) {
-/*			ret = mt7697_wr_set_op_mode_req(vif->cfg, 
-				vif->cfg->wifi_cfg.opmode);
-			if (ret < 0) {
-				dev_err(vif->cfg->dev, 
-					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
-					__func__, ret);
-       				goto failed;
-    			}
-*/
-			ret = mt7697_wr_unreg_rx_hndlr_req(vif->cfg);
-			if (ret < 0) {
-				dev_err(vif->cfg->dev, 
-					"%s(): mt7697_wr_unreg_rx_hndlr_req() failed(%d)\n", 
-					__func__, ret);
-       				goto failed;
-    			}
+		if (vif->sme_state == SME_CONNECTING)
+			cfg80211_connect_result(vif->ndev, vif->bssid, 
+						NULL, 0,
+						NULL, 0,
+						WLAN_STATUS_UNSPECIFIED_FAILURE,
+						GFP_KERNEL);
+		else if (vif->sme_state == SME_CONNECTED) {
+			cfg80211_disconnected(vif->ndev, 0,
+				      	      NULL, 0, GFP_KERNEL);
 		}
 
 		ret = mt7697_wr_disconnect_req(vif->cfg, vif->fw_vif_idx, 
@@ -390,7 +330,49 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 			dev_err(vif->cfg->dev, 
 				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
 				__func__, ret);
-			goto failed;
+			goto cleanup;
+		}
+
+		memset(vif->ssid, 0, IEEE80211_MAX_SSID_LEN);
+		ret = mt7697_wr_set_ssid_req(vif->cfg, IEEE80211_MAX_SSID_LEN, vif->ssid);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_set_ssid_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		memset(vif->req_bssid, 0, ETH_ALEN);
+		ret = mt7697_wr_set_bssid_req(vif->cfg, vif->req_bssid);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		memset(vif->pmk, 0, MT7697_WIFI_LENGTH_PMK);
+		ret = mt7697_wr_set_pmk_req(vif->cfg, vif->pmk);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		ret = mt7697_wr_reload_settings_req(vif->cfg, vif->fw_vif_idx);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697q_wr_unused() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
 		}
 
 		/*
@@ -401,7 +383,7 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 		clear_bit(CONNECT_PEND, &vif->flags);
 	}
 
-failed:
+cleanup:
 	return ret;
 }
 

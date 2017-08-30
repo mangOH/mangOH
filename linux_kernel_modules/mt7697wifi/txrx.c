@@ -18,78 +18,16 @@
 #include "common.h"
 #include "core.h"
 
-static int mt7697_80211_to_ethernet(struct sk_buff *skb, 
+static int mt7697_ethernet_to_80211(struct sk_buff *skb, 
                                     struct net_device *ndev)
-{
-	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	struct mt7697_vif *vif = netdev_priv(ndev);
-	struct ieee80211_hdr *hdr = (struct ieee80211_hdr*) skb->data;
-	struct ethhdr *ehdr;
-	u8 *payload;
-        u16 hdrlen, ethertype;
-	__be16 len;     
-        u8 dst[ETH_ALEN];
-        u8 src[ETH_ALEN] __aligned(2);
-	int ret = 0;
-
-	print_hex_dump(KERN_DEBUG, DRVNAME" --> Rx 802.11 Frame", 
-		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
-
-        if (unlikely(!ieee80211_is_data_present(hdr->frame_control))) {
-		dev_warn(cfg->dev, "%s(): no data present\n", __func__);
-                ret = -EINVAL;
-		goto cleanup;
-	}
-
-        hdrlen = ieee80211_hdrlen(hdr->frame_control);
-
-        /* convert IEEE 802.11 header + possible LLC headers into Ethernet
-         * header
-         * IEEE 802.11 address fields:
-         * ToDS FromDS Addr1 Addr2 Addr3 Addr4
-         *   0     0   DA    SA    BSSID n/a
-         *   0     1   DA    BSSID SA    n/a
-         *   1     0   BSSID SA    DA    n/a
-         *   1     1   RA    TA    DA    SA
-         */
-        memcpy(dst, ieee80211_get_DA(hdr), ETH_ALEN);
-        memcpy(src, ieee80211_get_SA(hdr), ETH_ALEN);
-
-        if (!pskb_may_pull(skb, hdrlen + 8)) {
-		dev_warn(cfg->dev, "%s(): pskb_may_pull() failed\n", __func__);
-                ret = -EINVAL;
-		goto cleanup;
-	}
-
-        payload = skb->data + hdrlen;
-        ethertype = (payload[6] << 8) | payload[7];
-
-        skb_pull(skb, hdrlen);
-        len = htons(skb->len);
-        ehdr = (struct ethhdr*)skb_push(skb, sizeof(struct ethhdr));
-        memcpy(ehdr->h_dest, dst, ETH_ALEN);
-        memcpy(ehdr->h_source, src, ETH_ALEN);
-        ehdr->h_proto = len;
-
-	print_hex_dump(KERN_DEBUG, DRVNAME" Rx 802.3 Frame ", 
-		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
-
-	if (!is_broadcast_ether_addr(ehdr->h_dest))
-		vif->net_stats.multicast++;
-
-cleanup:
-	return ret;
-}
-
-static void mt7697_ethernet_to_80211(struct sk_buff *skb, 
-                                     struct net_device *ndev)
 {
 	struct ieee80211_hdr hdr;
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	struct ethhdr *eth_hdr = (struct ethhdr*)skb->data;
 	struct mt7697_llc_snap_hdr *llc_hdr;
-	u8 *datap;        
+	u8 *datap;
+	int ret = 0;        
 	__be16 type = eth_hdr->h_proto;
 	__le16 fc;
 	u16 hdrlen;
@@ -97,17 +35,39 @@ static void mt7697_ethernet_to_80211(struct sk_buff *skb,
 	dev_dbg(cfg->dev, "%s(): Tx 802.3 Frame len(%u)\n", 
 		__func__, skb->len);
 	print_hex_dump(KERN_DEBUG, DRVNAME" 802.3 Frame ", DUMP_PREFIX_OFFSET, 
-			16, 1, skb->data, skb->len, 0);
+		16, 1, skb->data, skb->len, 0);
 
 	fc = cpu_to_le16(IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA);
-        fc |= cpu_to_le16(IEEE80211_FCTL_TODS);
 
-	/* DA BSSID SA */
-	hdr.frame_control = fc;
+	switch (vif->wdev.iftype) {
+	case NL80211_IFTYPE_STATION:
+        	fc |= cpu_to_le16(IEEE80211_FCTL_TODS);
+
+		/* BSSID SA DA */
+		hdr.frame_control = fc;	
+		memcpy(hdr.addr1, vif->bssid, ETH_ALEN);
+		memcpy(hdr.addr2, eth_hdr->h_source, ETH_ALEN);
+		memcpy(hdr.addr3, eth_hdr->h_dest, ETH_ALEN);
+		break;
+	
+	case NL80211_IFTYPE_AP:
+		fc |= cpu_to_le16(IEEE80211_FCTL_FROMDS);
+
+		/* DA BSSID SA */
+		hdr.frame_control = fc;	
+		memcpy(hdr.addr1, eth_hdr->h_dest, ETH_ALEN);
+		memcpy(hdr.addr2, vif->bssid, ETH_ALEN);
+		memcpy(hdr.addr3, eth_hdr->h_source, ETH_ALEN);
+		break;
+
+	default:
+		dev_warn(cfg->dev, "%s(): unsupported iftype(%d)\n", 
+			__func__, vif->wdev.iftype);
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
 	hdr.duration_id = 0;
-	memcpy(hdr.addr1, vif->bssid, ETH_ALEN);
-	memcpy(hdr.addr2, eth_hdr->h_source, ETH_ALEN);
-	memcpy(hdr.addr3, eth_hdr->h_dest, ETH_ALEN);
 	hdr.seq_ctrl = 0;
 	hdrlen = sizeof(struct ieee80211_hdr_3addr);
 
@@ -129,6 +89,9 @@ static void mt7697_ethernet_to_80211(struct sk_buff *skb,
 		__func__, skb->len);
 	print_hex_dump(KERN_DEBUG, DRVNAME" <-- Tx 802.11 Frame ", 
 		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
+
+cleanup:
+	return ret;
 }
 
 int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
@@ -162,7 +125,12 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 		}
 	}
 
-	mt7697_ethernet_to_80211(skb, ndev);
+	ret = mt7697_ethernet_to_80211(skb, ndev);
+	if (ret < 0) {
+		dev_err(cfg->dev, "%s(): mt7697_ethernet_to_80211() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
 
 	cookie = mt7697_alloc_cookie(cfg);
 	if (cookie == NULL) {
@@ -173,7 +141,13 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 	dev_dbg(cfg->dev, "%s(): tx cookie/cnt(0x%p/%u)\n", 
 		__func__, cookie, cfg->cookie_count);
 	cookie->skb = skb;
-	schedule_work(&cfg->tx_work);
+
+	ret = queue_work(cfg->tx_workq, &cfg->tx_work);
+	if (ret < 0) {
+		dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
 
 	return NETDEV_TX_OK;
 
@@ -215,7 +189,6 @@ void mt7697_tx_work(struct work_struct *work)
                 	ret = -EINVAL;
                 	goto cleanup;
         	}
-
 
 		ret = mt7697_wr_tx_raw_packet(cfg, cookie->skb->data, 
 			cookie->skb->len);
@@ -286,22 +259,27 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
         memcpy(skb->data, cfg->rx_data, len);
 	skb->dev = vif->ndev;
 
-	ret = mt7697_80211_to_ethernet(skb, vif->ndev);
-	if (ret < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_80211_to_ethernet() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
-	}
-
 	vif->net_stats.rx_packets++;
 	vif->net_stats.rx_bytes += len;
 
-	netif_rx_ni(skb);
+	skb->protocol = eth_type_trans(skb, skb->dev);
+
+	ret = netif_rx_ni(skb);
+	if (ret != NET_RX_SUCCESS) {
+		if (ret == NET_RX_DROP) {
+			dev_warn(cfg->dev, "%s(): rx frame dropped\n", __func__);
+			vif->net_stats.rx_dropped++;
+			ret = 0;
+			goto cleanup;
+		}
+
+		dev_err(cfg->dev, "%s(): netif_rx_ni() failed(%d)\n", __func__, ret);
+		goto cleanup;
+	}
 
 cleanup:
 	if (ret < 0) {
-		vif->net_stats.tx_errors++;
+		vif->net_stats.rx_errors++;
 		if (skb) dev_kfree_skb(skb);
 	}
 

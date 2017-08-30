@@ -23,7 +23,6 @@
 					 ((x) % sizeof(u32) ? 1:0))
 
 #define mt7697_queue_init_rsp		mt7697q_rsp_hdr
-#define mt7697_queue_unused_rsp		mt7697q_rsp_hdr
 #define mt7697_queue_reset_rsp		mt7697q_rsp_hdr
 
 enum mt7697q_dir
@@ -42,7 +41,6 @@ enum mt7697q_cmd_types {
 	MT7697_CMD_QUEUE_INIT = 0,
 	MT7697_CMD_QUEUE_INIT_RSP,
 	MT7697_CMD_QUEUE_UNUSED,
-	MT7697_CMD_QUEUE_UNUSED_RSP,
 	MT7697_CMD_QUEUE_RESET,
 	MT7697_CMD_QUEUE_RESET_RSP,
 };
@@ -91,9 +89,9 @@ u32 mt7697q_flags_get_in_use(u32);
 u32 mt7697q_flags_get_dir(u32);
 
 int mt7697q_init(u8, u8, void*, rx_hndlr, void**, void**);
+int mt7697q_wr_reset(void*, void*);
+int mt7697q_wr_unused(void*, void*);
 size_t mt7697q_read(void*, u32*, size_t);
 size_t mt7697q_write(void*, const u32*, size_t);
-
-int mt7697q_send_reset(void*, void*);
 
 #endif
