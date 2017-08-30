@@ -1,8 +1,44 @@
-all:
-	$(info Bug LE-7663 prevents this Makefile from building a correct Legato system.)
-	$(info Once this bug is fixed in a stable version of Legato, the Makefile will)
-	$(info be restored.  For now, build the mangOH system by executing the following)
-	$(info command from a Legato working copy:)
-	$(info     make wp85 SDEF_TO_USE=$$MANGOH_ROOT/mangOH_Red.sdef MKSYS_FLAGS="-s $$MANGOH_ROOT/apps/GpioExpander/gpioExpanderService -s $$MANGOH_ROOT/apps/RedSensorToCloud")
-	$(info Note that you must first define MANGOH_ROOT.  eg. export MANGOH_ROOT=~/mangOH)
-	exit 1
+export MANGOH_ROOT = $(shell pwd)
+
+MKSYS_ARGS_COMMON = -s $(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService
+MKSYS_ARGS_GREEN =
+MKSYS_ARGS_RED = -s $(MANGOH_ROOT)/apps/RedSensorToCloud
+
+# The comments below are for Developer Studio integration. Do not remove them.
+# DS_CLONE_ROOT(MANGOH_ROOT)
+# DS_CUSTOM_OPTIONS(MKSYS_ARGS_COMMON)
+# DS_CUSTOM_OPTIONS(MKSYS_ARGS_GREEN)
+# DS_CUSTOM_OPTIONS(MKSYS_ARGS_RED)
+
+# This is a temporary workaround for bug LE-7850. Once Legato 17.08.0 or 17.07.2 is released, this
+# should no longer be necessary.
+export TARGET := wp85
+
+.PHONY: all
+all: green_wp85 green_wp750x red_wp85 red_wp750x
+
+.PHONY: green_wp85
+green_wp85:
+	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH_Green.sdef
+
+.PHONY: green_wp750x
+green_wp750x:
+	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH_Green.sdef
+
+.PHONY: red_wp85
+red_wp85:
+	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH_Red.sdef
+
+.PHONY: red_wp750x
+red_wp750x:
+	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH_Red.sdef
+
+.PHONY: clean
+clean:
+	rm -rf \
+		_build_mangOH_Green \
+		mangOH_Green.wp85.update \
+		mangOH_Green.wp750x.update \
+		_build_mangOH_Red \
+		mangOH_Red.wp85.update \
+		mangOH_Red.wp750x.update

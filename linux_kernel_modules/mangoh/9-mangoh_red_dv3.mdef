@@ -10,6 +10,7 @@ sources:
     board_green_dv4.c
     board_red_dv2.c
     board_red_dv3.c
+    board_red_dv4.c
 }
 
 params:

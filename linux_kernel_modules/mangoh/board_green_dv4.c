@@ -4,8 +4,6 @@
 #include <linux/slab.h>
 #include <linux/i2c.h>
 #include <linux/i2c/pca954x.h>
-#include <linux/i2c/sx150x.h>
-#include <linux/gpio.h>
 
 #include "mangoh.h"
 #include "lsm6ds3_platform_data.h"
@@ -17,9 +15,6 @@
  */
 struct green_dv4_platform_data {
 	struct i2c_client* i2c_switch;
-	struct i2c_client* gpio_expander1;
-	struct i2c_client* gpio_expander2;
-	struct i2c_client* gpio_expander3;
 	struct i2c_client* accelerometer;
 };
 
@@ -84,59 +79,6 @@ static const struct i2c_board_info green_dv4_pca954x_device_info = {
 	.platform_data = &green_dv4_pca954x_pdata,
 };
 
-static struct sx150x_platform_data green_dv4_expander1_platform_data = {
-	.gpio_base         = -1,
-	.oscio_is_gpo      = false,
-	.io_pullup_ena     = 0,
-	.io_pulldn_ena     = 0,
-	.io_open_drain_ena = 0,
-	.io_polarity       = 0,
-	.irq_base          = -1,
-	.irq_summary       = -1,
-};
-static const struct i2c_board_info green_dv4_expander1_devinfo = {
-	I2C_BOARD_INFO("sx1509q", 0x3e),
-	.platform_data = &green_dv4_expander1_platform_data,
-};
-
-static struct sx150x_platform_data green_dv4_expander2_platform_data = {
-	.gpio_base         = -1,
-	.oscio_is_gpo      = false,
-	/*
-	 * Enable pull-up resistors for CARD_DETECT_IOT0, CARD_DETECT_IOT2 and
-	 * CARD_DETECT_IOT1 respectively.
-	 */
-	.io_pullup_ena     = ((1 << 11) | (1 << 12) | (1 << 13)),
-	.io_pulldn_ena     = 0,
-	.io_open_drain_ena = 0,
-	/*
-	 * The interrupt lines driven by expanders 1 and 3 respectively are
-	 * driven low when an interrupt occurs, so invert the polarity
-	 */
-	.io_polarity       = ((1 << 0) | (1 << 14)),
-	.irq_base          = -1,
-	.irq_summary       = -1,
-};
-static const struct i2c_board_info green_dv4_expander2_devinfo = {
-	I2C_BOARD_INFO("sx1509q", 0x3f),
-	.platform_data = &green_dv4_expander2_platform_data,
-};
-
-static struct sx150x_platform_data green_dv4_expander3_platform_data = {
-	.gpio_base         = -1,
-	.oscio_is_gpo      = false,
-	.io_pullup_ena     = 0,
-	.io_pulldn_ena     = 0,
-	.io_open_drain_ena = 0,
-	.io_polarity       = 0,
-	.irq_base          = -1,
-	.irq_summary       = -1,
-};
-static const struct i2c_board_info green_dv4_expander3_devinfo = {
-	I2C_BOARD_INFO("sx1509q", 0x70),
-	.platform_data = &green_dv4_expander3_platform_data,
-};
-
 static struct lsm6ds3_platform_data green_dv4_accelerometer_platform_data = {
 	.drdy_int_pin = 1,
 };
@@ -173,19 +115,6 @@ int green_dv4_create_device(struct platform_device** d)
  * Static function definitions
  *-----------------------------------------------------------------------------
  */
-static int get_sx150x_gpio_base(struct i2c_client *client)
-{
-	/*
-	 * This is kind of a hack. It depends on the fact that we know
-	 * that the clientdata of the gpio expander is a struct
-	 * sx150x_chip (type is private to the sx150x driver) and
-	 * knowing that the first element of that struct is a struct
-	 * gpio_chip.
-	 */
-	struct gpio_chip *expander = i2c_get_clientdata(client);
-	return expander->base;
-}
-
 static int green_dv4_map(struct platform_device *pdev)
 {
 	struct green_dv4_platform_data* pdata = dev_get_platdata(&pdev->dev);
@@ -208,92 +137,6 @@ static int green_dv4_map(struct platform_device *pdev)
 		return -ENODEV;
 	}
 
-#if 0
-	/*
-	 * Map SX1509 GPIO expander 2. Expander 2 has to be mapped first because
-	 * the interrupt pins of expanders 1 and 3 are connected to I/Os of
-	 * expander 2.
-	 */
-	dev_dbg(&pdev->dev, "mapping gpio expander 2\n");
-	/*
-	 * GPIOEXP_INT2 goes to "GPIO2" on the inner ring in the green dv4
-	 * schematic. The WP85 schematic maps this to GPIO 59.
-	 */
-	green_dv4_expander2_platform_data.irq_summary = gpio_to_irq(59);
-	/*
-	 * Currently we just hard code an IRQ base that was tested to have a
-	 * contiguous set of 16 available IRQs. TODO: Is there a better way to
-	 * find a contiguous set of IRQs?
-	 */
-	green_dv4_expander2_platform_data.irq_base = 347;
-	adapter = i2c_get_adapter(
-		GREEN_DV4_I2C_SW_BASE_ADAPTER_ID +
-		GREEN_DV4_I2C_SW_PORT_GPIO_EXPANDER2);
-	if (!adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n", GREEN_DV4_I2C_SW_PORT_GPIO_EXPANDER2);
-		return -ENODEV;
-	}
-	pdata->gpio_expander2 = i2c_new_device(adapter, &green_dv4_expander2_devinfo);
-	if (!pdata->gpio_expander2) {
-		dev_err(&pdev->dev, "GPIO expander 2 is missing\n");
-		return -ENODEV;
-	}
-
-	/* Map SX1509 GPIO expander 1 */
-	dev_dbg(&pdev->dev, "mapping gpio expander 1\n");
-	/*
-	 * GPIOEXP_INT1 goes to I/O0 on GPIO expander 2 in the green dv4
-	 * schematic.
-	 */
-	green_dv4_expander1_platform_data.irq_summary =
-		gpio_to_irq(get_sx150x_gpio_base(pdata->gpio_expander2) + 0);
-	/*
-	 * Currently we just hard code an IRQ base that was tested to have a
-	 * contiguous set of 16 available IRQs. TODO: Is there a better way to
-	 * find a contiguous set of IRQs?
-	 */
-	green_dv4_expander1_platform_data.irq_base = 154;
-	adapter = i2c_get_adapter(
-		GREEN_DV4_I2C_SW_BASE_ADAPTER_ID +
-		GREEN_DV4_I2C_SW_PORT_GPIO_EXPANDER1);
-	if (!adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n", GREEN_DV4_I2C_SW_PORT_GPIO_EXPANDER1);
-		return -ENODEV;
-	}
-	pdata->gpio_expander1 = i2c_new_device(adapter, &green_dv4_expander1_devinfo);
-	if (!pdata->gpio_expander1) {
-		dev_err(&pdev->dev, "GPIO expander 1 is missing\n");
-		return -ENODEV;
-	}
-
-	/* Map SX1509 GPIO expander 3 */
-	dev_dbg(&pdev->dev, "mapping gpio expander 3\n");
-	/*
-	 * GPIOEXP_INT3 goes to I/O14 on GPIO expander 2 in the green dv4
-	 * schematic.
-	 */
-	green_dv4_expander3_platform_data.irq_summary =
-		gpio_to_irq(get_sx150x_gpio_base(pdata->gpio_expander2) + 14);
-	/*
-	 * Currently we just hard code an IRQ base that was tested to have a
-	 * contiguous set of 16 available IRQs. TODO: Is there a better way to
-	 * find a contiguous set of IRQs?
-	 */
-	green_dv4_expander3_platform_data.irq_base = 168;
-	adapter = i2c_get_adapter(
-		GREEN_DV4_I2C_SW_BASE_ADAPTER_ID +
-		GREEN_DV4_I2C_SW_PORT_GPIO_EXPANDER3);
-	if (!adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n", GREEN_DV4_I2C_SW_PORT_GPIO_EXPANDER3);
-		return -ENODEV;
-	}
-	pdata->gpio_expander3 = i2c_new_device(adapter, &green_dv4_expander3_devinfo);
-	if (!pdata->gpio_expander3) {
-		dev_err(&pdev->dev, "GPIO expander 3 is missing\n");
-		return -ENODEV;
-	}
-#endif // GPIO expander not properly supported
-
 	/* Map the I2C LSM6DS3 accelerometer */
 	dev_dbg(&pdev->dev, "mapping lsm6ds3 accelerometer\n");
 	/* Pin 10 of gpio expander 2 is connected to INT2 of the lsm6ds3 */
@@ -314,6 +157,10 @@ static int green_dv4_map(struct platform_device *pdev)
 
 	/*
 	 * TODO:
+	 * SX1509 GPIO expanders: 0x3E, 0x3F, 0x70
+	 *    There is a driver in the WP85 kernel, but the gpiolib
+	 *    infrastructure of the WP85 kernel does not allow the expander
+	 *    GPIOs to be used in sysfs due to a hardcoded translation table.
 	 * 3503 USB Hub: 0x08
 	 *    Looks like there is a driver in the wp85 kernel source at drivers/usb/misc/usb3503.c
 	 *    I'm not really sure what benefit is achieved through using this driver.
@@ -339,17 +186,6 @@ static int green_dv4_unmap(struct platform_device* pdev)
 
 	i2c_unregister_device(pdata->accelerometer);
 	i2c_put_adapter(pdata->accelerometer->adapter);
-
-#if 0
-	i2c_unregister_device(pdata->gpio_expander3);
-	i2c_put_adapter(pdata->gpio_expander3->adapter);
-
-	i2c_unregister_device(pdata->gpio_expander1);
-	i2c_put_adapter(pdata->gpio_expander1->adapter);
-
-	i2c_unregister_device(pdata->gpio_expander2);
-	i2c_put_adapter(pdata->gpio_expander2->adapter);
-#endif // GPIO expander not properly supported
 
 	i2c_unregister_device(pdata->i2c_switch);
 	i2c_put_adapter(pdata->i2c_switch->adapter);
