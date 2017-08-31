@@ -1007,6 +1007,7 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 			print_hex_dump(KERN_DEBUG, DRVNAME" DISCONNECT STA BSSID ", 
 				DUMP_PREFIX_OFFSET, 16, 1, sta->bssid, ETH_ALEN, 0);
 
+			spin_unlock_bh(&vif->sta_list_lock);
 			ret = mt7697_wr_disconnect_req(vif->cfg, sta->bssid);
 			if (ret < 0) {
 				dev_err(vif->cfg->dev, 
@@ -1015,12 +1016,21 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 				goto cleanup;
 			}
 
+			spin_lock_bh(&vif->sta_list_lock);
 			list_del(&sta->next);
 			kfree(sta);
 		}
 
 		vif->sta_count = 0;
-		spin_lock_bh(&vif->sta_list_lock);
+		spin_unlock_bh(&vif->sta_list_lock);
+
+		ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697q_wr_unused() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
 	}
 
 	vif->sme_state = SME_DISCONNECTED;
@@ -1266,7 +1276,9 @@ int mt7697_cfg80211_new_sta(struct mt7697_vif *vif, const u8* bssid)
 	struct mt7697_sta *sta;
 	int ret = 0;
 
-	if (vif->sta_count < vif->sta_max) {
+	dev_dbg(vif->cfg->dev, "%s(): # stations(%u)\n",
+		__func__, vif->sta_count);
+	if (vif->sta_count > vif->sta_max) {
 		dev_err(vif->cfg->dev, "%s(): max stations reached(%u)\n",
 			__func__, vif->sta_max);
 		ret = -EINVAL;
