@@ -1250,6 +1250,7 @@ int mt7697_cfg80211_del_sta(struct mt7697_vif *vif, const u8* bssid)
 			print_hex_dump(KERN_DEBUG, DRVNAME" DISCONNECT STA BSSID ", 
 				DUMP_PREFIX_OFFSET, 16, 1, sta->bssid, ETH_ALEN, 0);
 
+			spin_unlock_bh(&vif->sta_list_lock);
 			ret = mt7697_wr_disconnect_req(vif->cfg, sta->bssid);
 			if (ret < 0) {
 				dev_err(vif->cfg->dev, 
@@ -1258,6 +1259,7 @@ int mt7697_cfg80211_del_sta(struct mt7697_vif *vif, const u8* bssid)
 				goto cleanup;
 			}
 
+			spin_lock_bh(&vif->sta_list_lock);
 			list_del(&sta->next);
 			kfree(sta);
 			vif->sta_count--;
