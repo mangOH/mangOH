@@ -1,0 +1,11 @@
+sources:
+{
+    mangoh_iot.c
+    green.c
+    eeprom.c
+}
+
+params:
+{
+    model = "green"
+}
