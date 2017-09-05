@@ -619,7 +619,7 @@ static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp,
     		}
 	}
 	else {
-//		struct station_info sinfo = {0};
+		struct station_info sinfo = {0};
 
 		vif = mt7697_get_vif_by_idx(cfg, 0);
 		if (!vif) {
@@ -629,7 +629,6 @@ static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp,
 			goto cleanup;
 		}
 
-//		cfg80211_new_sta(vif->ndev, bssid, &sinfo, GFP_KERNEL);
 		ret = mt7697_cfg80211_new_sta(vif, bssid);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
@@ -638,12 +637,12 @@ static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp,
        			goto cleanup;
     		}
 
-		netif_wake_queue(vif->ndev);
+		cfg80211_new_sta(vif->ndev, bssid, &sinfo, GFP_KERNEL);
 
 		/* Update connect & link status atomically */
 		spin_lock_bh(&vif->if_lock);
 		set_bit(CONNECTED, &vif->flags);
-		clear_bit(CONNECT_PEND, &vif->flags);
+		netif_wake_queue(vif->ndev);
 		netif_carrier_on(vif->ndev);
 		spin_unlock_bh(&vif->if_lock);
 	}
@@ -793,8 +792,8 @@ static int mt7697_rx_raw(const struct mt7697q_rsp_hdr* rsp,
        		goto cleanup;
     	}
 
-	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET, 
-		16, 1, cfg->rx_data, rsp->result, 0);
+//	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET, 
+//		16, 1, cfg->rx_data, rsp->result, 0);
 
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);

@@ -34,8 +34,8 @@ static int mt7697_ethernet_to_80211(struct sk_buff *skb,
 
 	dev_dbg(cfg->dev, "%s(): Tx 802.3 Frame len(%u)\n", 
 		__func__, skb->len);
-	print_hex_dump(KERN_DEBUG, DRVNAME" 802.3 Frame ", DUMP_PREFIX_OFFSET, 
-		16, 1, skb->data, skb->len, 0);
+//	print_hex_dump(KERN_DEBUG, DRVNAME" 802.3 Frame ", DUMP_PREFIX_OFFSET, 
+//		16, 1, skb->data, skb->len, 0);
 
 	fc = cpu_to_le16(IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA);
 
@@ -56,7 +56,7 @@ static int mt7697_ethernet_to_80211(struct sk_buff *skb,
 		/* DA BSSID SA */
 		hdr.frame_control = fc;	
 		memcpy(hdr.addr1, eth_hdr->h_dest, ETH_ALEN);
-		memcpy(hdr.addr2, vif->bssid, ETH_ALEN);
+		memcpy(hdr.addr2, cfg->mac_addr.addr, ETH_ALEN);
 		memcpy(hdr.addr3, eth_hdr->h_source, ETH_ALEN);
 		break;
 
@@ -87,8 +87,8 @@ static int mt7697_ethernet_to_80211(struct sk_buff *skb,
 
 	dev_dbg(cfg->dev, "%s(): Tx 802.11 Frame len(%u)\n", 
 		__func__, skb->len);
-	print_hex_dump(KERN_DEBUG, DRVNAME" <-- Tx 802.11 Frame ", 
-		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
+//	print_hex_dump(KERN_DEBUG, DRVNAME" <-- Tx 802.11 Frame ", 
+//		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
 
 cleanup:
 	return ret;
