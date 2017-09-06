@@ -1,0 +1,28 @@
+sandboxed: true
+version: 1.0.0
+start: auto
+
+
+executables:
+{
+    buttonToAirVantage = ( buttonToAirVantageComponent )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = INFO
+    }
+    run:
+    {
+        ( buttonToAirVantage )
+    }
+    faultAction: restart
+}
+
+bindings:
+{
+    buttonToAirVantage.buttonToAirVantageComponent.mangoh_button -> gpioExpanderServiceRed.mangoh_gpioExpPin14
+    buttonToAirVantage.buttonToAirVantageComponent.le_avdata -> avcService.le_avdata
+}
