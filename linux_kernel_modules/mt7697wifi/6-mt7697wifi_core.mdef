@@ -1,0 +1,21 @@
+sources:
+{
+    wmi.c
+    cfg80211.c
+    main.c
+    txrx.c
+    ioctl.c
+}
+
+cflags:
+{
+//    -DDEBUG 
+    -DCONFIG_CFG80211_WEXT
+    -DCONFIG_WIRELESS
+    -DCONFIG_WIRELESS_EXT
+//    -DCONFIG_WEXT_CORE
+//    -DCONFIG_WEXT_PROC
+//    -DCONFIG_WEXT_SPY
+//    -DCONFIG_WEXT_PRIV
+    -I$MANGOH_ROOT/linux_kernel_modules/mt7697q
+}
