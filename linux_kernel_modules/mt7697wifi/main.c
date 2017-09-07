@@ -240,10 +240,9 @@ static int mt7697_remove(struct platform_device *pdev)
 	return 0;
 }
 
-static int mt7697_release(struct platform_device *pdev)
+static void mt7697_release(struct device *dev)
 {
 	pr_info(DRVNAME" %s(): released.\n", __func__);
-	return 0;
 }
 
 static struct platform_device mt7697_platform_device = {
