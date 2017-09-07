@@ -1,0 +1,13 @@
+requires:
+{
+    api:
+    {
+        mangoh_button = le_gpio.api
+        airVantage/le_avdata.api
+    }
+}
+
+sources:
+{
+    buttonToAirVantage.c
+}
