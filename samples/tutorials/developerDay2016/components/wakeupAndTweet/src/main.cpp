@@ -21,12 +21,24 @@
 
 #define LIGHT_SENSOR_SAMPLE_INTERVAL_MS 2000
 
+static void SendTweet(const char* tweet);
+static void LightSensorSampleTimerHandler(le_timer_Ref_t sampleTimer);
+static void PushCallbackHandler(le_avdata_PushStatus_t status, void *context);
+static void AvSessionStateHandler(le_avdata_SessionState_t state, void *context);
+static void TryStartTimer(void);
+
 static const uint32_t UnicodeTiredFace = 0x1F62B;
 static const uint32_t UnicodeSleepingFace = 0x1F634;
 
+static le_avdata_RequestSessionObjRef_t AvSession;
 static le_timer_Ref_t LightSensorSampleTimer;
+static bool TweetPending = false;
+static bool AvDataSessionActive = false;
+static uint32_t PushCount = 0;
+static uint32_t ShutdownAfterPush = 0;
 
-static le_avdata_AssetInstanceRef_t LightSensorAsset;
+
+static const char *LightSensorReadingResource = "lightSensor/reading";
 
 
 //--------------------------------------------------------------------------------------------------
@@ -73,6 +85,7 @@ static void SendTweet
             LE_FATAL("Unhandled tweet result (%d)", r);
         }
     } while (attempts < 3);
+    TweetPending = false;
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -98,15 +111,50 @@ static void LightSensorSampleTimerHandler
         LE_DEBUG("Light sensor reports value %d", lightSensorReading);
     }
 
-    le_avdata_SetInt(LightSensorAsset, "Reading", lightSensorReading);
 
     if (lightSensorReading < ADC_LEVEL_SLEEP)
     {
+        ShutdownAfterPush = PushCount + 1;
         LE_INFO(
             "Initiating shutdown due to light sensor value %d which is below the minimum %d",
             lightSensorReading,
             ADC_LEVEL_SLEEP);
+    }
 
+    auto setIntRes = le_avdata_SetInt(LightSensorReadingResource, lightSensorReading);
+    if (setIntRes != LE_OK)
+    {
+        LE_WARN("Failed to set light sensor resource");
+    }
+    else
+    {
+        PushCount++;
+        le_avdata_Push(LightSensorReadingResource, PushCallbackHandler, (void *)PushCount);
+    }
+}
+
+static void PushCallbackHandler
+(
+    le_avdata_PushStatus_t status, ///< push status
+    void *context                  ///< The push count when the push was submitted
+)
+{
+    switch (status)
+    {
+    case LE_AVDATA_PUSH_SUCCESS:
+        break;
+
+    case LE_AVDATA_PUSH_FAILED:
+        LE_WARN("Failed to push push_button state");
+        break;
+
+    default:
+        LE_FATAL("Unexpected push status");
+        break;
+    }
+
+    if ((uint32_t)context == ShutdownAfterPush)
+    {
         if (le_ulpm_BootOnAdc(
                 LIGHT_SENSOR_ADC_NUM,
                 LIGHT_SENSOR_SAMPLE_INTERVAL_MS,
@@ -139,12 +187,51 @@ static void LightSensorSampleTimerHandler
     }
 }
 
+static void AvSessionStateHandler
+(
+    le_avdata_SessionState_t state,
+    void *context
+)
+{
+    switch (state)
+    {
+    case LE_AVDATA_SESSION_STARTED:
+        LE_DEBUG("AVData session started");
+        AvDataSessionActive = true;
+        TryStartTimer();
+        break;
+
+    case LE_AVDATA_SESSION_STOPPED:
+        LE_INFO("AVData session stopped.  Push will fail.");
+        AvDataSessionActive = false;
+        le_timer_Stop(LightSensorSampleTimer);
+        break;
+
+    default:
+        LE_FATAL("Unsupported AV session state %d", state);
+        break;
+    }
+}
+
+static void TryStartTimer(void)
+{
+    if (AvDataSessionActive && !TweetPending)
+    {
+        LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+    }
+}
+
 
 COMPONENT_INIT
 {
     LE_DEBUG("wakeupAndTweetApp started");
 
-    LightSensorAsset = le_avdata_Create("LightSensor");
+    le_result_t r = le_avdata_CreateResource(LightSensorReadingResource, LE_AVDATA_ACCESS_VARIABLE);
+    LE_FATAL_IF(r != LE_OK && r != LE_DUPLICATE, "Couldn't create resource for light sensor reading");
+
+    le_avdata_AddSessionStateHandler(AvSessionStateHandler, NULL);
+    AvSession = le_avdata_RequestSession();
+    LE_FATAL_IF(AvSession == NULL, "Failed to request avdata session");
 
     LightSensorSampleTimer = le_timer_Create("light sensor");
     LE_ASSERT_OK(le_timer_SetHandler(LightSensorSampleTimer, LightSensorSampleTimerHandler));
@@ -168,18 +255,20 @@ COMPONENT_INIT
         std::ostringstream tweetStream;
         tweetStream << emoji << " mangOH with IMEI=" << imei << " has woken up at " << dateTime;
         auto tweet = std::make_shared<std::string>(tweetStream.str());
+        TweetPending = true;
         if (wakeupAndTweet_ConnectAndRun([tweet]{
                     SendTweet(tweet->c_str());
-                    LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+                    TryStartTimer();
                 }) != LE_OK)
         {
+            TweetPending = false;
             LE_ERROR("Couldn't create data connection to send tweet");
-            LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+            TryStartTimer();
         }
     }
     else
     {
         LE_DEBUG("Boot reason was not ADC %u", LIGHT_SENSOR_ADC_NUM);
-        LE_ASSERT_OK(le_timer_Start(LightSensorSampleTimer));
+        TryStartTimer();
     }
 }
