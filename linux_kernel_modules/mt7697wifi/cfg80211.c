@@ -245,27 +245,6 @@ cleanup:
 	return ret;
 }
 
-static bool mt7697_is_valid_iftype(const struct mt7697_cfg80211_info *cfg, 
-	                           enum nl80211_iftype type, u8 *if_idx)
-{
-	int i;
-
-	if (cfg->ibss_if_active || 
-	    ((type == NL80211_IFTYPE_ADHOC) && cfg->num_vif))
-		return false;
-
-	if (type == NL80211_IFTYPE_STATION || type == NL80211_IFTYPE_AP) {
-		for (i = cfg->vif_start; i < cfg->vif_max; i++) {
-			if ((cfg->avail_idx_map) & BIT(i)) {
-				*if_idx = i;
-				return true;
-			}
-		}
-	}
-
-	return false;
-}
-
 static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif, 
 						     const u8* bssid, 
 						     u32 freq)
@@ -344,30 +323,34 @@ static struct wireless_dev* mt7697_cfg80211_add_iface(struct wiphy *wiphy,
 						      struct vif_params *params)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_priv(wiphy);
+	struct mt7697_vif *vif;
 	struct wireless_dev *wdev = NULL;
 	u8 if_idx;
 
 	dev_dbg(cfg->dev, "%s(): iface('%s') type(%u)\n", 
 		__func__, name, type);
-	if (cfg->num_vif == cfg->vif_max) {
-		dev_err(cfg->dev, "max # supported vif(%u)\n", cfg->num_vif);
-		goto cleanup;
+	
+	spin_lock_bh(&cfg->vif_list_lock);
+	if (!list_empty(&cfg->vif_list)) {
+		list_for_each_entry(vif, &cfg->vif_list, next) {
+			wdev = &vif->wdev;
+			break;
+		}
+		
+		spin_unlock_bh(&cfg->vif_list_lock);
+		dev_dbg(cfg->dev, "%s(): iface('%s') exists\n", 
+			__func__, name);
 	}
+	else {
+		wdev = mt7697_interface_add(cfg, name, type, if_idx);
+		if (!wdev) {
+			dev_err(cfg->dev, "%s(): mt7697_interface_add() failed\n", 
+				__func__);
+			goto cleanup;
+		}
 
-	if (!mt7697_is_valid_iftype(cfg, type, &if_idx)) {
-		dev_err(cfg->dev, "%s(): unsupported interface(%d)\n", 
-			__func__, type);
-		goto cleanup;
+		cfg->num_vif++;
 	}
-
-	wdev = mt7697_interface_add(cfg, name, type, if_idx);
-	if (!wdev) {
-		dev_err(cfg->dev, "%s(): mt7697_interface_add() failed\n", 
-			__func__);
-		goto cleanup;
-	}
-
-	cfg->num_vif++;
 
 cleanup:
 	return wdev;

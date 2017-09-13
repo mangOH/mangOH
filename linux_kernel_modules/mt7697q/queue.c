@@ -515,22 +515,28 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn,
 	         void** tx_hndl, void** rx_hndl)
 {
 	char str[32];
-	struct spi_master *master;
+	struct spi_master *master = NULL;
 	struct device *dev;
 	struct spi_device *spi;
 	struct mt7697q_info *qinfo;
 	struct mt7697q_spec *qsTx, *qsRx;
+	int bus_num = MT7697_SPI_BUS_NUM;
 	int ret;
 
 	pr_info(DRVNAME" %s(): initialize queue(%u/%u)\n", 
 		__func__, tx_ch, rx_ch);
 
-	pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-		__func__, MT7697_SPI_BUS_NUM);
-	master = spi_busnum_to_master(MT7697_SPI_BUS_NUM);
+	while (!master && (bus_num >= 0)) {
+		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
+			__func__, bus_num);
+		master = spi_busnum_to_master(bus_num);
+		if (!master)
+			bus_num--;
+	}
+
 	if (!master) {
-		pr_err(DRVNAME" %s(): spi_busnum_to_master(%d) failed\n",
-			__func__, MT7697_SPI_BUS_NUM);
+		pr_err(DRVNAME" %s(): spi_busnum_to_master() failed\n",
+			__func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
@@ -593,6 +599,7 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn,
 			__func__, ret);
        		goto cleanup;
     	}
+
 
 	ret = mt7697q_read_state(rx_ch, qsRx);
 	if (ret < 0) {

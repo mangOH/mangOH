@@ -170,7 +170,7 @@ static void mt7697_cookie_cleanup(struct mt7697_cfg80211_info *cfg)
 	cfg->cookie_count = 0;
 }
 
-static int __init mt7697_probe(struct platform_device *pdev)
+static int mt7697_probe(struct platform_device *pdev)
 {	
 	struct wiphy *wiphy;
 	struct mt7697_cfg80211_info *cfg;
