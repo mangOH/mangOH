@@ -4,76 +4,95 @@
 # MediaTek wireless 7697 specific applications start or stop here
 # MediaTek WIFI IoT board is managed by SPI bus.
 
-#export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/tmp
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
 
 mt_wifi_start() {
-    # TODO figure way to only call echo command once
-    lsmod | grep 0-cp2130 >/dev/null                                            
-    if [ $? -eq 1 ]; then
-        insmod /tmp/0-cp2130.ko || exit 127
-        echo -n 0,2,-1,0,0,1,0,0,0,0,0,mt7697 > /sys/devices/platform/msm_hsic_host/usb1/1-1/1-1.1/1-1.1:1.0/channel_config                                                                     
-    fi
-
-    lsmod | grep cfg80211 >/dev/null                                            
-    if [ $? -eq 1 ]; then
-        insmod /tmp/cfg80211.ko || exit 127
-    fi
-
-    lsmod | grep mac80211 >/dev/null                                            
-    if [ $? -eq 1 ]; then
-        insmod /tmp/mac80211.ko || exit 127
-    fi                                                                 
-
-    lsmod | grep mt7697q >/dev/null                                            
-    if [ $? -eq 1 ]; then
-        insmod /tmp/mt7697q.ko || exit 127
-        echo "Initialized MT7697 queues"; 
-    fi
-               
-    lsmod | grep mt7697wifi_core >/dev/null                                            
-    if [ $? -eq 1 ]; then                         
-        insmod /tmp/mt7697wifi_core.ko || exit 127
-        echo "Initialized MT7697 80211 core";                                       
-        sleep 2
-    fi
-                                                                     
-    ifconfig -a | grep wlan0 >/dev/null                                         
-    if [ $? -ne 0 ] ; then                                                      
-        echo "Failed to init MT7697 80211 core"; 
-	exit 127                            
-    fi                                                                          
-    ifconfig wlan0 up >/dev/null                                                
-    if [ $? -ne 0 ] ; then                                                      
-        echo "Failed to start MT7697 80211 core"; 
-	exit 127                            
-    fi
-
-    /tmp/wpa_supplicant -i wlan0 -D wext -c /etc/swi-mobile -B                                                                          
-} 
-
-mt_wifi_stop() {                                                                
     ifconfig | grep wlan0 >/dev/null                                            
     if [ $? -eq 0 ]; then                                                       
        ifconfig wlan0 down                                                      
     fi
-    lsmod | grep mt7697wifi_core >/dev/null                                         
+
+    lsmod | grep 0_cp2130 >/dev/null                                            
+    if [ $? -eq 1 ]; then                         
+        insmod /mnt/flash/mtwifi/0-cp2130.ko || exit 127
+	echo "Initialized CP2130";
+    fi
+
+    lsmod | grep 1_mt7697q >/dev/null                                            
+    if [ $? -eq 1 ]; then                         
+        insmod /mnt/flash/mtwifi/1-mt7697q.ko || exit 127
+        echo "Initialized MT7697 queues";                                       
+    fi
+
+    lsmod | grep cfg80211 >/dev/null                                            
+    if [ $? -eq 1 ]; then
+        insmod /mnt/flash/mtwifi/cfg80211.ko || exit 127
+        echo "Initialized cfg80211";
+    fi
+
+    lsmod | grep mac80211 >/dev/null                                            
+    if [ $? -eq 1 ]; then
+        insmod /mnt/flash/mtwifi/mac80211.ko || exit 127
+	echo "Initialized mac80211";
+    fi                                                                 
+
+    lsmod | grep 2_mt7697wifi_core >/dev/null                                            
+    if [ $? -eq 1 ]; then                         
+        insmod /mnt/flash/mtwifi/2-mt7697wifi_core.ko itf_idx_start=$1 || exit 127
+        echo "Initialized MT7697 80211 core";                                       
+        sleep 2
+    fi
+                                                                     
+    ifconfig -a | grep wlan$1 >/dev/null                                         
+    if [ $? -ne 0 ] ; then                                                      
+        echo "Failed to init MT7697 80211 core"; 
+	exit 127                            
+    fi 
+                                                                         
+    ifconfig wlan$1 up >/dev/null                                                
+    if [ $? -ne 0 ] ; then                                                      
+        echo "Failed to start MT7697 80211 core"; 
+	exit 127                            
+    fi                                                                         
+} 
+
+mt_wifi_stop() { 
+    kill -9 $(pidof wpa_supplicant)
+                                                               
+    ifconfig | grep wlan$1 >/dev/null                                            
+    if [ $? -eq 0 ]; then                                                       
+       ifconfig wlan$1 down                                                      
+    fi
+
+    lsmod | grep 2_mt7697wifi_core >/dev/null                                         
     if [ $? -eq 0 ]; then
-        rmmod mt7697wifi_core || exit 127
+        rmmod 2_mt7697wifi_core || exit 127
         echo "Removed MT7697 80211 core"; exit 127         
-    fi                                                                          
+    fi
+
+    lsmod | grep mac80211 >/dev/null                                         
+    if [ $? -eq 0 ]; then
+        rmmod mac80211 || exit 127
+        echo "Removed mac80211"; exit 127         
+    fi
+
+    lsmod | grep cfg80211 >/dev/null                                         
+    if [ $? -eq 0 ]; then
+        rmmod cfg80211 || exit 127
+        echo "Removed cfg80211"; exit 127         
+    fi                                                                   
 }                                                                               
                                                                                 
 case "$1" in                                                                    
     start)                                                                      
-        mt_wifi_start                                                           
+        mt_wifi_start $2                                                          
         ;;                                                                      
     stop)                                                                       
-        mt_wifi_stop                                                            
+        mt_wifi_stop $2                                                           
         ;;                                                                      
     restart)                                                                    
-        mt_wifi_stop                                                            
-        mt_wifi_start                                                           
+        mt_wifi_stop $2                                                          
+        mt_wifi_start $2                                                         
         ;;                                                                      
     *)                                                                          
         exit 1                                                                  
