@@ -1,0 +1,14 @@
+sources:
+{
+    io.c
+    interrupt.c
+    queue.c
+    spi.c
+}
+
+cflags:
+{
+//    -DDEBUG
+      -I$MANGOH_ROOT/linux_kernel_modules/cp2130
+}
+
