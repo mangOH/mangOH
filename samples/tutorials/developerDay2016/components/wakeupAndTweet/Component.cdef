@@ -2,12 +2,12 @@ requires:
 {
     api:
     {
-        ${MANGOH_ROOT}/apps/SocialService/interfaces/twitter.api
+        twitter.api
         le_ulpm.api
         le_bootReason.api
         le_adc.api
         le_data.api
-        airVantage/legacy/le_avdata.api
+        airVantage/le_avdata.api
         modemServices/le_info.api
     }
 }
@@ -21,15 +21,4 @@ sources:
 cxxflags:
 {
     -std=c++11
-}
-
-assets:
-{
-    LightSensor =
-    {
-        variables:
-        {
-            int Reading
-        }
-    }
 }

@@ -31,6 +31,13 @@ commands:
     twitter = socialService:/bin/twitter
 }
 
+interfaceSearch:
+{
+    $MANGOH_ROOT/apps/MqttClient
+    $MANGOH_ROOT/apps/DataRouter
+    $MANGOH_ROOT/apps/MuxControl
+    $MANGOH_ROOT/apps/SocialService/interfaces
+}
 
 kernelModules:
 {

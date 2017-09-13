@@ -5,47 +5,20 @@
 // Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
 //--------------------------------------------------------------------------------------------------
 
+#include "$LEGATO_ROOT/default.sdef"
+
 apps:
 {
-    // Platform services.
-    $LEGATO_SERVICE_AVC_APP
-    $LEGATO_ROOT/apps/platformServices/cellNetService
-    $LEGATO_ROOT/apps/platformServices/dataConnectionService
-    $LEGATO_ROOT/apps/platformServices/fwupdateService
-    $LEGATO_ROOT/apps/platformServices/modemService
-    $LEGATO_ROOT/apps/platformServices/positioningService
-    $LEGATO_ROOT/apps/platformServices/powerMgr
-    $LEGATO_ROOT/apps/platformServices/secStore
-    $LEGATO_ROOT/apps/platformServices/gpioService
-    $LEGATO_ROOT/apps/platformServices/fsService
-
-    $LEGATO_ROOT/apps/sample/lwm2mAirVantageControl/lwm2mControl
-
     $MANGOH_ROOT/apps/SocialService/socialService
-
-    // Command-line tools.
-    $LEGATO_ROOT/apps/tools/tools
-
     $MANGOH_ROOT/samples/tutorials/developerDay2016/apps/wakeupAndTweet
 }
 
 commands:
 {
-    cm = tools:/scripts/cm
-    fwupdate = tools:/bin/fwupdate
-    secstore = tools:/bin/secstore
-    pmtool = tools:/bin/pmtool
-
     twitter = socialService:/bin/twitter
-}
-
-bindings:
-{
-    <root>.le_fwupdate -> fwupdateService.le_fwupdate
 }
 
 interfaceSearch:
 {
-    interfaces/modemServices
-    interfaces/positioning
+    $MANGOH_ROOT/apps/SocialService/interfaces
 }
