@@ -66,6 +66,17 @@ iptables -A FORWARD --match state --state RELATED,ESTABLISHED --jump ACCEPT
 iptables -A FORWARD -i $ITF_LAN --destination $SUBNET --match state --state NEW --jump ACCEPT
 iptables -A INPUT -s $SUBNET --jump ACCEPT
 
+echo "Moving IP tables rules..."
+if [ ! -d /etc/iptables/backup ]; then
+    mkdir /etc/iptables/backup
+fi
+if [ ! -f /etc/iptables/rules.v4 ]; then
+    mv /etc/iptables/rules.v4 /etc/iptables/backup/.
+fi
+if [ ! -f /etc/iptables/rules.v4 ]; then
+    mv /etc/iptables/rules.v6 /etc/iptables/backup/.
+fi
+
 echo "Reconfiguring the DHCP server..."
 /etc/init.d/dnsmasq stop || echo -ne ">>>>>>>>>>>>>>>>>>> UNABLE TO STOP THE DHCP server"
 ### Configure the IP addresses range for DHCP (dnsmasq)
@@ -77,3 +88,6 @@ echo -ne "log-dhcp\nlog-queries\nlog-facility=/tmp/dnsmasq.log\ndhcp-range=$ITF_
 echo "Restarting the DHCP server..."
 /etc/init.d/dnsmasq start  || echo ">>>>>>>>>>>>>>>>>>> UNABLE TO START THE DHCP server"
 
+echo "Start wpa supplicant...."
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
+/mnt/flash/mtwifi/wpa_supplicant -Dwext -i wlan1 -c /etc/mt7697-ap -B

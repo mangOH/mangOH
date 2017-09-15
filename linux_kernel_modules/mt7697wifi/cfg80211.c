@@ -969,6 +969,19 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 	struct mt7697_sta *sta, *sta_next;
 	int ret = 0;
 
+	if ((vif->cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
+	    (vif->cfg->radio_state == MT7697_RADIO_STATE_ON)) {
+		ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
+	}
+
 	if (vif->wdev.iftype == NL80211_IFTYPE_STATION) {
 		switch (vif->sme_state) {
 		case SME_DISCONNECTED:
@@ -1528,14 +1541,20 @@ cleanup:
 
 void mt7697_cfg80211_cleanup(struct mt7697_cfg80211_info *cfg)
 {
+	dev_dbg(cfg->dev, "%s(): cleanup\n", __func__);
+
+	dev_dbg(cfg->dev, "%s(): cleanup vif\n", __func__);
 	mt7697_cleanup_vif(cfg);
 
+	dev_dbg(cfg->dev, "%s(): destroy Tx workqueues\n", __func__);
 	flush_workqueue(cfg->tx_workq);
 	destroy_workqueue(cfg->tx_workq);
 
 	if (cfg->wiphy_registered) {
+		dev_dbg(cfg->dev, "%s(): unregister wiphy\n", __func__);
 		wiphy_unregister(cfg->wiphy);
 		cfg->wiphy_registered = false;
+		dev_dbg(cfg->dev, "%s(): wiphy unregistered\n", __func__);
 	}
 }
 
@@ -1557,5 +1576,6 @@ struct mt7697_cfg80211_info *mt7697_cfg80211_create(void)
 
 void mt7697_cfg80211_destroy(struct mt7697_cfg80211_info *cfg)
 {
+	dev_dbg(cfg->dev, "%s(): destroy\n", __func__);
 	wiphy_free(cfg->wiphy);
 }

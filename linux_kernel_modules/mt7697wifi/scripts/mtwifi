@@ -4,7 +4,7 @@
 # MediaTek wireless 7697 specific applications start or stop here
 # MediaTek WIFI IoT board is managed by SPI bus.
 
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
+#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
 
 mt_wifi_start() {
     ifconfig | grep wlan0 >/dev/null                                            

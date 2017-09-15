@@ -34,8 +34,22 @@ static int mt7697_open(struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
+	int ret;
 
 	dev_dbg(cfg->dev, "%s(): open net device\n", __func__);
+
+	if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
+	    (cfg->radio_state == MT7697_RADIO_STATE_OFF)) {
+		ret = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_ON);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		cfg->radio_state = MT7697_RADIO_STATE_ON;
+	}
 
 	set_bit(WLAN_ENABLED, &vif->flags);
 
@@ -45,19 +59,29 @@ static int mt7697_open(struct net_device *ndev)
 	} else
 		netif_carrier_off(ndev);
 
-	return 0;
+cleanup:
+	return ret;
 }
 
 static int mt7697_stop(struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
+	int ret;
 
 	dev_dbg(cfg->dev, "%s(): stop net device\n", __func__);
-
-	mt7697_cfg80211_stop(vif);
 	clear_bit(WLAN_ENABLED, &vif->flags);
-	return 0;
+
+	ret = mt7697_cfg80211_stop(vif);
+	if (ret < 0) {
+		dev_err(cfg->dev, 
+			"%s(): mt7697_cfg80211_stop() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+cleanup:	
+	return ret;
 }
 
 static struct net_device_stats *mt7697_get_stats(struct net_device *dev)
@@ -113,6 +137,18 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		dev_err(cfg->dev, "%s(): queue(%u) init() failed(%d)\n",
 			__func__, MT7697_MAC80211_QUEUE_TX, err);
 		goto failed;
+	}
+
+	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
+		err = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_OFF);
+		if (err < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+				__func__, err);
+			goto failed;
+		}
+
+		cfg->radio_state = MT7697_RADIO_STATE_OFF;
 	}
 
 	err = mt7697_wr_cfg_req(cfg);
@@ -363,6 +399,19 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 				"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
+		}
+
+		if ((vif->cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) && 
+		    (vif->cfg->radio_state == MT7697_RADIO_STATE_ON)) {
+			ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+					__func__, ret);
+				goto cleanup;
+			}
+
+			vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
 		}
 
 		ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
