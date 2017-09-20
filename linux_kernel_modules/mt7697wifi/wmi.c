@@ -792,8 +792,8 @@ static int mt7697_rx_raw(const struct mt7697q_rsp_hdr* rsp,
        		goto cleanup;
     	}
 
-//	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET, 
-//		16, 1, cfg->rx_data, rsp->result, 0);
+	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET, 
+		16, 1, cfg->rx_data, rsp->result, 0);
 
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);

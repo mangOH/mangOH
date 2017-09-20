@@ -18,82 +18,6 @@
 #include "common.h"
 #include "core.h"
 
-static int mt7697_ethernet_to_80211(struct sk_buff *skb, 
-                                    struct net_device *ndev)
-{
-	struct ieee80211_hdr hdr;
-	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
-	struct mt7697_vif *vif = netdev_priv(ndev);
-	struct ethhdr *eth_hdr = (struct ethhdr*)skb->data;
-	struct mt7697_llc_snap_hdr *llc_hdr;
-	u8 *datap;
-	int ret = 0;        
-	__be16 type = eth_hdr->h_proto;
-	__le16 fc;
-	u16 hdrlen;
-
-	dev_dbg(cfg->dev, "%s(): Tx 802.3 Frame len(%u)\n", 
-		__func__, skb->len);
-//	print_hex_dump(KERN_DEBUG, DRVNAME" 802.3 Frame ", DUMP_PREFIX_OFFSET, 
-//		16, 1, skb->data, skb->len, 0);
-
-	fc = cpu_to_le16(IEEE80211_FTYPE_DATA | IEEE80211_STYPE_DATA);
-
-	switch (vif->wdev.iftype) {
-	case NL80211_IFTYPE_STATION:
-        	fc |= cpu_to_le16(IEEE80211_FCTL_TODS);
-
-		/* BSSID SA DA */
-		hdr.frame_control = fc;	
-		memcpy(hdr.addr1, vif->bssid, ETH_ALEN);
-		memcpy(hdr.addr2, eth_hdr->h_source, ETH_ALEN);
-		memcpy(hdr.addr3, eth_hdr->h_dest, ETH_ALEN);
-		break;
-	
-	case NL80211_IFTYPE_AP:
-		fc |= cpu_to_le16(IEEE80211_FCTL_FROMDS);
-
-		/* DA BSSID SA */
-		hdr.frame_control = fc;	
-		memcpy(hdr.addr1, eth_hdr->h_dest, ETH_ALEN);
-		memcpy(hdr.addr2, cfg->mac_addr.addr, ETH_ALEN);
-		memcpy(hdr.addr3, eth_hdr->h_source, ETH_ALEN);
-		break;
-
-	default:
-		dev_warn(cfg->dev, "%s(): unsupported iftype(%d)\n", 
-			__func__, vif->wdev.iftype);
-		ret = -EINVAL;
-		goto cleanup;
-	}
-
-	hdr.duration_id = 0;
-	hdr.seq_ctrl = 0;
-	hdrlen = sizeof(struct ieee80211_hdr_3addr);
-
-	datap = skb_push(skb, hdrlen + 
-			      sizeof(struct mt7697_llc_snap_hdr) - 
-			      sizeof(struct ethhdr));
-	memcpy(datap, &hdr, hdrlen);
-
-	llc_hdr = (struct mt7697_llc_snap_hdr*)(datap + hdrlen);
-	llc_hdr->dsap = 0xAA;
-	llc_hdr->ssap = 0xAA;
-	llc_hdr->cntl = 0x03;
-	llc_hdr->org_code[0] = 0x0;
-	llc_hdr->org_code[1] = 0x0;
-	llc_hdr->org_code[2] = 0x0;
-	llc_hdr->eth_type = type;
-
-	dev_dbg(cfg->dev, "%s(): Tx 802.11 Frame len(%u)\n", 
-		__func__, skb->len);
-//	print_hex_dump(KERN_DEBUG, DRVNAME" <-- Tx 802.11 Frame ", 
-//		DUMP_PREFIX_OFFSET, 16, 1, skb->data, skb->len, 0);
-
-cleanup:
-	return ret;
-}
-
 int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -123,13 +47,6 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 			dev_dbg(cfg->dev, "%s(): tx dropped\n", __func__);
 			goto cleanup;
 		}
-	}
-
-	ret = mt7697_ethernet_to_80211(skb, ndev);
-	if (ret < 0) {
-		dev_err(cfg->dev, "%s(): mt7697_ethernet_to_80211() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
 	}
 
 	cookie = mt7697_alloc_cookie(cfg);
@@ -263,6 +180,8 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 	vif->net_stats.rx_bytes += len;
 
 	skb->protocol = eth_type_trans(skb, skb->dev);
+	dev_dbg(cfg->dev, "%s(): rx frame protocol(%u) type(%u)\n", 
+		__func__, skb->protocol, skb->pkt_type);
 
 	ret = netif_rx_ni(skb);
 	if (ret != NET_RX_SUCCESS) {

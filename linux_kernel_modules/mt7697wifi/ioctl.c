@@ -257,6 +257,7 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
                                 struct iw_point *data,
                                 char *ssid)
 {
+	u8 pmk[MT7697_WIFI_LENGTH_PMK] = {0};
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct wireless_dev *wdev = ndev->ieee80211_ptr;
 	struct mt7697_vif *vif = mt7697_vif_from_wdev(wdev);
@@ -317,11 +318,25 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 		}
 	}
 
-	ret = mt7697_wr_set_pmk_req(cfg, vif->pmk);
-	if (ret < 0) {
-		dev_err(cfg->dev, "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
+	if (memcmp(pmk, vif->pmk, sizeof(pmk))) {
+		ret = mt7697_wr_set_pmk_req(cfg, vif->pmk);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+	}
+	else {
+		ret = mt7697_wr_set_security_mode_req(cfg, 
+                	MT7697_WIFI_AUTH_MODE_OPEN, 
+			MT7697_WIFI_ENCRYPT_TYPE_ENCRYPT_DISABLED);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_wr_set_security_mode_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
 	}
 
 	if (len > 0) {

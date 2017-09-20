@@ -14,31 +14,19 @@ mt_wifi_start() {
 
     lsmod | grep 0_cp2130 >/dev/null                                            
     if [ $? -eq 1 ]; then                         
-        insmod /mnt/flash/mtwifi/0-cp2130.ko || exit 127
+        insmod /legato/systems/current/modules/0-cp2130.ko || exit 127
 	echo "Initialized CP2130";
     fi
 
     lsmod | grep 1_mt7697q >/dev/null                                            
     if [ $? -eq 1 ]; then                         
-        insmod /mnt/flash/mtwifi/1-mt7697q.ko || exit 127
+        insmod /legato/systems/current/modules/1-mt7697q.ko || exit 127
         echo "Initialized MT7697 queues";                                       
-    fi
-
-    lsmod | grep cfg80211 >/dev/null                                            
-    if [ $? -eq 1 ]; then
-        insmod /mnt/flash/mtwifi/cfg80211.ko || exit 127
-        echo "Initialized cfg80211";
-    fi
-
-    lsmod | grep mac80211 >/dev/null                                            
-    if [ $? -eq 1 ]; then
-        insmod /mnt/flash/mtwifi/mac80211.ko || exit 127
-	echo "Initialized mac80211";
-    fi                                                                 
+    fi                                                           
 
     lsmod | grep 2_mt7697wifi_core >/dev/null                                            
     if [ $? -eq 1 ]; then                         
-        insmod /mnt/flash/mtwifi/2-mt7697wifi_core.ko itf_idx_start=$1 || exit 127
+        insmod /legato/systems/current/modules/2-mt7697wifi_core.ko itf_idx_start=$1 || exit 127
         echo "Initialized MT7697 80211 core";                                       
         sleep 2
     fi

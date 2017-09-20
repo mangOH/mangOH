@@ -34,7 +34,7 @@ static int mt7697_open(struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
-	int ret;
+	int ret = 0;
 
 	dev_dbg(cfg->dev, "%s(): open net device\n", __func__);
 
@@ -57,7 +57,7 @@ static int mt7697_open(struct net_device *ndev)
 		netif_carrier_on(ndev);
 		netif_wake_queue(ndev);
 	} else
-		netif_carrier_off(ndev);
+		netif_carrier_on(ndev);
 
 cleanup:
 	return ret;
@@ -97,7 +97,8 @@ static void mt7697_set_multicast_list(struct net_device *ndev)
 	bool mc_all_on = false;
 	int mc_count = netdev_mc_count(ndev);
 
-	dev_dbg(cfg->dev, "%s(): net device set multicast\n", __func__);
+	dev_dbg(cfg->dev, "%s(): net device set multicast flags(0x%08x)\n", 
+		__func__, ndev->flags);
 
 	/* Enable multicast-all filter. */
 	mc_all_on = !!(ndev->flags & IFF_PROMISC) ||

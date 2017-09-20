@@ -11,16 +11,30 @@ export ITF_WAN="rmnet0" # 3G/4G interface as WLAN interface
 
 export WIFIAPIP="192.168.20.1"
 export WIFIAPMASK="255.255.255.0"
-export SUBNET="192.168.0.0/24"
+#export SUBNET="192.168.0.0/24"
 export WIFIAPSTART="192.168.20.10"
 export WIFIAPSTOP="192.168.20.100"
 
 # DHCP config file
 export DHCP_CFG_FILE=dnsmasq.wlan.conf
 
-/sbin/ifup wlan1
 echo "Mounting of $ITF_LAN..."
+/sbin/ifup $ITF_LAN
 ifconfig $ITF_LAN $WIFIAPIP netmask $WIFIAPMASK up
+
+echo "Reconfiguring the DHCP server..."
+/etc/init.d/dnsmasq stop || echo -ne ">>>>>>>>>>>>>>>>>>> UNABLE TO STOP THE DHCP server"
+### Configure the IP addresses range for DHCP (dnsmasq)
+test -L /etc/dnsmasq.d/$DHCP_CFG_FILE || ln -s /tmp/$DHCP_CFG_FILE /etc/dnsmasq.d/$DHCP_CFG_FILE
+
+echo "Generating the configuration file for the DHCP server..."
+echo -ne "log-dhcp\nlog-queries\n" \
+         "log-facility=/tmp/dnsmasq.log\n" \  
+         "interface=$ITF_LAN\n" \
+         "dhcp-option=$ITF_LAN,3,$WIFIAPIP\n" \
+         "dhcp-option=$ITF_LAN,6,$WIFIAPIP\n" \
+         "dhcp-range=$WIFIAPSTART,$WIFIAPSTOP,24h\n" \
+	 "server=8.8.8.8\n" >> /tmp/$DHCP_CFG_FILE
 
 echo "Mounting the relay interface $ITF_WAN..."
 case "$ITF_WAN" in
@@ -38,56 +52,30 @@ case "$ITF_WAN" in
         echo "Waiting for data connection on $ITF_WAN..."
         ;;
 esac
- 
-RETRY=0
-while [ $RETRY -lt 30 ] ; do
-    ITF_WAN_ADDR=$(ifconfig $ITF_WAN | grep "inet addr" | cut -d ':' -f 2 | cut -d ' ' -f 1)
-    if [ "$ITF_WAN_ADDR" == "" ]; then
-        sleep 1
-        RETRY=$(($RETRY + 1))
-    else
-        break
-    fi
-done
 
-if [ "$ITF_WAN_ADDR" == "" ]; then
-    echo "Mounting of relay interface $ITF_WAN failed..."
-else
-    echo "Relay interface $ITF_WAN IP address is $ITF_WAN_ADDR"
-    route add default gw $ITF_WAN_ADDR $ITF_WAN
-fi
-
-echo "Enabling IP forwarding..."
-echo 1 > /proc/sys/net/ipv4/ip_forward
-echo "Configuring the NAT..."
-modprobe ipt_MASQUERADE
-iptables -A POSTROUTING -t nat -o $ITF_WAN -j MASQUERADE
-iptables -A FORWARD --match state --state RELATED,ESTABLISHED --jump ACCEPT
-iptables -A FORWARD -i $ITF_LAN --destination $SUBNET --match state --state NEW --jump ACCEPT
-iptables -A INPUT -s $SUBNET --jump ACCEPT
-
-echo "Moving IP tables rules..."
-if [ ! -d /etc/iptables/backup ]; then
-    mkdir /etc/iptables/backup
-fi
-if [ ! -f /etc/iptables/rules.v4 ]; then
-    mv /etc/iptables/rules.v4 /etc/iptables/backup/.
-fi
-if [ ! -f /etc/iptables/rules.v4 ]; then
-    mv /etc/iptables/rules.v6 /etc/iptables/backup/.
-fi
-
-echo "Reconfiguring the DHCP server..."
-/etc/init.d/dnsmasq stop || echo -ne ">>>>>>>>>>>>>>>>>>> UNABLE TO STOP THE DHCP server"
-### Configure the IP addresses range for DHCP (dnsmasq)
-test -L /etc/dnsmasq.d/$DHCP_CFG_FILE || ln -s /tmp/$DHCP_CFG_FILE /etc/dnsmasq.d/$DHCP_CFG_FILE
-
-echo "Generating the configuration file for the DHCP server..."
-echo -ne "log-dhcp\nlog-queries\nlog-facility=/tmp/dnsmasq.log\ndhcp-range=$ITF_LAN,$WIFIAPSTART,$WIFIAPSTOP,24h\nserver=8.8.8.8\n" >> /tmp/$DHCP_CFG_FILE
 ### Start the DHCP server
 echo "Restarting the DHCP server..."
 /etc/init.d/dnsmasq start  || echo ">>>>>>>>>>>>>>>>>>> UNABLE TO START THE DHCP server"
 
+echo "Check SIM inserted..."
+cm sim
+
+echo "Cleaning IP tables..."
+iptables --flush
+iptables --table nat --flush
+iptables --table nat --delete-chain
+
+echo "Configuring the NAT..."
+iptables -P INPUT ACCEPT
+iptables -P OUTPUT ACCEPT
+iptables -P FORWARD ACCEPT
+iptables --table nat -A POSTROUTING -o $ITF_WAN -j MASQUERADE
+iptables -A FORWARD -i $ITF_WAN -o $ITF_LAN -m state --state RELATED,ESTABLISHED -j ACCEPT
+iptables -A FORWARD -i $ITF_LAN -o $ITF_WAN -m state --state NEW -j ACCEPT
+
+echo "Enabling IP forwarding..."
+sysctl -w net.ipv4.ip_forward=1
+
 echo "Start wpa supplicant...."
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
-/mnt/flash/mtwifi/wpa_supplicant -Dwext -i wlan1 -c /etc/mt7697-ap -B
+/mnt/flash/mtwifi/wpa_supplicant -Dwext -i $ITF_LAN -c /etc/mt7697-ap -B
