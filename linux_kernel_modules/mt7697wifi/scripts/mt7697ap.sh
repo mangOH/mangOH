@@ -9,9 +9,9 @@ export PATH=/legato/systems/current/bin:/usr/local/bin:/usr/bin:/bin:/usr/local/
 export ITF_LAN="wlan1" # WiFi? access point interface
 export ITF_WAN="rmnet0" # 3G/4G interface as WLAN interface
 
+export APN="internet.sierrawireless.com"
 export WIFIAPIP="192.168.20.1"
 export WIFIAPMASK="255.255.255.0"
-#export SUBNET="192.168.0.0/24"
 export WIFIAPSTART="192.168.20.10"
 export WIFIAPSTOP="192.168.20.100"
 
@@ -29,7 +29,7 @@ test -L /etc/dnsmasq.d/$DHCP_CFG_FILE || ln -s /tmp/$DHCP_CFG_FILE /etc/dnsmasq.
 
 echo "Generating the configuration file for the DHCP server..."
 echo -ne "log-dhcp\nlog-queries\n" \
-         "log-facility=/tmp/dnsmasq.log\n" \  
+         "log-facility=/tmp/dnsmasq.log\n" \
          "interface=$ITF_LAN\n" \
          "dhcp-option=$ITF_LAN,3,$WIFIAPIP\n" \
          "dhcp-option=$ITF_LAN,6,$WIFIAPIP\n" \
@@ -46,7 +46,7 @@ case "$ITF_WAN" in
         cm radio on
         sleep 1
         echo "Enabling the data connection on $ITF_WAN..."
-        cm data apn sp.telus.com
+        cm data apn $APN
         cm data connect &
         sleep 1
         echo "Waiting for data connection on $ITF_WAN..."

@@ -10,19 +10,7 @@ mt_wifi_start() {
     ifconfig | grep wlan0 >/dev/null                                            
     if [ $? -eq 0 ]; then                                                       
        ifconfig wlan0 down                                                      
-    fi
-
-    lsmod | grep 0_cp2130 >/dev/null                                            
-    if [ $? -eq 1 ]; then                         
-        insmod /legato/systems/current/modules/0-cp2130.ko || exit 127
-	echo "Initialized CP2130";
-    fi
-
-    lsmod | grep 1_mt7697q >/dev/null                                            
-    if [ $? -eq 1 ]; then                         
-        insmod /legato/systems/current/modules/1-mt7697q.ko || exit 127
-        echo "Initialized MT7697 queues";                                       
-    fi                                                           
+    fi                                                       
 
     lsmod | grep 2_mt7697wifi_core >/dev/null                                            
     if [ $? -eq 1 ]; then                         

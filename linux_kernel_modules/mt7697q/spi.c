@@ -72,8 +72,8 @@ static int __init mt7697spi_init(void)
 	pr_info(DRVNAME" %s(): '%s' initialize\n", __func__, DRVNAME);
 
 	while (!master && (bus_num >= 0)) {
-		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-			__func__, bus_num);
+//		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
+//			__func__, bus_num);
 		master = spi_busnum_to_master(bus_num);
 		if (!master) 
 			bus_num--;
@@ -189,8 +189,8 @@ static void __exit mt7697spi_exit(void)
 	int bus_num = MT7697_SPI_BUS_NUM;
 
 	while (!master && (bus_num >= 0)) {
-		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-			__func__, bus_num);
+//		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
+//			__func__, bus_num);
 		master = spi_busnum_to_master(bus_num);
 		if (!master)
 			bus_num--;
