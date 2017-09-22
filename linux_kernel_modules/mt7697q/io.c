@@ -242,13 +242,6 @@ int mt7697io_wr(struct mt7697q_info *qinfo, u32 addr, const u32 *data, size_t nu
 
     	WARN_ON(num == 0);
 
-	ret = mt7697io_slave_wait(qinfo);
-	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_slave_wait() failed(%d)\n", 
-			__func__, ret);
-       		goto cleanup;
-    	}
-
     	ret = mt7697io_write32(qinfo, MT7697_IO_SLAVE_REG_BUS_ADDR_LOW, addr);
     	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write32() failed(%d)\n", 
@@ -278,14 +271,6 @@ int mt7697io_wr(struct mt7697q_info *qinfo, u32 addr, const u32 *data, size_t nu
 				__func__, ret);
        			goto cleanup;
     		}
-
-		ret = mt7697io_slave_wait(qinfo);
-		if (ret < 0) {
-			dev_err(qinfo->dev, 
-				"%s(): mt7697io_slave_wait() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
     	}
 
 cleanup:
@@ -298,13 +283,6 @@ int mt7697io_rd(struct mt7697q_info *qinfo, u32 addr, u32 *data, size_t num)
 	int ret;
 
     	WARN_ON(num == 0);    
-
-	ret = mt7697io_slave_wait(qinfo);
-	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_slave_wait() failed(%d)\n", 
-			__func__, ret);
-       		goto cleanup;
-    	}
 
     	ret = mt7697io_write32(qinfo, MT7697_IO_SLAVE_REG_BUS_ADDR_LOW, addr);
 	if (ret < 0) {

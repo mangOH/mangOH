@@ -188,25 +188,6 @@ static const struct mt7697q_if_ops if_ops = {
 	.write		= mt7697q_write,
 };
 
-static void mt7697_cookie_init(struct mt7697_cfg80211_info *cfg)
-{
-	u32 i;
-
-	cfg->cookie_list = NULL;
-	cfg->cookie_count = 0;
-
-	memset(cfg->cookie_mem, 0, sizeof(cfg->cookie_mem));
-
-	for (i = 0; i < MT7697_MAX_COOKIE_NUM; i++)
-		mt7697_free_cookie(cfg, &cfg->cookie_mem[i]);
-}
-
-static void mt7697_cookie_cleanup(struct mt7697_cfg80211_info *cfg)
-{
-	cfg->cookie_list = NULL;
-	cfg->cookie_count = 0;
-}
-
 static int mt7697_probe(struct platform_device *pdev)
 {	
 	struct wiphy *wiphy;
@@ -224,10 +205,10 @@ static int mt7697_probe(struct platform_device *pdev)
         }
 
 	sema_init(&cfg->sem, 1);
-	cfg->tx_workq = create_singlethread_workqueue(DRVNAME);
+	cfg->tx_workq = create_workqueue(DRVNAME);
 	if (!cfg->tx_workq) {
                 dev_err(&pdev->dev, 
-			"%s(): mt7697_cfg80211_create() failed()\n",
+			"%s(): create_workqueue() failed()\n",
 			__func__);
 		err = -ENOMEM;
 		goto failed;
@@ -239,9 +220,13 @@ static int mt7697_probe(struct platform_device *pdev)
 	spin_lock_init(&cfg->vif_list_lock);
 	INIT_LIST_HEAD(&cfg->vif_list);
 
+	INIT_LIST_HEAD(&cfg->tx_skb_list);
+	atomic_set(&cfg->tx_skb_pool_idx, 0);
+	memset(cfg->tx_skb_pool, 0, sizeof(cfg->tx_skb_pool));
+
 	cfg->hif_ops = &if_ops;
 	cfg->dev = &pdev->dev;
-	mt7697_cookie_init(cfg);
+	skb_queue_head_init(&cfg->tx_skb_queue);
 
 	cfg->vif_start = itf_idx_start;
 	cfg->vif_max = MT7697_MAX_STA;
@@ -270,7 +255,6 @@ static int mt7697_remove(struct platform_device *pdev)
 {
 	struct mt7697_cfg80211_info *cfg = platform_get_drvdata(pdev);
 
-	mt7697_cookie_cleanup(cfg);
 	mt7697_cfg80211_cleanup(cfg);
 	mt7697_cfg80211_destroy(cfg);
 	pr_info(DRVNAME" %s(): removed.\n", __func__);
@@ -433,32 +417,6 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 
 cleanup:
 	return ret;
-}
-
-struct mt7697_cookie *mt7697_alloc_cookie(struct mt7697_cfg80211_info *cfg)
-{
-	struct mt7697_cookie *cookie;
-
-	cookie = cfg->cookie_list;
-	if (cookie != NULL) {
-		cfg->cookie_list = cookie->arc_list_next;
-		cfg->cookie_count--;
-	}
-
-	return cookie;
-}
-
-void mt7697_free_cookie(struct mt7697_cfg80211_info *cfg, 
-                        struct mt7697_cookie *cookie)
-{
-	/* Insert first */
-	if (!cfg || !cookie)
-		return;
-
-	cookie->skb = NULL;
-	cookie->arc_list_next = cfg->cookie_list;
-	cfg->cookie_list = cookie;
-	cfg->cookie_count++;
 }
 
 MODULE_AUTHOR("Sierra Wireless Corporation");

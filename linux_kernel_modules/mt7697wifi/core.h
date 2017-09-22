@@ -38,6 +38,7 @@
 #define MT7697_MAX_MC_FILTERS_PER_LIST 	7
 #define MT7697_MAX_COOKIE_NUM		180
 #define MT7697_TX_TIMEOUT      		10
+#define MT7697_TX_PKT_POOL_LEN		64
 /* TODO update below */
 #define MT7697_DISCON_TIMER_INTVAL_MSEC (300 * 1000)
 
@@ -78,9 +79,9 @@ enum mt7697_vif_state {
         SCHED_SCANNING,
 };
 
-struct mt7697_cookie {
+struct mt7697_tx_pkt {
 	struct sk_buff *skb;
-	struct mt7697_cookie *arc_list_next;
+	struct list_head next;
 };
 
 struct mt7697_cfg80211_info {
@@ -96,13 +97,14 @@ struct mt7697_cfg80211_info {
 
 	struct work_struct init_work;
 
-	struct mt7697_cookie *cookie_list;
-	u32 cookie_count;
-	struct mt7697_cookie cookie_mem[MT7697_MAX_COOKIE_NUM];
-
+	atomic_t tx_skb_pool_idx;
+	struct mt7697_tx_pkt tx_skb_pool[MT7697_TX_PKT_POOL_LEN];
+	struct sk_buff_head tx_skb_queue;
+	struct list_head tx_skb_list;
 	struct workqueue_struct *tx_workq;
 	struct work_struct tx_work;
 	struct mt7697_tx_raw_packet tx_req;
+
 	u8 rx_data[LEN32_ALIGNED(IEEE80211_MAX_FRAME_LEN)];
 	u8 probe_data[LEN32_ALIGNED(IEEE80211_MAX_DATA_LEN)];
 	
@@ -219,8 +221,5 @@ int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr*, void*);
 
 void mt7697_disconnect_timer_hndlr(unsigned long);
 int mt7697_disconnect(struct mt7697_vif*);
-
-struct mt7697_cookie *mt7697_alloc_cookie(struct mt7697_cfg80211_info*);
-void mt7697_free_cookie(struct mt7697_cfg80211_info*, struct mt7697_cookie*);
 
 #endif

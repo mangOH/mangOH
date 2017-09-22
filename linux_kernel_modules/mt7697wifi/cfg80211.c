@@ -1189,6 +1189,8 @@ struct wireless_dev* mt7697_interface_add(struct mt7697_cfg80211_info *cfg,
 		INIT_LIST_HEAD(&vif->sta_list);
 		vif->sta_max = MT7697_MAX_STA;
 
+//		INIT_LIST_HEAD(&vif->rx_pkt_list);
+
 		ndev->addr_assign_type = NET_ADDR_PERM;
 		ndev->addr_len = ETH_ALEN;
 		ndev->dev_addr = cfg->mac_addr.addr;

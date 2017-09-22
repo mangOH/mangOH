@@ -38,7 +38,7 @@ int mt7697_irq_run(struct mt7697q_info *qinfo)
 
 	if (s2m_mbox) {
 		if (!queue_delayed_work(qinfo->irq_workq, 
-			&qinfo->irq_delayed_work, usecs_to_jiffies(100))) {
+			&qinfo->irq_delayed_work, usecs_to_jiffies(10))) {
 			dev_err(qinfo->dev, 
 				"%s(): queue_delayed_work() failed\n", 
 				__func__);

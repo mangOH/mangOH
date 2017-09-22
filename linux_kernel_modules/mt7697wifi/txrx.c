@@ -22,12 +22,10 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
-	struct mt7697_cookie *cookie;
+	struct mt7697_tx_pkt *tx_skb;
 	int ret = 0;
 
-	dev_dbg(cfg->dev, 
-		"%s(): tx cookie cnt(%u) skb(0x%p), data(0x%p), len(%u)\n", 
-		__func__, cfg->cookie_count, skb, skb->data, skb->len);
+	dev_dbg(cfg->dev, "%s(): tx len(%u)\n", __func__, skb->len);
 
 	if (!test_bit(CONNECTED, &vif->flags)) {
 		dev_warn(cfg->dev, "%s(): interface not associated\n", 
@@ -49,15 +47,22 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 		}
 	}
 
-	cookie = mt7697_alloc_cookie(cfg);
-	if (cookie == NULL) {
-		ret = -ENOMEM;
+	tx_skb = &cfg->tx_skb_pool[atomic_read(&cfg->tx_skb_pool_idx)];
+	if (tx_skb->skb) {
+		dev_warn(cfg->dev, "%s(): tx pool full\n", 
+			__func__);
+		ret = -EAGAIN;
 		goto cleanup;
-	}
+ 	}
 
-	dev_dbg(cfg->dev, "%s(): tx cookie/cnt(0x%p/%u)\n", 
-		__func__, cookie, cfg->cookie_count);
-	cookie->skb = skb;
+	tx_skb->skb = skb;
+	dev_dbg(cfg->dev, "%s(): tx pkt(%u/%p)\n", 
+		__func__, atomic_read(&cfg->tx_skb_pool_idx), tx_skb->skb);
+
+	atomic_inc(&cfg->tx_skb_pool_idx);
+	if (atomic_read(&cfg->tx_skb_pool_idx) >= MT7697_TX_PKT_POOL_LEN) 
+		atomic_set(&cfg->tx_skb_pool_idx, 0);
+	list_add_tail(&tx_skb->next, &cfg->tx_skb_list);
 
 	ret = queue_work(cfg->tx_workq, &cfg->tx_work);
 	if (ret < 0) {
@@ -80,35 +85,26 @@ void mt7697_tx_work(struct work_struct *work)
 {
         struct mt7697_cfg80211_info *cfg = container_of(work, 
 		struct mt7697_cfg80211_info, tx_work);
-	struct sk_buff_head skb_queue;
+	struct mt7697_tx_pkt *tx_pkt, *tx_pkt_next = NULL;
 	struct ieee80211_hdr *hdr;
 	int ret;
 
-	skb_queue_head_init(&skb_queue);
-
-	dev_dbg(cfg->dev, "%s(): tx cookie cnt(%u)\n", 
-		__func__, cfg->cookie_count);
-	while (cfg->cookie_count < MT7697_MAX_COOKIE_NUM) {
-		struct mt7697_vif *vif;
-		struct mt7697_cookie *cookie = &cfg->cookie_mem[cfg->cookie_count];
-		if (!cookie->skb)
-			break;
-
-		vif = netdev_priv(cookie->skb->dev);
+	list_for_each_entry_safe(tx_pkt, tx_pkt_next, &cfg->tx_skb_list, next) {
+		struct mt7697_vif *vif = netdev_priv(tx_pkt->skb->dev);
 		WARN_ON(!vif);
 
        		/* validate length for ether packet */
-        	if (cookie->skb->len < sizeof(*hdr)) {
+        	if (tx_pkt->skb->len < sizeof(*hdr)) {
 			dev_err(cfg->dev, "%s(): invalid skb len(%u < %u)\n", 
-				__func__, cookie->skb->len, sizeof(*hdr));
+				__func__, tx_pkt->skb->len, sizeof(*hdr));
 
 			vif->net_stats.tx_errors++;
                 	ret = -EINVAL;
                 	goto cleanup;
         	}
 
-		ret = mt7697_wr_tx_raw_packet(cfg, cookie->skb->data, 
-			cookie->skb->len);
+		ret = mt7697_wr_tx_raw_packet(cfg, tx_pkt->skb->data, 
+			tx_pkt->skb->len);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
 				"%s(): mt7697_wr_tx_raw_packet() failed(%d)\n", 
@@ -117,19 +113,16 @@ void mt7697_tx_work(struct work_struct *work)
 			goto cleanup;
 		}
 
+		dev_dbg(cfg->dev, "%s(): tx complete pkt(%p)\n", __func__, tx_pkt->skb);
 		vif->net_stats.tx_packets++;
-		vif->net_stats.tx_bytes += cookie->skb->len;
+		vif->net_stats.tx_bytes += tx_pkt->skb->len;
+		list_del(&tx_pkt->next);
 
-		__skb_queue_tail(&skb_queue, cookie->skb);
-		mt7697_free_cookie(cfg, cookie);
-
-		dev_dbg(cfg->dev, "%s(): tx cookie cnt(%u)\n", 
-			__func__, cfg->cookie_count);
-		if (cfg->cookie_count < MT7697_MAX_COOKIE_NUM) 
-			cookie = &cfg->cookie_mem[cfg->cookie_count];
+		__skb_queue_tail(&cfg->tx_skb_queue, tx_pkt->skb);
+		tx_pkt->skb = NULL;
 	}
 
-	__skb_queue_purge(&skb_queue);
+	__skb_queue_purge(&cfg->tx_skb_queue);
 
 cleanup:
 	return;
@@ -180,6 +173,7 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 	vif->net_stats.rx_bytes += len;
 
 	skb->protocol = eth_type_trans(skb, skb->dev);
+	skb->ip_summed = CHECKSUM_UNNECESSARY;
 	dev_dbg(cfg->dev, "%s(): rx frame protocol(%u) type(%u)\n", 
 		__func__, skb->protocol, skb->pkt_type);
 
