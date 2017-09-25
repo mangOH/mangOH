@@ -82,15 +82,7 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
 		if (cfg->wifi_cfg.opmode != MT7697_WIFI_MODE_AP_ONLY) {
 			cfg->wifi_cfg.opmode = MT7697_WIFI_MODE_AP_ONLY;
 			cfg->port_type = MT7697_PORT_AP;
-			vif->wdev.iftype = NL80211_IFTYPE_AP;
-
-			ret = mt7697_wr_set_op_mode_req(cfg);
-			if (ret < 0) {
-				dev_err(cfg->dev, 
-					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
-					__func__, ret);
-       				goto cleanup;
-    			}
+			vif->wdev.iftype = NL80211_IFTYPE_AP;	
 		}
 
                 break;
@@ -99,14 +91,6 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
 			cfg->wifi_cfg.opmode = MT7697_WIFI_MODE_STA_ONLY;
 			cfg->port_type = MT7697_PORT_STA;
 			vif->wdev.iftype = NL80211_IFTYPE_STATION;
-
-			ret = mt7697_wr_set_op_mode_req(cfg);
-			if (ret < 0) {
-				dev_err(cfg->dev, 
-					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
-					__func__, ret);
-       				goto cleanup;
-    			}
 		}
 
                 break;
@@ -290,6 +274,16 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 	memcpy(wdev->ssid, ssid, len);
         wdev->ssid_len = len;
 
+	if (vif->ssid_len > 0) {
+		ret = mt7697_wr_set_op_mode_req(cfg);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
+				__func__, ret);
+       			goto cleanup;
+    		}
+	}
+
 	ret = mt7697_wr_set_ssid_req(cfg, len, ssid);
 	if (ret < 0) {
 		dev_err(cfg->dev, 
@@ -327,7 +321,7 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 			goto cleanup;
 		}
 	}
-	else {
+	else if (vif->ssid_len > 0) {
 		ret = mt7697_wr_set_security_mode_req(cfg, 
                 	MT7697_WIFI_AUTH_MODE_OPEN, 
 			MT7697_WIFI_ENCRYPT_TYPE_ENCRYPT_DISABLED);
@@ -500,18 +494,6 @@ static int mt7697_wext_siwencodeext(struct net_device *ndev,
 			DUMP_PREFIX_OFFSET, 16, 1, ext->key, ext->key_len, 0);
 
 		memcpy(vif->pmk, ext->key, ext->key_len);
-
-		if (wdev->iftype == NL80211_IFTYPE_AP) {
-			ret = mt7697_wr_set_security_mode_req(cfg, 
-                                                      MT7697_WIFI_AUTH_MODE_WPA2_PSK, 
-						      MT7697_WIFI_ENCRYPT_TYPE_AES_ENABLED);
-			if (ret < 0) {
-				dev_err(cfg->dev, 
-					"%s(): mt7697_wr_set_security_mode_req() failed(%d)\n", 
-					__func__, ret);
-                		goto cleanup;
-			}
-		}
         }
 
 cleanup:
