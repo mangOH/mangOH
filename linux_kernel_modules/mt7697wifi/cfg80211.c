@@ -1019,19 +1019,76 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 
 		vif->sta_count = 0;
 		spin_unlock_bh(&vif->sta_list_lock);
-
-		ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697q_wr_unused() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
 	}
 
 	vif->sme_state = SME_DISCONNECTED;
 	clear_bit(CONNECTED, &vif->flags);
 	clear_bit(CONNECT_PEND, &vif->flags);
+
+	vif->cfg->wifi_cfg.opmode = MT7697_WIFI_MODE_STA_ONLY;
+	vif->cfg->port_type = MT7697_PORT_STA;
+	vif->wdev.iftype = NL80211_IFTYPE_STATION;
+	ret = mt7697_wr_set_op_mode_req(vif->cfg);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, 
+			"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
+			__func__, ret);
+       		goto cleanup;
+    	}
+
+	memset(vif->ssid, 0, IEEE80211_MAX_SSID_LEN);
+	ret = mt7697_wr_set_ssid_req(vif->cfg, IEEE80211_MAX_SSID_LEN, vif->ssid);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, 
+			"%s(): mt7697_wr_set_ssid_req() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+	memset(vif->req_bssid, 0, ETH_ALEN);
+	ret = mt7697_wr_set_bssid_req(vif->cfg, vif->req_bssid);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, 
+			"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+	memset(vif->pmk, 0, MT7697_WIFI_LENGTH_PMK);
+	ret = mt7697_wr_set_pmk_req(vif->cfg, vif->pmk);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+	ret = mt7697_wr_reload_settings_req(vif->cfg, vif->fw_vif_idx);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, 
+			"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+	if (vif->cfg->radio_state == MT7697_RADIO_STATE_ON) {
+		ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
+	}
+
+	ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, 
+			"%s(): mt7697q_wr_unused() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
 
 	/* Stop netdev queues, needed during recovery */
 	netif_stop_queue(vif->ndev);
@@ -1107,13 +1164,6 @@ static void mt7697_cleanup_vif(struct mt7697_cfg80211_info *cfg)
 		list_del(&vif->next);
 		WARN_ON(vif->sta_count > 0);
 		spin_unlock_bh(&cfg->vif_list_lock);
-		
-		ret = mt7697_cfg80211_stop(vif);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_cfg80211_stop() failed(%d)\n", 
-				__func__, ret);
-		}
 
 		unregister_netdev(vif->ndev);	
 
@@ -1188,8 +1238,6 @@ struct wireless_dev* mt7697_interface_add(struct mt7697_cfg80211_info *cfg,
 		spin_lock_init(&vif->sta_list_lock);
 		INIT_LIST_HEAD(&vif->sta_list);
 		vif->sta_max = MT7697_MAX_STA;
-
-//		INIT_LIST_HEAD(&vif->rx_pkt_list);
 
 		ndev->addr_assign_type = NET_ADDR_PERM;
 		ndev->addr_len = ETH_ALEN;

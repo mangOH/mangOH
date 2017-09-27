@@ -140,16 +140,13 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		goto failed;
 	}
 
-	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
-		err = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_OFF);
-		if (err < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
-				__func__, err);
-			goto failed;
-		}
-
-		cfg->radio_state = MT7697_RADIO_STATE_OFF;
+	cfg->radio_state = MT7697_RADIO_STATE_OFF;
+	err = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_OFF);
+	if (err < 0) {
+		dev_err(cfg->dev, 
+			"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+			__func__, err);
+		goto failed;
 	}
 
 	err = mt7697_wr_cfg_req(cfg);
@@ -348,61 +345,6 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 		if (ret < 0) {
 			dev_err(vif->cfg->dev, 
 				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		memset(vif->ssid, 0, IEEE80211_MAX_SSID_LEN);
-		ret = mt7697_wr_set_ssid_req(vif->cfg, IEEE80211_MAX_SSID_LEN, vif->ssid);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_set_ssid_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		memset(vif->req_bssid, 0, ETH_ALEN);
-		ret = mt7697_wr_set_bssid_req(vif->cfg, vif->req_bssid);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		memset(vif->pmk, 0, MT7697_WIFI_LENGTH_PMK);
-		ret = mt7697_wr_set_pmk_req(vif->cfg, vif->pmk);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		ret = mt7697_wr_reload_settings_req(vif->cfg, vif->fw_vif_idx);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		if ((vif->cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) && 
-		    (vif->cfg->radio_state == MT7697_RADIO_STATE_ON)) {
-			ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);
-			if (ret < 0) {
-				dev_err(vif->cfg->dev, 
-					"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
-					__func__, ret);
-				goto cleanup;
-			}
-
-			vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
-		}
-
-		ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697q_wr_unused() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
