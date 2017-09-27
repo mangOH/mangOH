@@ -158,9 +158,9 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 		goto cleanup;
 	}
 
-	skb = alloc_skb(len, GFP_KERNEL);
+	skb = dev_alloc_skb(len);
 	if (!skb) {
-		dev_err(cfg->dev, "%s(): alloc_skb() failed\n", __func__);
+		dev_err(cfg->dev, "%s(): dev_alloc_skb() failed\n", __func__);
 		ret = -ENOMEM;
 		goto cleanup;
 	}
@@ -192,6 +192,7 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 
 cleanup:
 	if (ret < 0) {
+		vif->net_stats.rx_dropped++;
 		vif->net_stats.rx_errors++;
 		if (skb) dev_kfree_skb(skb);
 	}
