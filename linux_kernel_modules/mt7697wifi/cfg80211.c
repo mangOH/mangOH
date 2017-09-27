@@ -1154,7 +1154,6 @@ cleanup:
 static void mt7697_cleanup_vif(struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_vif *vif, *vif_next = NULL;
-	int ret;
 
 	spin_lock_bh(&cfg->vif_list_lock);
 	list_for_each_entry_safe(vif, vif_next, &cfg->vif_list, next) {
