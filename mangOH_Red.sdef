@@ -68,4 +68,8 @@ kernelModules:
     // Re-enabled once cp2130 is added again
     //$MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
     //$MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+
+    // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
+    // loaded.
+    $LEGATO_ROOT/drivers/spisvc/spisvc
 }
