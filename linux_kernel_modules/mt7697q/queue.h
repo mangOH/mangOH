@@ -55,7 +55,7 @@ struct mt7697q_info {
 	struct mt7697q_spec 		queues[MT7697_NUM_QUEUES];
 	struct mt7697q_rsp_hdr 		rsp;
 	u8 				txBuffer[sizeof(u32)];
-	u8 				rxBuffer[sizeof(u16)];
+	u8 				rxBuffer[sizeof(u32)];
 	
 	struct device			*dev;
 	void 				*hw_priv;

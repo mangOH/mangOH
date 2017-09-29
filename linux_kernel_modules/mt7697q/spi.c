@@ -30,6 +30,18 @@
 #include "queue.h"
 #include "spi.h"
 
+static int mt7697spi_write_then_read(struct spi_device *spi, const void *txbuf,
+				     void *rxbuf, unsigned len)
+{
+	struct spi_transfer transfer = {
+		.tx_buf		= txbuf,
+		.rx_buf		= rxbuf,
+		.len		= len,
+	};
+
+	return spi_sync_transfer(spi, &transfer, 1);
+}
+
 static void mt7697spi_reset(struct spi_device *spi)
 {
 
@@ -53,7 +65,7 @@ static const struct mt7697spi_hw_ops hw_ops =
 {
 	.write			= spi_write,
 	.read			= spi_read,
-	.write_then_read	= spi_write_then_read,
+	.write_then_read	= mt7697spi_write_then_read,
 	.reset			= mt7697spi_reset,
 	.enable_irq		= mt7697spi_enable_irq,
 	.disable_irq		= mt7697spi_disable_irq,
@@ -72,8 +84,6 @@ static int __init mt7697spi_init(void)
 	pr_info(DRVNAME" %s(): '%s' initialize\n", __func__, DRVNAME);
 
 	while (!master && (bus_num >= 0)) {
-//		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-//			__func__, bus_num);
 		master = spi_busnum_to_master(bus_num);
 		if (!master) 
 			bus_num--;
@@ -136,9 +146,10 @@ static int __init mt7697spi_init(void)
 	INIT_DELAYED_WORK(&qinfo->irq_delayed_work, mt7697_irq_delayed_work);
 	INIT_WORK(&qinfo->irq_work, mt7697_irq_work);
 
-	qinfo->irq_workq = create_workqueue(DRVNAME"wq");
+	qinfo->irq_workq = alloc_workqueue(DRVNAME"wq", 
+		WQ_HIGHPRI | WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
 	if (!qinfo->irq_workq) {
-		dev_err(qinfo->dev, "%s(): create_workqueue() failed\n", 
+		dev_err(qinfo->dev, "%s(): alloc_workqueue() failed\n", 
 			__func__);
 		ret = -ENOMEM;
 		goto cleanup;
@@ -189,8 +200,6 @@ static void __exit mt7697spi_exit(void)
 	int bus_num = MT7697_SPI_BUS_NUM;
 
 	while (!master && (bus_num >= 0)) {
-//		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-//			__func__, bus_num);
 		master = spi_busnum_to_master(bus_num);
 		if (!master)
 			bus_num--;

@@ -83,16 +83,15 @@ static int mt7697io_read16(struct mt7697q_info *qinfo, u8 reg, u16 *value)
 	qinfo->txBuffer[0] = MT7697_IO_CMD_READ;
 	qinfo->txBuffer[1] = reg;
 
-	ret = qinfo->hw_ops->write_then_read(qinfo->hw_priv, 
-		qinfo->txBuffer, sizeof(u16), 
-		qinfo->rxBuffer, sizeof(qinfo->rxBuffer));
+	ret = qinfo->hw_ops->write_then_read(qinfo->hw_priv,
+		qinfo->txBuffer, qinfo->rxBuffer, sizeof(u16) + sizeof(u16));
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): write_then_read() failed(%d)\n", 
 			__func__, ret);
        		goto cleanup;
     	}
 
-	*value = ((qinfo->rxBuffer[0] << 8) | qinfo->rxBuffer[1]);
+	*value = ((qinfo->rxBuffer[2] << 8) | qinfo->rxBuffer[3]);
 
 cleanup:
     	return ret;

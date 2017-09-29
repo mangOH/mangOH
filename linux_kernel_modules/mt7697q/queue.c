@@ -426,14 +426,14 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 			dev_dbg(qsS2M->qinfo->dev, "%s(): avail(%u) len(%u) req(%u)\n", 
 				__func__, avail, qsS2M->qinfo->rsp.cmd.len, req);
 		}
-	}
 
-	ret =  mt7697q_push_rd_ptr(qsS2M);
-	if (ret < 0) {
-		dev_err(qsS2M->qinfo->dev, 
-			"%s(): mt7697q_push_rd_ptr() failed(%d)\n", 
-			__func__, ret);
-       		goto cleanup;
+		ret =  mt7697q_push_rd_ptr(qsS2M);
+		if (ret < 0) {
+			dev_err(qsS2M->qinfo->dev, 
+				"%s(): mt7697q_push_rd_ptr() failed(%d)\n", 
+				__func__, ret);
+       			goto cleanup;
+		}
 	}
 
 cleanup:

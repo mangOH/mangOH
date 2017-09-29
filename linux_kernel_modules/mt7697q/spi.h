@@ -36,8 +36,7 @@
 struct mt7697spi_hw_ops {
 	int (*write)(struct spi_device*, const void*, size_t);
 	int (*read)(struct spi_device*, void*, size_t);
-	int (*write_then_read)(struct spi_device*, const void*, unsigned, 
-		void*, unsigned);
+	int (*write_then_read)(struct spi_device*, const void*, void*, unsigned);
 	void (*reset)(struct spi_device*);
 	void (*enable_irq)(struct spi_device*);
 	void (*disable_irq)(struct spi_device*);
