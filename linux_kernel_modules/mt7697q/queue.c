@@ -734,21 +734,23 @@ size_t mt7697q_write(void *hndl, const u32 *buff, size_t num)
 
 	mutex_lock(&qs->qinfo->mutex);
 
-	ret = mt7697q_pull_rd_ptr(qs);
-	if (ret < 0) {
-		dev_err(qs->qinfo->dev, 
-			"%s(): mt7697q_pull_rd_ptr() failed(%d)\n", 
-			__func__, ret);
-       		goto cleanup;
-    	}
-
 	avail = mt7697q_get_free_words(qs);
 	dev_dbg(qs->qinfo->dev, "%s(): free words(%u)\n", __func__, avail);
 	if (avail < num) {
-		dev_warn(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
-			__func__, avail, num);
-		ret = -EAGAIN;
-		goto cleanup;
+		ret = mt7697q_pull_rd_ptr(qs);
+		if (ret < 0) {
+			dev_err(qs->qinfo->dev, 
+				"%s(): mt7697q_pull_rd_ptr() failed(%d)\n", 
+				__func__, ret);
+       			goto cleanup;
+    		}
+
+		if (avail < num) {
+			dev_warn(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
+				__func__, avail, num);
+			ret = -EAGAIN;
+			goto cleanup;
+		}
 	}
 
 	buff_words = BF_GET(qs->data.flags, MT7697_QUEUE_FLAGS_NUM_WORDS_OFFSET, 
