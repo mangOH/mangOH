@@ -27,13 +27,6 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 
 	dev_dbg(cfg->dev, "%s(): tx len(%u)\n", __func__, skb->len);
 
-	if (!test_bit(CONNECTED, &vif->flags)) {
-		dev_warn(cfg->dev, "%s(): interface not associated\n", 
-			__func__);
-		ret = -EAGAIN;
-		goto cleanup;
-	}
-
 	dev_dbg(cfg->dev, "%s(): headroom skb/needed(%u/%u)\n", 
 		__func__, skb_headroom(skb), ndev->needed_headroom);
 	if (skb_headroom(skb) < ndev->needed_headroom) {
