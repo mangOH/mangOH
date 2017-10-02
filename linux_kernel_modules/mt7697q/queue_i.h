@@ -75,9 +75,10 @@ struct mt7697_queue_reset_req {
 } __attribute__((packed, aligned(4)));
 
 typedef int (*rx_hndlr)(const struct mt7697q_rsp_hdr*, void*);
+typedef int (*notify_tx_hndlr)(void*);
 
 struct mt7697q_if_ops {
-	int (*init)(u8, u8, void*, rx_hndlr, void**, void**);
+	int (*init)(u8, u8, void*, notify_tx_hndlr, rx_hndlr, void**, void**);
 	size_t (*read)(void*, u32*, size_t);
 	size_t (*write)(void*, const u32*, size_t);
 	void (*reset)(void*);
@@ -88,7 +89,7 @@ struct mt7697q_if_ops {
 u32 mt7697q_flags_get_in_use(u32);
 u32 mt7697q_flags_get_dir(u32);
 
-int mt7697q_init(u8, u8, void*, rx_hndlr, void**, void**);
+int mt7697q_init(u8, u8, void*, notify_tx_hndlr, rx_hndlr, void**, void**);
 int mt7697q_wr_reset(void*, void*);
 int mt7697q_wr_unused(void*, void*);
 size_t mt7697q_read(void*, u32*, size_t);

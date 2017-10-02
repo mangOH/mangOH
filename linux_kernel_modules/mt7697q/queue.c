@@ -511,8 +511,8 @@ cleanup:
 
 EXPORT_SYMBOL(mt7697q_wr_reset);
 
-int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn, 
-	         void** tx_hndl, void** rx_hndl)
+int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, notify_tx_hndlr notify_tx_fcn,
+		 rx_hndlr rx_fcn, void** tx_hndl, void** rx_hndl)
 {
 	char str[32];
 	struct spi_master *master = NULL;
@@ -583,6 +583,7 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn,
 	qsTx->qinfo = qinfo;
 	qsTx->ch = tx_ch;
 	qsTx->priv = priv;
+	qsTx->notify_tx_fcn = notify_tx_fcn;
 	*tx_hndl = qsTx;
 
    	qsRx = &qinfo->queues[rx_ch];
@@ -746,7 +747,7 @@ size_t mt7697q_write(void *hndl, const u32 *buff, size_t num)
     		}
 
 		if (avail < num) {
-			dev_warn(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
+			dev_dbg(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
 				__func__, avail, num);
 			ret = -EAGAIN;
 			goto cleanup;

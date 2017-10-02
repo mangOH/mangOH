@@ -131,7 +131,8 @@ static void mt7697_init_hw_start(struct work_struct *work)
 	dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n", 
 		__func__, MT7697_MAC80211_QUEUE_TX, MT7697_MAC80211_QUEUE_RX);
 	err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, 
-		                 MT7697_MAC80211_QUEUE_RX, cfg, 
+		                 MT7697_MAC80211_QUEUE_RX, cfg,
+				 mt7697_notify_tx, 
                                  mt7697_proc_80211cmd, 
 		                 &cfg->txq_hdl, &cfg->rxq_hdl);
 	if (err < 0) {
@@ -217,6 +218,7 @@ static int mt7697_probe(struct platform_device *pdev)
 	spin_lock_init(&cfg->vif_list_lock);
 	INIT_LIST_HEAD(&cfg->vif_list);
 
+	spin_lock_init(&cfg->tx_skb_list_lock);
 	INIT_LIST_HEAD(&cfg->tx_skb_list);
 	atomic_set(&cfg->tx_skb_pool_idx, 0);
 	memset(cfg->tx_skb_pool, 0, sizeof(cfg->tx_skb_pool));

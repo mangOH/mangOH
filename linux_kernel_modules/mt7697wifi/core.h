@@ -38,7 +38,7 @@
 #define MT7697_MAX_MC_FILTERS_PER_LIST 	7
 #define MT7697_MAX_COOKIE_NUM		180
 #define MT7697_TX_TIMEOUT      		10
-#define MT7697_TX_PKT_POOL_LEN		128
+#define MT7697_TX_PKT_POOL_LEN		64
 /* TODO update below */
 #define MT7697_DISCON_TIMER_INTVAL_MSEC (300 * 1000)
 
@@ -97,6 +97,7 @@ struct mt7697_cfg80211_info {
 
 	struct work_struct init_work;
 
+	spinlock_t tx_skb_list_lock;
 	atomic_t tx_skb_pool_idx;
 	struct mt7697_tx_pkt tx_skb_pool[MT7697_TX_PKT_POOL_LEN];
 	struct sk_buff_head tx_skb_queue;
@@ -214,6 +215,7 @@ void mt7697_init_netdev(struct net_device*);
 struct mt7697_vif *mt7697_get_vif_by_idx(struct mt7697_cfg80211_info*, u32);
 struct wireless_dev *mt7697_interface_add(struct mt7697_cfg80211_info*, 
 	const char*, enum nl80211_iftype, u8);
+int mt7697_notify_tx(void*);
 void mt7697_tx_work(struct work_struct *);
 int mt7697_data_tx(struct sk_buff*, struct net_device*);
 int mt7697_rx_data(struct mt7697_cfg80211_info*, u32, u32);

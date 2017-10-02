@@ -47,6 +47,7 @@ struct mt7697q_spec {
 	struct mt7697q_data		data;
 	struct mt7697q_info             *qinfo;
 	void				*priv;
+	notify_tx_hndlr			notify_tx_fcn;
 	rx_hndlr			rx_fcn;
 	u8				ch;
 };

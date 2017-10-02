@@ -1555,7 +1555,7 @@ int mt7697_wr_tx_raw_packet(struct mt7697_cfg80211_info* cfg,
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&cfg->tx_req, 
 		LEN_TO_WORD(LEN32_ALIGNED(cfg->tx_req.cmd.len)));
 	if (ret != LEN_TO_WORD(LEN32_ALIGNED(cfg->tx_req.cmd.len))) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
+		dev_dbg(cfg->dev, "%s(): write() failed(%d != %d)\n", 
 			__func__, ret,
 			LEN_TO_WORD(LEN32_ALIGNED(cfg->tx_req.cmd.len)));
 		ret = (ret < 0) ? ret:-EIO;

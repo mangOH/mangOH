@@ -18,6 +18,26 @@
 #include "common.h"
 #include "core.h"
 
+int mt7697_notify_tx(void* priv)
+{
+	struct mt7697_cfg80211_info *cfg = (struct mt7697_cfg80211_info*)priv;
+	int ret = 0;
+
+	spin_lock_bh(&cfg->tx_skb_list_lock);
+	if (!list_empty(&cfg->tx_skb_list)) {
+		ret = queue_work(cfg->tx_workq, &cfg->tx_work);
+		if (ret < 0) {
+			dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+	}
+
+cleanup:
+	spin_unlock_bh(&cfg->tx_skb_list_lock);
+	return ret;
+}
+
 int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -55,7 +75,10 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 	atomic_inc(&cfg->tx_skb_pool_idx);
 	if (atomic_read(&cfg->tx_skb_pool_idx) >= MT7697_TX_PKT_POOL_LEN) 
 		atomic_set(&cfg->tx_skb_pool_idx, 0);
+
+	spin_lock_bh(&cfg->tx_skb_list_lock);
 	list_add_tail(&tx_skb->next, &cfg->tx_skb_list);
+	spin_unlock_bh(&cfg->tx_skb_list_lock);
 
 	ret = queue_work(cfg->tx_workq, &cfg->tx_work);
 	if (ret < 0) {
@@ -99,17 +122,19 @@ void mt7697_tx_work(struct work_struct *work)
 		ret = mt7697_wr_tx_raw_packet(cfg, tx_pkt->skb->data, 
 			tx_pkt->skb->len);
 		if (ret < 0) {
-			dev_err(cfg->dev, 
+			dev_dbg(cfg->dev, 
 				"%s(): mt7697_wr_tx_raw_packet() failed(%d)\n", 
 				__func__, ret);
-			vif->net_stats.tx_errors++;
 			goto cleanup;
 		}
 
 		dev_dbg(cfg->dev, "%s(): tx complete pkt(%p)\n", __func__, tx_pkt->skb);
 		vif->net_stats.tx_packets++;
 		vif->net_stats.tx_bytes += tx_pkt->skb->len;
+
+		spin_lock_bh(&cfg->tx_skb_list_lock);
 		list_del(&tx_pkt->next);
+		spin_unlock_bh(&cfg->tx_skb_list_lock);
 
 		__skb_queue_tail(&cfg->tx_skb_queue, tx_pkt->skb);
 		tx_pkt->skb = NULL;
