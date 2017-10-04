@@ -64,7 +64,7 @@ int mt7697_irq_run(struct mt7697q_info *qinfo)
        					goto cleanup;
     				}
 			}
-			else {
+			else if (mt7697q_blocked_writer(qs)) {
 				WARN_ON(!qs->notify_tx_fcn);			
 				ret = qs->notify_tx_fcn(qs->priv, mt7697q_get_free_words(qs));
 				if (ret < 0) {

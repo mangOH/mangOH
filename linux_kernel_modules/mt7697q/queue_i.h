@@ -93,6 +93,7 @@ int mt7697q_init(u8, u8, void*, notify_tx_hndlr, rx_hndlr, void**, void**);
 int mt7697q_wr_reset(void*, void*);
 int mt7697q_wr_unused(void*, void*);
 size_t mt7697q_read(void*, u32*, size_t);
+void mt7697q_unblock_writer(void*);
 size_t mt7697q_write(void*, const u32*, size_t);
 
 #endif

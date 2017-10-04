@@ -324,6 +324,11 @@ cleanup:
     	return ret;
 }
 
+__inline int mt7697q_blocked_writer(const struct mt7697q_spec *qs)
+{
+    return atomic_read(&qs->qinfo->blocked_writer);
+}
+
 int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 {
 	size_t avail;
@@ -439,6 +444,14 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 cleanup:
 	return ret;
 }
+
+__inline void mt7697q_unblock_writer(void *hndl)
+{
+	struct mt7697q_spec *qs = (struct mt7697q_spec*)hndl;
+    	atomic_set(&qs->qinfo->blocked_writer, false);
+}
+
+EXPORT_SYMBOL(mt7697q_unblock_writer);
 
 int mt7697q_wr_unused(void *tx_hndl, void* rx_hndl)
 {
@@ -584,6 +597,7 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, notify_tx_hndlr notify_tx_fcn,
 	qsTx->ch = tx_ch;
 	qsTx->priv = priv;
 	qsTx->notify_tx_fcn = notify_tx_fcn;
+	atomic_set(&qsTx->qinfo->blocked_writer, false);
 	*tx_hndl = qsTx;
 
    	qsRx = &qinfo->queues[rx_ch];
@@ -749,6 +763,7 @@ size_t mt7697q_write(void *hndl, const u32 *buff, size_t num)
 		if (avail < num) {
 			dev_dbg(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
 				__func__, avail, num);
+			atomic_set(&qs->qinfo->blocked_writer, true);
 			ret = -EAGAIN;
 			goto cleanup;
 		}
