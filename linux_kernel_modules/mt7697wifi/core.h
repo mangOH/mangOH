@@ -80,8 +80,8 @@ enum mt7697_vif_state {
 };
 
 struct mt7697_tx_pkt {
-	struct sk_buff *skb;
 	struct list_head next;
+	struct sk_buff *skb;
 };
 
 struct mt7697_cfg80211_info {
@@ -215,7 +215,7 @@ void mt7697_init_netdev(struct net_device*);
 struct mt7697_vif *mt7697_get_vif_by_idx(struct mt7697_cfg80211_info*, u32);
 struct wireless_dev *mt7697_interface_add(struct mt7697_cfg80211_info*, 
 	const char*, enum nl80211_iftype, u8);
-int mt7697_notify_tx(void*);
+int mt7697_notify_tx(void*, u32);
 void mt7697_tx_work(struct work_struct *);
 int mt7697_data_tx(struct sk_buff*, struct net_device*);
 int mt7697_rx_data(struct mt7697_cfg80211_info*, u32, u32);

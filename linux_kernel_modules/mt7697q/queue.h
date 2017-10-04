@@ -76,6 +76,7 @@ void mt7697_irq_delayed_work(struct work_struct*);
 void mt7697_irq_work(struct work_struct*);
 irqreturn_t mt7697_isr(int, void*);
 
+size_t mt7697q_get_free_words(const struct mt7697q_spec*);
 int mt7697q_proc_data(struct mt7697q_spec*);
 int mt7697q_get_s2m_mbx(struct mt7697q_info*, u8*);
 

@@ -52,11 +52,6 @@ static __inline size_t mt7697q_get_num_words(const struct mt7697q_spec *qs)
         	qs->data.rd_offset, qs->data.wr_offset);
 }
 
-static __inline size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
-{
-    	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
-}
-
 static int mt7697q_wr_init(u8 tx_ch, u8 rx_ch, struct mt7697q_spec *qs)
 {
 	struct mt7697_queue_init_req req;
@@ -293,6 +288,11 @@ static int mt7697q_proc_queue_rsp(struct mt7697q_spec *qs)
 
 cleanup:
 	return ret;
+}
+
+__inline size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
+{
+    	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
 }
 
 int mt7697q_get_s2m_mbx(struct mt7697q_info *qinfo, u8* s2m_mbox)

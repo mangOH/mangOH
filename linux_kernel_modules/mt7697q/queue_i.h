@@ -75,7 +75,7 @@ struct mt7697_queue_reset_req {
 } __attribute__((packed, aligned(4)));
 
 typedef int (*rx_hndlr)(const struct mt7697q_rsp_hdr*, void*);
-typedef int (*notify_tx_hndlr)(void*);
+typedef int (*notify_tx_hndlr)(void*, u32);
 
 struct mt7697q_if_ops {
 	int (*init)(u8, u8, void*, notify_tx_hndlr, rx_hndlr, void**, void**);

@@ -66,7 +66,7 @@ int mt7697_irq_run(struct mt7697q_info *qinfo)
 			}
 			else {
 				WARN_ON(!qs->notify_tx_fcn);			
-				ret = qs->notify_tx_fcn(qs->priv);
+				ret = qs->notify_tx_fcn(qs->priv, mt7697q_get_free_words(qs));
 				if (ret < 0) {
 					dev_err(qs->qinfo->dev, 
 						"%s(): notify_tx_fcn() failed(%d)\n", 

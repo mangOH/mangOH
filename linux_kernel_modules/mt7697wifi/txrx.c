@@ -18,18 +18,22 @@
 #include "common.h"
 #include "core.h"
 
-int mt7697_notify_tx(void* priv)
+int mt7697_notify_tx(void* priv, u32 free)
 {
 	struct mt7697_cfg80211_info *cfg = (struct mt7697_cfg80211_info*)priv;
 	int ret = 0;
 
 	spin_lock_bh(&cfg->tx_skb_list_lock);
 	if (!list_empty(&cfg->tx_skb_list)) {
-		ret = queue_work(cfg->tx_workq, &cfg->tx_work);
-		if (ret < 0) {
-			dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
+		struct mt7697_tx_pkt *tx_pkt = list_entry(&cfg->tx_skb_list, 
+			struct mt7697_tx_pkt, next);
+		if (tx_pkt->skb->len >= free) {
+			ret = queue_work(cfg->tx_workq, &cfg->tx_work);
+			if (ret < 0) {
+				dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
+					__func__, ret);
+				goto cleanup;
+			}
 		}
 	}
 
