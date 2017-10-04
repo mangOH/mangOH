@@ -45,8 +45,8 @@ kernelModules:
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
     $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv4
 
-    // Disable the cp2130 for now until the lockup issue is resolved
-    // $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
+    // cp2130 required for MT7697 WiFi/BT
+    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
 
     // Required for bmp280 & bmi160
     $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
@@ -65,9 +65,8 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
-    // Re-enabled once cp2130 is added again
-    //$MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
-    //$MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
 
     // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
     // loaded.
