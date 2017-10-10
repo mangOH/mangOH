@@ -270,6 +270,14 @@ int mt7697io_wr(struct mt7697q_info *qinfo, u32 addr, const u32 *data, size_t nu
 				__func__, ret);
        			goto cleanup;
     		}
+
+		ret = mt7697io_slave_wait(qinfo);
+		if (ret < 0) {
+			dev_err(qinfo->dev, 
+				"%s(): mt7697io_slave_wait() failed(%d)\n", 
+				__func__, ret);
+       			goto cleanup;
+    		}
     	}
 
 cleanup:
