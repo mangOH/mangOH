@@ -5,12 +5,13 @@
 #include <linux/slab.h>
 #include <linux/i2c.h>
 #include <linux/i2c/pca954x.h>
-#include <linux/i2c/sx150x.h>
+//#include <linux/i2c/sx150x.h>
 #include <linux/gpio.h>
 
 #include "mangoh.h"
 #include "lsm6ds3_platform_data.h"
-
+#include "ltc294x-platform-data.h"
+#include "bq24190-platform-data.h"
 /*
  *-----------------------------------------------------------------------------
  * Type definitions
@@ -21,6 +22,8 @@ struct red_dv2_platform_data {
 	struct i2c_client* gpio_expander;
 	struct i2c_client* accelerometer;
 	struct i2c_client* pressure;
+	struct i2c_client* battery_gauge;
+        struct i2c_client* battery_charger;
 };
 
 struct red_dv2_device
@@ -76,7 +79,7 @@ static const struct i2c_board_info red_dv2_pca954x_device_info = {
 	.platform_data = &red_dv2_pca954x_pdata,
 };
 
-static struct sx150x_platform_data red_dv2_expander_platform_data = {
+/*static struct sx150x_platform_data red_dv2_expander_platform_data = {
 	.gpio_base         = -1,
 	.oscio_is_gpo      = false,
 	.io_pullup_ena     = 0,
@@ -86,12 +89,13 @@ static struct sx150x_platform_data red_dv2_expander_platform_data = {
 	.irq_summary       = -1,
 	.irq_base          = -1,
 };
-static const struct i2c_board_info red_dv2_expander_devinfo = {
+*/
+/*static const struct i2c_board_info red_dv2_expander_devinfo = {
 	I2C_BOARD_INFO("sx1509q", 0x3e),
 	.platform_data = &red_dv2_expander_platform_data,
 	.irq = 0,
 };
-
+*/
 static struct lsm6ds3_platform_data red_dv2_accelerometer_platform_data = {
 	.drdy_int_pin = 1,
 };
@@ -102,6 +106,28 @@ static struct i2c_board_info red_dv2_accelerometer_devinfo = {
 
 static struct i2c_board_info red_dv2_pressure_devinfo = {
 	I2C_BOARD_INFO("bmp280", 0x76),
+};
+
+static struct ltc294x_platform_data red_dv2_battery_gauge_platform_data = {
+	.chip_id = LTC2942_ID,
+	.r_sense = 18,
+	.prescaler_exp = 32,
+        .name = "LTC2942",
+};
+static struct i2c_board_info red_dv2_battery_gauge_devinfo = {
+	I2C_BOARD_INFO("ltc2942", 0x64),
+	.platform_data = &red_dv2_battery_gauge_platform_data,
+};
+
+static struct bq24190_platform_data red_dv2_battery_charger_platform_data = {
+        .gpio_int = 49,
+};
+
+
+
+static struct i2c_board_info red_dv2_battery_charger_devinfo = {
+	I2C_BOARD_INFO("bq24190", 0x6B),
+        .platform_data = &red_dv2_battery_charger_platform_data,
 };
 
 static const char platform_device_name[] = "mangoh red dv2";
@@ -132,7 +158,9 @@ int red_dv2_create_device(struct platform_device** d)
  * Static function definitions
  *-----------------------------------------------------------------------------
  */
-static int get_sx150x_gpio_base(struct i2c_client *client)
+#if 0
+
+//static int get_sx150x_gpio_base(struct i2c_client *client)
 {
 	/*
 	 * This is kind of a hack. It depends on the fact that we know
@@ -144,6 +172,7 @@ static int get_sx150x_gpio_base(struct i2c_client *client)
 	struct gpio_chip *expander = i2c_get_clientdata(client);
 	return expander->base;
 }
+#endif
 
 static int red_dv2_map(struct platform_device *pdev)
 {
@@ -168,7 +197,9 @@ static int red_dv2_map(struct platform_device *pdev)
 	}
 
 	/* Map GPIO expander */
-	dev_dbg(&pdev->dev, "mapping gpio expander\n");
+	#if 0
+            dev_dbg(&pdev->dev, "mapping gpio expander\n");
+       
 	/*
 	 * GPIOEXP_INT1 goes to GPIO32 on the CF3 inner ring which maps to
 	 * GPIO30 in the WP85.
@@ -191,12 +222,13 @@ static int red_dv2_map(struct platform_device *pdev)
 		dev_err(&pdev->dev, "GPIO expander is missing\n");
 		return -ENODEV;
 	}
+        #endif
 
 	/* Map the I2C LSM6DS3 accelerometer */
 	dev_dbg(&pdev->dev, "mapping lsm6ds3 accelerometer\n");
 	/* Pin 12 of the gpio expander is connected to INT2 of the lsm6ds3 */
-	red_dv2_accelerometer_devinfo.irq =
-		gpio_to_irq(get_sx150x_gpio_base(pdata->gpio_expander) + 12);
+	//red_dv2_accelerometer_devinfo.irq =
+	//	gpio_to_irq(get_sx150x_gpio_base(pdata->gpio_expander) + 12);
 	adapter = i2c_get_adapter(0);
 	if (!adapter) {
 		dev_err(&pdev->dev, "No I2C bus %d.\n", RED_DV2_I2C_SW_BASE_ADAPTER_ID);
@@ -220,6 +252,36 @@ static int red_dv2_map(struct platform_device *pdev)
 		dev_err(&pdev->dev, "Pressure sensor is missing\n");
 		return -ENODEV;
 	}
+
+	/* Map the I2C ltc2942 battery gauge */
+	dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
+	adapter = i2c_get_adapter(RED_DV2_I2C_SW_BASE_ADAPTER_ID +
+				  RED_DV2_I2C_SW_PORT_USB_HUB);
+	if (!adapter) {
+		dev_err(&pdev->dev, "No I2C bus %d.\n", RED_DV2_I2C_SW_BASE_ADAPTER_ID);
+		return -ENODEV;
+	}
+	pdata->battery_gauge = i2c_new_device(adapter, &red_dv2_battery_gauge_devinfo);
+	if (!pdata->battery_gauge) {
+		dev_err(&pdev->dev, "battery gauge is missing\n");
+		return -ENODEV;
+	}
+
+
+        /*Map the I2C BQ24296 driver: for now use the BQ24190 driver code */
+        dev_dbg(&pdev->dev, "mapping bq24296 driver\n");
+	adapter = i2c_get_adapter(RED_DV2_I2C_SW_BASE_ADAPTER_ID +
+				  RED_DV2_I2C_SW_PORT_USB_HUB);
+	if(!adapter) {
+		dev_err(&pdev->dev, "No I2C bus %d.\n", RED_DV2_I2C_SW_BASE_ADAPTER_ID);
+		return -ENODEV;
+	}
+        pdata->battery_charger = i2c_new_device(adapter, &red_dv2_battery_charger_devinfo);
+        if (!pdata->battery_gauge) {
+		dev_err(&pdev->dev, "battery charger is missing\n");
+		return -ENODEV;
+	}	
+        
 	/*
 	 * TODO:
 	 * Pressure Sensor: 0x76
@@ -240,14 +302,20 @@ static int red_dv2_unmap(struct platform_device* pdev)
 {
 	struct red_dv2_platform_data* pdata = dev_get_platdata(&pdev->dev);
 
+	i2c_unregister_device(pdata->battery_gauge);
+	i2c_put_adapter(pdata->battery_gauge->adapter);
+
 	i2c_unregister_device(pdata->pressure);
 	i2c_put_adapter(pdata->pressure->adapter);
 
 	i2c_unregister_device(pdata->accelerometer);
 	i2c_put_adapter(pdata->accelerometer->adapter);
 
-	i2c_unregister_device(pdata->gpio_expander);
-	i2c_put_adapter(pdata->gpio_expander->adapter);
+	//i2c_unregister_device(pdata->gpio_expander);
+	//i2c_put_adapter(pdata->gpio_expander->adapter);
+        
+        i2c_unregister_device(pdata->battery_charger);
+	i2c_put_adapter(pdata->battery_charger->adapter);
 
 	i2c_unregister_device(pdata->i2c_switch);
 	i2c_put_adapter(pdata->i2c_switch->adapter);

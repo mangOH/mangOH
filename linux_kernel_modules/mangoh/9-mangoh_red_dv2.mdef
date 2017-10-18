@@ -2,6 +2,10 @@ cflags:
 {
     // Needed for lsm6ds3 platform data type definition
     -I${MANGOH_ROOT}/linux_kernel_modules/lsm6ds3
+
+    -I${MANGOH_ROOT}/linux_kernel_modules/ltc294x
+    
+    -I${MANGOH_ROOT}/linux_kernel_modules/bq24296
 }
 
 sources:
