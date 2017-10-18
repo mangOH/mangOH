@@ -14,7 +14,7 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
-
+    $MANGOH_ROOT/apps/BatteryService/batteryService
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
 
     // The heartbeat app is disabled on mangOH Red because the logging messages
@@ -56,4 +56,12 @@ kernelModules:
     // Only on mangOH Red DV3
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+
+    // Only on mangOH Red DV4
+    $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
+    
+    // Required for BQ24296 
+    $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
+
+
 }

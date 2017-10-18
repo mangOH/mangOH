@@ -2,7 +2,7 @@ export MANGOH_ROOT = $(shell pwd)
 
 MKSYS_ARGS_COMMON = -s ${MANGOH_ROOT}/apps/GpioExpander/gpioExpanderService
 MKSYS_ARGS_GREEN =
-MKSYS_ARGS_RED = -s ${MANGOH_ROOT}/apps/RedSensorToCloud
+MKSYS_ARGS_RED = -s ${MANGOH_ROOT}/apps/RedSensorToCloud -i ${MANGOH_ROOT}/apps/BatteryService
 
 
 .PHONY: all
