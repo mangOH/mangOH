@@ -17,6 +17,7 @@
 #include <linux/delay.h>
 #include <linux/power_supply.h>
 #include <linux/slab.h>
+#include "ltc294x-platform-data.h"
 
 #define I16_MSB(x)			((x >> 8) & 0xFF)
 #define I16_LSB(x)			(x & 0xFF)
@@ -44,12 +45,13 @@ enum ltc294x_reg {
 	LTC2943_REG_TEMPERATURE_LSB	= 0x15,
 };
 
-enum ltc294x_id {
+/*enum ltc294x_id {
 	LTC2941_ID,
 	LTC2942_ID,
 	LTC2943_ID,
 	LTC2944_ID,
 };
+*/
 
 #define LTC2941_REG_STATUS_CHIP_ID	BIT(7)
 
@@ -63,8 +65,7 @@ enum ltc294x_id {
 
 struct ltc294x_info {
 	struct i2c_client *client;	/* I2C Client pointer */
-	struct power_supply *supply;	/* Supply pointer */
-	struct power_supply_desc supply_desc;	/* Supply description */
+	struct power_supply supply;	/* Supply pointer */
 	struct delayed_work work;	/* Work scheduler */
 	enum ltc294x_id id;		/* Chip type */
 	int charge;	/* Last charge register content */
@@ -332,7 +333,8 @@ static int ltc294x_get_property(struct power_supply *psy,
 				enum power_supply_property prop,
 				union power_supply_propval *val)
 {
-	struct ltc294x_info *info = power_supply_get_drvdata(psy);
+	struct ltc294x_info *info =
+		container_of(psy, struct ltc294x_info, supply);
 
 	switch (prop) {
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
@@ -354,7 +356,8 @@ static int ltc294x_set_property(struct power_supply *psy,
 	enum power_supply_property psp,
 	const union power_supply_propval *val)
 {
-	struct ltc294x_info *info = power_supply_get_drvdata(psy);
+	struct ltc294x_info *info =
+		container_of(psy, struct ltc294x_info, supply);
 
 	switch (psp) {
 	case POWER_SUPPLY_PROP_CHARGE_NOW:
@@ -381,7 +384,7 @@ static void ltc294x_update(struct ltc294x_info *info)
 
 	if (charge != info->charge) {
 		info->charge = charge;
-		power_supply_changed(info->supply);
+		power_supply_changed(&info->supply);
 	}
 }
 
@@ -407,62 +410,58 @@ static int ltc294x_i2c_remove(struct i2c_client *client)
 	struct ltc294x_info *info = i2c_get_clientdata(client);
 
 	cancel_delayed_work(&info->work);
-	power_supply_unregister(info->supply);
+	power_supply_unregister(&info->supply);
 	return 0;
 }
 
 static int ltc294x_i2c_probe(struct i2c_client *client,
 	const struct i2c_device_id *id)
 {
-	struct power_supply_config psy_cfg = {};
+	struct ltc294x_platform_data *platform_data;
 	struct ltc294x_info *info;
-	struct device_node *np;
 	int ret;
 	u32 prescaler_exp;
-	s32 r_sense;
 	u8 status;
 
-	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
+	
+        info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
 	if (info == NULL)
 		return -ENOMEM;
-
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 	i2c_set_clientdata(client, info);
 
-	np = of_node_get(client->dev.of_node);
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
+	// DF
+	platform_data = client->dev.platform_data;
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
-	info->id = (enum ltc294x_id)of_device_get_match_data(&client->dev);
-	info->supply_desc.name = np->name;
+
+	info->id = platform_data->chip_id;
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
+	info->supply.name = platform_data->name;
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
 	/* r_sense can be negative, when sense+ is connected to the battery
 	 * instead of the sense-. This results in reversed measurements. */
-	ret = of_property_read_u32(np, "lltc,resistor-sense", &r_sense);
-	if (ret < 0) {
-		dev_err(&client->dev,
-			"Could not find lltc,resistor-sense in devicetree\n");
-		return ret;
-	}
-	info->r_sense = r_sense;
+	info->r_sense = platform_data->r_sense;
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
-	ret = of_property_read_u32(np, "lltc,prescaler-exponent",
-		&prescaler_exp);
-	if (ret < 0) {
-		dev_warn(&client->dev,
-			"lltc,prescaler-exponent not in devicetree\n");
-		prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
-	}
+	prescaler_exp = platform_data->prescaler_exp;
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
 	if (info->id == LTC2943_ID) {
 		if (prescaler_exp > LTC2943_MAX_PRESCALER_EXP)
 			prescaler_exp = LTC2943_MAX_PRESCALER_EXP;
-		info->Qlsb = ((340 * 50000) / r_sense) /
+		info->Qlsb = ((340 * 50000) / info->r_sense) /
 				(4096 / (1 << (2*prescaler_exp)));
 	} else {
 		if (prescaler_exp > LTC2941_MAX_PRESCALER_EXP)
 			prescaler_exp = LTC2941_MAX_PRESCALER_EXP;
-		info->Qlsb = ((85 * 50000) / r_sense) /
+		info->Qlsb = ((85 * 50000) / info->r_sense) /
 				(128 / (1 << prescaler_exp));
 	}
 
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 	/* Read status register to check for LTC2942 */
 	if (info->id == LTC2941_ID || info->id == LTC2942_ID) {
 		ret = ltc294x_read_regs(client, LTC294X_REG_STATUS, &status, 1);
@@ -478,30 +477,30 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 	}
 
 	info->client = client;
-	info->supply_desc.type = POWER_SUPPLY_TYPE_BATTERY;
-	info->supply_desc.properties = ltc294x_properties;
+	info->supply.type = POWER_SUPPLY_TYPE_BATTERY;
+	info->supply.properties = ltc294x_properties;
 	switch (info->id) {
 	case LTC2944_ID:
 	case LTC2943_ID:
-		info->supply_desc.num_properties =
+		info->supply.num_properties =
 			ARRAY_SIZE(ltc294x_properties);
 		break;
 	case LTC2942_ID:
-		info->supply_desc.num_properties =
-			ARRAY_SIZE(ltc294x_properties) - 1;
+		info->supply.num_properties =
+			ARRAY_SIZE(ltc294x_properties);
 		break;
 	case LTC2941_ID:
 	default:
-		info->supply_desc.num_properties =
+		info->supply.num_properties =
 			ARRAY_SIZE(ltc294x_properties) - 3;
 		break;
 	}
-	info->supply_desc.get_property = ltc294x_get_property;
-	info->supply_desc.set_property = ltc294x_set_property;
-	info->supply_desc.property_is_writeable = ltc294x_property_is_writeable;
-	info->supply_desc.external_power_changed	= NULL;
+        dev_err(&client->dev, "reached line at %d\n", __LINE__);
+	info->supply.get_property = ltc294x_get_property;
+	info->supply.set_property = ltc294x_set_property;
+	info->supply.property_is_writeable = ltc294x_property_is_writeable;
+	info->supply.external_power_changed	= NULL;
 
-	psy_cfg.drv_data = info;
 
 	INIT_DELAYED_WORK(&info->work, ltc294x_work);
 
@@ -511,11 +510,10 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 		return ret;
 	}
 
-	info->supply = power_supply_register(&client->dev, &info->supply_desc,
-					     &psy_cfg);
-	if (IS_ERR(info->supply)) {
+	ret = power_supply_register(&client->dev, &info->supply);
+	if (ret < 0) {
 		dev_err(&client->dev, "failed to register ltc2941\n");
-		return PTR_ERR(info->supply);
+		return ret;
 	} else {
 		schedule_delayed_work(&info->work, LTC294X_WORK_DELAY * HZ);
 	}

@@ -1,0 +1,4 @@
+sources:
+{
+    ltc2941-battery-gauge.c
+}
