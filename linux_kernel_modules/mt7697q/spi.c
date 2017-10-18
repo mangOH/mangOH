@@ -25,9 +25,22 @@
 #include <linux/of.h>
 #include <linux/usb.h>
 #include <linux/gpio.h>
+#include "spi-cp2130.h"
 #include "interrupt.h"
 #include "queue.h"
 #include "spi.h"
+
+static int mt7697spi_write_then_read(struct spi_device *spi, const void *txbuf,
+				     void *rxbuf, unsigned len)
+{
+	struct spi_transfer transfer = {
+		.tx_buf		= txbuf,
+		.rx_buf		= rxbuf,
+		.len		= len,
+	};
+
+	return spi_sync_transfer(spi, &transfer, 1);
+}
 
 static void mt7697spi_reset(struct spi_device *spi)
 {
@@ -52,7 +65,7 @@ static const struct mt7697spi_hw_ops hw_ops =
 {
 	.write			= spi_write,
 	.read			= spi_read,
-	.write_then_read	= spi_write_then_read,
+	.write_then_read	= mt7697spi_write_then_read,
 	.reset			= mt7697spi_reset,
 	.enable_irq		= mt7697spi_enable_irq,
 	.disable_irq		= mt7697spi_disable_irq,
@@ -61,20 +74,32 @@ static const struct mt7697spi_hw_ops hw_ops =
 static int __init mt7697spi_init(void)
 {
 	char str[32];
-	struct spi_master *master;
+	struct spi_master *master = NULL;
 	struct device *dev;
 	struct spi_device *spi;
-	struct mt7697q_info *qinfo;
+	struct mt7697q_info *qinfo = NULL;
+	int bus_num = MT7697_SPI_BUS_NUM;
 	int ret = 0;
 
 	pr_info(DRVNAME" %s(): '%s' initialize\n", __func__, DRVNAME);
 
-	pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-		__func__, MT7697_SPI_BUS_NUM);
-	master = spi_busnum_to_master(MT7697_SPI_BUS_NUM);
+	while (!master && (bus_num >= 0)) {
+		master = spi_busnum_to_master(bus_num);
+		if (!master) 
+			bus_num--;
+	}
+
 	if (!master) {
-		pr_err(DRVNAME" spi_busnum_to_master(%d) failed\n",
-			MT7697_SPI_BUS_NUM);
+		pr_err(DRVNAME" spi_busnum_to_master() failed\n");
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
+	ret = cp2130_update_ch_config(master, MT7697_SPI_CONFIG);
+	if (ret < 0) {
+		dev_err(&master->dev, 
+			"%s(): cp2130_update_ch_config() failed(%d)\n", 
+			__func__, ret);
 		goto cleanup;
 	}
 
@@ -83,8 +108,10 @@ static int __init mt7697spi_init(void)
 	dev = bus_find_device_by_name(&spi_bus_type, NULL, str);
 	if (!dev) {
 		dev_err(&master->dev, 
-			"%s(): '%s' bus_find_device_by_name() failed\n", 
+			"%s(): bus_find_device_by_name('%s') failed\n", 
 			__func__, str);
+
+		ret = -EINVAL;
 		goto cleanup;
 	}
 
@@ -92,13 +119,14 @@ static int __init mt7697spi_init(void)
 	if (!spi) {
 		dev_err(&master->dev, "%s(): get SPI device failed\n", 
 			__func__);
+		ret = -EINVAL;
 		goto cleanup;
 	}
 
 	dev_info(&master->dev, "%s(): init dev('%s') mode(%d) max speed(%d) "
-		"CS(%d) GPIO(%d) bits/word(%d)\n", 
+		"CS(%d) bits/word(%d)\n", 
 		__func__, spi->modalias, spi->mode, spi->max_speed_hz, 
-		spi->chip_select, spi->cs_gpio, spi->bits_per_word);
+		spi->chip_select, spi->bits_per_word);
 
 	qinfo = kzalloc(sizeof(struct mt7697q_info), GFP_KERNEL);
 	if (!qinfo) {
@@ -118,9 +146,10 @@ static int __init mt7697spi_init(void)
 	INIT_DELAYED_WORK(&qinfo->irq_delayed_work, mt7697_irq_delayed_work);
 	INIT_WORK(&qinfo->irq_work, mt7697_irq_work);
 
-	qinfo->irq_workq = create_workqueue(DRVNAME"wq");
+	qinfo->irq_workq = alloc_workqueue(DRVNAME"wq", 
+		WQ_HIGHPRI | WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
 	if (!qinfo->irq_workq) {
-		dev_err(qinfo->dev, "%s(): create_workqueue() failed\n", 
+		dev_err(qinfo->dev, "%s(): alloc_workqueue() failed\n", 
 			__func__);
 		ret = -ENOMEM;
 		goto cleanup;
@@ -157,24 +186,27 @@ failed_gpio_req:
 	gpio_free(MT7697_SPI_INTR_GPIO_PIN);
 
 cleanup:
-	kfree(qinfo);
+	if (qinfo) kfree(qinfo);
 	return ret;
 }
 
 static void __exit mt7697spi_exit(void)
 {
 	char str[32];
-	struct spi_master *master;
+	struct spi_master *master = NULL;
 	struct device *dev;
 	struct spi_device *spi;
 	struct mt7697q_info *qinfo;
+	int bus_num = MT7697_SPI_BUS_NUM;
 
-	pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-		__func__, MT7697_SPI_BUS_NUM);
-	master = spi_busnum_to_master(MT7697_SPI_BUS_NUM);
+	while (!master && (bus_num >= 0)) {
+		master = spi_busnum_to_master(bus_num);
+		if (!master)
+			bus_num--;
+	}
+
 	if (!master) {
-		pr_err(DRVNAME" %s(): spi_busnum_to_master(%d) failed\n",
-			__func__, MT7697_SPI_BUS_NUM);
+		pr_err(DRVNAME" spi_busnum_to_master() failed\n");
 		goto cleanup;
 	}
 

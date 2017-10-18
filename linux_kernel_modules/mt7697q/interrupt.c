@@ -38,7 +38,7 @@ int mt7697_irq_run(struct mt7697q_info *qinfo)
 
 	if (s2m_mbox) {
 		if (!queue_delayed_work(qinfo->irq_workq, 
-			&qinfo->irq_delayed_work, usecs_to_jiffies(100))) {
+			&qinfo->irq_delayed_work, usecs_to_jiffies(10))) {
 			dev_err(qinfo->dev, 
 				"%s(): queue_delayed_work() failed\n", 
 				__func__);
@@ -54,15 +54,25 @@ int mt7697_irq_run(struct mt7697q_info *qinfo)
 		u32 dir = mt7697q_flags_get_dir(qs->data.flags);
 
 		if (in_use && 
-		    (s2m_mbox & (0x01 << ch)) && 
-		    (dir == MT7697_QUEUE_DIR_S2M)) {
-			ret = mt7697q_proc_data(qs);
-			if (ret < 0) {
-				dev_err(qinfo->dev, 
-					"%s(): mt7697q_proc_data() failed(%d)\n", 
-					__func__, ret);
-       				goto cleanup;
-    			}
+		    (s2m_mbox & (0x01 << ch))) { 
+			if (dir == MT7697_QUEUE_DIR_S2M) {
+				ret = mt7697q_proc_data(qs);
+				if (ret < 0) {
+					dev_err(qinfo->dev, 
+						"%s(): mt7697q_proc_data() failed(%d)\n", 
+						__func__, ret);
+       					goto cleanup;
+    				}
+			}
+			else if (mt7697q_blocked_writer(qs)) {
+				WARN_ON(!qs->notify_tx_fcn);			
+				ret = qs->notify_tx_fcn(qs->priv, mt7697q_get_free_words(qs));
+				if (ret < 0) {
+					dev_err(qs->qinfo->dev, 
+						"%s(): notify_tx_fcn() failed(%d)\n", 
+						__func__, ret);
+    				}
+			}
 		}
 	}
 

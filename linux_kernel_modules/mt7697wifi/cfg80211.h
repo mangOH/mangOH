@@ -22,9 +22,12 @@
 struct mt7697_cfg80211_info;
 struct mt7697_vif;
 
+int mt7697_cfg80211_new_sta(struct mt7697_vif*, const u8*);
+int mt7697_cfg80211_del_sta(struct mt7697_vif*, const u8*);
 int mt7697_cfg80211_connect_event(struct mt7697_vif*, const u8*, u32);
 struct mt7697_cfg80211_info *mt7697_cfg80211_create(void);
-void mt7697_cfg80211_stop(struct mt7697_vif *vif);
+int mt7697_cfg80211_stop(struct mt7697_vif*);
+int mt7697_cfg80211_get_params(struct mt7697_cfg80211_info*);
 int mt7697_cfg80211_init(struct mt7697_cfg80211_info*);
 void mt7697_cfg80211_cleanup(struct mt7697_cfg80211_info*);
 void mt7697_cfg80211_destroy(struct mt7697_cfg80211_info*);

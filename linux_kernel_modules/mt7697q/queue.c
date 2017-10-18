@@ -52,12 +52,7 @@ static __inline size_t mt7697q_get_num_words(const struct mt7697q_spec *qs)
         	qs->data.rd_offset, qs->data.wr_offset);
 }
 
-static __inline size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
-{
-    	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
-}
-
-static int mt7697q_send_init(u8 tx_ch, u8 rx_ch, struct mt7697q_spec *qs)
+static int mt7697q_wr_init(u8 tx_ch, u8 rx_ch, struct mt7697q_spec *qs)
 {
 	struct mt7697_queue_init_req req;
 	int ret;
@@ -279,11 +274,6 @@ static int mt7697q_proc_queue_rsp(struct mt7697q_spec *qs)
 			__func__);
 		break;
 
-	case MT7697_CMD_QUEUE_UNUSED_RSP:
-		dev_dbg(qs->qinfo->dev, "%s(): --> QUEUE UNUSED RSP\n", 
-			__func__);
-		break;
-
 	case MT7697_CMD_QUEUE_RESET_RSP:
 		dev_dbg(qs->qinfo->dev, "%s(): --> QUEUE RESET RSP\n", 
 			__func__);
@@ -298,6 +288,11 @@ static int mt7697q_proc_queue_rsp(struct mt7697q_spec *qs)
 
 cleanup:
 	return ret;
+}
+
+__inline size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
+{
+    	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
 }
 
 int mt7697q_get_s2m_mbx(struct mt7697q_info *qinfo, u8* s2m_mbox)
@@ -327,6 +322,11 @@ int mt7697q_get_s2m_mbx(struct mt7697q_info *qinfo, u8* s2m_mbox)
 cleanup:
 	mutex_unlock(&qinfo->mutex);
     	return ret;
+}
+
+__inline int mt7697q_blocked_writer(const struct mt7697q_spec *qs)
+{
+    return atomic_read(&qs->qinfo->blocked_writer);
 }
 
 int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
@@ -431,21 +431,67 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 			dev_dbg(qsS2M->qinfo->dev, "%s(): avail(%u) len(%u) req(%u)\n", 
 				__func__, avail, qsS2M->qinfo->rsp.cmd.len, req);
 		}
-	}
 
-	ret =  mt7697q_push_rd_ptr(qsS2M);
-	if (ret < 0) {
-		dev_err(qsS2M->qinfo->dev, 
-			"%s(): mt7697q_push_rd_ptr() failed(%d)\n", 
-			__func__, ret);
-       		goto cleanup;
+		ret =  mt7697q_push_rd_ptr(qsS2M);
+		if (ret < 0) {
+			dev_err(qsS2M->qinfo->dev, 
+				"%s(): mt7697q_push_rd_ptr() failed(%d)\n", 
+				__func__, ret);
+       			goto cleanup;
+		}
 	}
 
 cleanup:
 	return ret;
 }
 
-int mt7697q_send_reset(void *tx_hndl, void* rx_hndl)
+__inline void mt7697q_unblock_writer(void *hndl)
+{
+	struct mt7697q_spec *qs = (struct mt7697q_spec*)hndl;
+    	atomic_set(&qs->qinfo->blocked_writer, false);
+}
+
+EXPORT_SYMBOL(mt7697q_unblock_writer);
+
+int mt7697q_wr_unused(void *tx_hndl, void* rx_hndl)
+{
+	struct mt7697q_spec *qsM2S = (struct mt7697q_spec*)tx_hndl;
+	struct mt7697q_spec *qsS2M = (struct mt7697q_spec*)rx_hndl;
+	struct mt7697_queue_reset_req req;
+	int ret;
+
+	req.cmd.len = sizeof(struct mt7697_queue_reset_req);
+	req.cmd.grp = MT7697_CMD_GRP_QUEUE;
+	req.cmd.type = MT7697_CMD_QUEUE_UNUSED;
+	req.m2s_ch = qsM2S->ch;
+	req.s2m_ch = qsS2M->ch;
+
+	qsM2S->data.flags &= ~BF_GET(qsM2S->data.flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
+		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
+	qsS2M->data.flags &= ~BF_GET(qsS2M->data.flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
+		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
+
+ 	dev_dbg(qsM2S->qinfo->dev, "%s(): <-- QUEUE UNUSED(%u/%u)\n", 
+		__func__, req.m2s_ch, req.s2m_ch);
+	ret = mt7697q_write(qsM2S, (const u32*)&req, 
+		LEN_TO_WORD(req.cmd.len));
+	if (ret != LEN_TO_WORD(req.cmd.len)) {
+		dev_err(qsM2S->qinfo->dev, 
+			"%s(): mt7697q_write() failed(%d != %d)\n", 
+			__func__, ret, LEN_TO_WORD(req.cmd.len));
+		ret = (ret < 0) ? ret:-EIO;
+		goto cleanup;
+	}
+
+	ret = 0;
+
+cleanup:
+	return ret;
+}
+
+EXPORT_SYMBOL(mt7697q_wr_unused);
+
+int mt7697q_wr_reset(void *tx_hndl, void* rx_hndl)
 {
 	struct mt7697q_spec *qsM2S = (struct mt7697q_spec*)tx_hndl;
 	struct mt7697q_spec *qsS2M = (struct mt7697q_spec*)rx_hndl;
@@ -476,28 +522,34 @@ cleanup:
 	return ret;
 }
 
-EXPORT_SYMBOL(mt7697q_send_reset);
+EXPORT_SYMBOL(mt7697q_wr_reset);
 
-int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn, 
-	         void** tx_hndl, void** rx_hndl)
+int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, notify_tx_hndlr notify_tx_fcn,
+		 rx_hndlr rx_fcn, void** tx_hndl, void** rx_hndl)
 {
 	char str[32];
-	struct spi_master *master;
+	struct spi_master *master = NULL;
 	struct device *dev;
 	struct spi_device *spi;
 	struct mt7697q_info *qinfo;
 	struct mt7697q_spec *qsTx, *qsRx;
+	int bus_num = MT7697_SPI_BUS_NUM;
 	int ret;
 
 	pr_info(DRVNAME" %s(): initialize queue(%u/%u)\n", 
 		__func__, tx_ch, rx_ch);
 
-	pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
-		__func__, MT7697_SPI_BUS_NUM);
-	master = spi_busnum_to_master(MT7697_SPI_BUS_NUM);
+	while (!master && (bus_num >= 0)) {
+		pr_info(DRVNAME" %s(): get SPI master bus(%u)\n", 
+			__func__, bus_num);
+		master = spi_busnum_to_master(bus_num);
+		if (!master)
+			bus_num--;
+	}
+
 	if (!master) {
-		pr_err(DRVNAME" %s(): spi_busnum_to_master(%d) failed\n",
-			__func__, MT7697_SPI_BUS_NUM);
+		pr_err(DRVNAME" %s(): spi_busnum_to_master() failed\n",
+			__func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
@@ -544,6 +596,8 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn,
 	qsTx->qinfo = qinfo;
 	qsTx->ch = tx_ch;
 	qsTx->priv = priv;
+	qsTx->notify_tx_fcn = notify_tx_fcn;
+	atomic_set(&qsTx->qinfo->blocked_writer, false);
 	*tx_hndl = qsTx;
 
    	qsRx = &qinfo->queues[rx_ch];
@@ -561,6 +615,7 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn,
        		goto cleanup;
     	}
 
+
 	ret = mt7697q_read_state(rx_ch, qsRx);
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697q_read_state() failed(%d)\n", 
@@ -573,9 +628,9 @@ int mt7697q_init(u8 tx_ch, u8 rx_ch, void *priv, rx_hndlr rx_fcn,
 	qsRx->data.flags |= BF_DEFINE(1, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
 		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
 
-	ret = mt7697q_send_init(tx_ch, rx_ch, qsTx);
+	ret = mt7697q_wr_init(tx_ch, rx_ch, qsTx);
 	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697q_send_init() failed(%d)\n", 
+		dev_err(qinfo->dev, "%s(): mt7697q_wr_init() failed(%d)\n", 
 			__func__, ret);
 		goto cleanup;
 	}
@@ -694,21 +749,24 @@ size_t mt7697q_write(void *hndl, const u32 *buff, size_t num)
 
 	mutex_lock(&qs->qinfo->mutex);
 
-	ret = mt7697q_pull_rd_ptr(qs);
-	if (ret < 0) {
-		dev_err(qs->qinfo->dev, 
-			"%s(): mt7697q_pull_rd_ptr() failed(%d)\n", 
-			__func__, ret);
-       		goto cleanup;
-    	}
-
 	avail = mt7697q_get_free_words(qs);
 	dev_dbg(qs->qinfo->dev, "%s(): free words(%u)\n", __func__, avail);
 	if (avail < num) {
-		dev_warn(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
-			__func__, avail, num);
-		ret = -EAGAIN;
-		goto cleanup;
+		ret = mt7697q_pull_rd_ptr(qs);
+		if (ret < 0) {
+			dev_err(qs->qinfo->dev, 
+				"%s(): mt7697q_pull_rd_ptr() failed(%d)\n", 
+				__func__, ret);
+       			goto cleanup;
+    		}
+
+		if (avail < num) {
+			dev_dbg(qs->qinfo->dev, "%s(): queue avail(%u < %u)\n", 
+				__func__, avail, num);
+			atomic_set(&qs->qinfo->blocked_writer, true);
+			ret = -EAGAIN;
+			goto cleanup;
+		}
 	}
 
 	buff_words = BF_GET(qs->data.flags, MT7697_QUEUE_FLAGS_NUM_WORDS_OFFSET, 

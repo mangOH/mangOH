@@ -47,6 +47,7 @@ struct mt7697q_spec {
 	struct mt7697q_data		data;
 	struct mt7697q_info             *qinfo;
 	void				*priv;
+	notify_tx_hndlr			notify_tx_fcn;
 	rx_hndlr			rx_fcn;
 	u8				ch;
 };
@@ -55,7 +56,7 @@ struct mt7697q_info {
 	struct mt7697q_spec 		queues[MT7697_NUM_QUEUES];
 	struct mt7697q_rsp_hdr 		rsp;
 	u8 				txBuffer[sizeof(u32)];
-	u8 				rxBuffer[sizeof(u16)];
+	u8 				rxBuffer[sizeof(u32)];
 	
 	struct device			*dev;
 	void 				*hw_priv;
@@ -66,6 +67,7 @@ struct mt7697q_info {
 	
 	struct work_struct              irq_work;
 	struct delayed_work		irq_delayed_work;
+	atomic_t			blocked_writer;
 	int 				irq;
 	u8 				s2m_mbox;
 	bool				slave_busy;
@@ -75,6 +77,8 @@ void mt7697_irq_delayed_work(struct work_struct*);
 void mt7697_irq_work(struct work_struct*);
 irqreturn_t mt7697_isr(int, void*);
 
+int mt7697q_blocked_writer(const struct mt7697q_spec*);
+size_t mt7697q_get_free_words(const struct mt7697q_spec*);
 int mt7697q_proc_data(struct mt7697q_spec*);
 int mt7697q_get_s2m_mbx(struct mt7697q_info*, u8*);
 

@@ -31,10 +31,22 @@ commands:
     twitter = socialService:/bin/twitter
 }
 
+interfaceSearch:
+{
+    $MANGOH_ROOT/apps/MqttClient
+    $MANGOH_ROOT/apps/DataRouter
+    $MANGOH_ROOT/apps/MuxControl
+    $MANGOH_ROOT/apps/SocialService/interfaces
+}
+
 kernelModules:
 {
     $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_green_dv4
 
     $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
     $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+
+    // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
+    // loaded.
+    $LEGATO_ROOT/drivers/spisvc/spisvc
 }

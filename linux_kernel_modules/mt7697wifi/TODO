@@ -1,9 +1,0 @@
-- use variable length fields
-- use msg to set if idx for each mode (STA, AP)
-- connect/scan/connect failed - need to notify cfg of disconnect
-- master to slave rd offset corrupted
-- use memory pool for MT7697 SPI messages
-
-
-
-

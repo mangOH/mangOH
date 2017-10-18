@@ -36,7 +36,7 @@
 /**@brief Specifies 20MHz | 40MHz bandwidth in the 2.4GHz band.
 */
 #define MT7697_WIFI_IOT_COMMAND_CONFIG_BANDWIDTH_2040MHZ     (MT7697_WIFI_IOT_COMMAND_CONFIG_BANDWIDTH_20MHZ | \
-								MT7697_WIFI_IOT_COMMAND_CONFIG_BANDWIDTH_40MHZ)
+							      MT7697_WIFI_IOT_COMMAND_CONFIG_BANDWIDTH_40MHZ)
 
 /**
 * @brief Station operation mode. In this mode the device works as a Wi-Fi client.
@@ -50,7 +50,8 @@
 
 /**
 * @brief Repeater mode. There are two virtual ports in repeater mode, one is #WIFI_PORT_AP, and the other is #WIFI_PORT_APCLI.
-* Both ports should be configured to operate on the same channel with the same bandwidth, while their other settings can be different. For example, both ports can have different MAC addresses and security modes.
+* Both ports should be configured to operate on the same channel with the same bandwidth, while their other settings can be different. 
+* For example, both ports can have different MAC addresses and security modes.
 */
 #define MT7697_WIFI_MODE_REPEATER      (3)
 
@@ -63,7 +64,7 @@
 */
 #define MT7697_WIFI_MODE_MONITOR       (4)
 
-enum mt7697_port_types {
+enum mt7697_port_type {
 	MT7697_PORT_STA = 0,
 	MT7697_PORT_APCLI = MT7697_PORT_STA,
 	MT7697_PORT_AP,
@@ -192,9 +193,9 @@ struct mt7697_wifi_ap_config_t {
 /** @brief Wi-Fi configuration for initialization.
 */
 struct mt7697_wifi_config_t {
-    	u8 opmode;                                  /**< The operation mode. The value should be #WIFI_MODE_STA_ONLY, #WIFI_MODE_AP_ONLY, #WIFI_MODE_REPEATER or #WIFI_MODE_MONITOR*/
-    	struct mt7697_wifi_sta_config_t sta_cfg;    /**< The configurations for the STA. It should be set when the OPMODE is #WIFI_MODE_STA_ONLY or #WIFI_MODE_REPEATER. */
-    	struct mt7697_wifi_ap_config_t ap_cfg;      /**< The configurations for the AP. It should be set when the OPMODE is #WIFI_MODE_AP_ONLY or #WIFI_MODE_REPEATER. */
+    	u8 opmode;                              /**< The operation mode. The value should be #WIFI_MODE_STA_ONLY, #WIFI_MODE_AP_ONLY, #WIFI_MODE_REPEATER or #WIFI_MODE_MONITOR*/
+    	struct mt7697_wifi_sta_config_t sta;    /**< The configurations for the STA. It should be set when the OPMODE is #WIFI_MODE_STA_ONLY or #WIFI_MODE_REPEATER. */
+    	struct mt7697_wifi_ap_config_t ap;      /**< The configurations for the AP. It should be set when the OPMODE is #WIFI_MODE_AP_ONLY or #WIFI_MODE_REPEATER. */
 } __attribute__((__packed__));
 
 #endif

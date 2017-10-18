@@ -3,17 +3,15 @@ cflags:
     // Needed for lsm6ds3 platform data type definition
     -I${MANGOH_ROOT}/linux_kernel_modules/lsm6ds3
     -I${MANGOH_ROOT}/linux_kernel_modules/ltc294x
+    -I${MANGOH_ROOT}/linux_kernel_modules/bq24296
 }
 
 sources:
 {
-    mangoh_module.c
-    board_green_dv4.c
-    board_red_dv2.c
-    board_red_dv3.c
+    mangoh_red.c
 }
 
 params:
 {
-    board = "red dv3"
+    revision = "dv3"
 }

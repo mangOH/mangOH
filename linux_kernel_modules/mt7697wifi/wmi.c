@@ -21,11 +21,13 @@
 #include "wmi.h"
 #include "core.h"
 #include "cfg80211.h"
+#include "wifi_api.h"
 
 static int mt7697_proc_mac_addr(const struct mt7697q_rsp_hdr* rsp, 
                                 struct mt7697_cfg80211_info *cfg)
 {
 	u8 addr[LEN32_ALIGNED(ETH_ALEN)];
+	char iname[MT7697_IFACE_NAME_LEN];
 	struct wireless_dev *wdev;
 	int ret = 0;
 
@@ -54,13 +56,16 @@ static int mt7697_proc_mac_addr(const struct mt7697q_rsp_hdr* rsp,
 
 	rtnl_lock();
 
-	wdev = mt7697_interface_add(cfg, "wlan%d", NL80211_IFTYPE_STATION, 0);
+	snprintf(iname, MT7697_IFACE_NAME_LEN, "wlan%d", cfg->vif_start);
+	wdev = mt7697_interface_add(cfg, iname, 
+		(cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) ? 
+			NL80211_IFTYPE_STATION : NL80211_IFTYPE_AP, 0);
 
 	rtnl_unlock();
 
 	if (!wdev) {
 		dev_err(cfg->dev, "%s(): mt7697_interface_add() failed\n", 
-			__func__);
+				__func__);
 		ret = -ENOMEM;
 		goto cleanup;
 	}
@@ -146,168 +151,116 @@ static int mt7697_proc_get_cfg(const struct mt7697q_rsp_hdr* rsp,
 	wifi_cfg = (struct mt7697_wifi_config_t*)rd_buf;
 	dev_dbg(cfg->dev, "%s(): operation mode(%u)\n", 
 		__func__, wifi_cfg->opmode);
+	if (wifi_cfg->opmode == MT7697_WIFI_MODE_STA_ONLY) 
+	    cfg->port_type = MT7697_PORT_STA;
+	else if (wifi_cfg->opmode == MT7697_WIFI_MODE_AP_ONLY) 
+	    cfg->port_type = MT7697_PORT_AP;
+	else {
+		dev_err(cfg->dev, 
+			"%s(): unsupported operation mode(%d)\n",
+			__func__,  wifi_cfg->opmode);
+		ret = -EINVAL;
+		goto cleanup;
+	}
+
 	if ((wifi_cfg->opmode == MT7697_WIFI_MODE_STA_ONLY) || 
 	    (wifi_cfg->opmode == MT7697_WIFI_MODE_REPEATER)) {
 		dev_dbg(cfg->dev, "%s(): STA ssid len(%u)\n", 
-			__func__, wifi_cfg->sta_cfg.ssid_len);
-		if (wifi_cfg->sta_cfg.ssid_len > 0) {
-			if (wifi_cfg->sta_cfg.ssid_len > IEEE80211_MAX_SSID_LEN) {
+			__func__, wifi_cfg->sta.ssid_len);
+		if (wifi_cfg->sta.ssid_len > 0) {
+			if (wifi_cfg->sta.ssid_len > IEEE80211_MAX_SSID_LEN) {
 				dev_err(cfg->dev, 
 					"%s(): invalid STA SSID len(%u > %u)\n",
-					__func__,  
-					wifi_cfg->sta_cfg.ssid_len, 
+					__func__,  wifi_cfg->sta.ssid_len, 
 					IEEE80211_MAX_SSID_LEN);
 				ret = -EINVAL;
 				goto cleanup;
 			}
 
 			dev_dbg(cfg->dev, "%s(): STA ssid('%s')\n", 
-				__func__, wifi_cfg->sta_cfg.ssid);
+				__func__, wifi_cfg->sta.ssid);
 		}
 	
-		if (wifi_cfg->sta_cfg.bssid_present) {
+		if (wifi_cfg->sta.bssid_present) {
 			print_hex_dump(KERN_DEBUG, DRVNAME"STA BSSID ", 
 				DUMP_PREFIX_OFFSET, 16, 1, 
-				wifi_cfg->sta_cfg.bssid, ETH_ALEN, 0);
+				wifi_cfg->sta.bssid, ETH_ALEN, 0);
 		}
 
 		dev_dbg(cfg->dev, "%s(): STA passphrase len(%u)\n", 
-			__func__, wifi_cfg->sta_cfg.pw_len);
-		if (wifi_cfg->sta_cfg.pw_len > 0) {
-			if (wifi_cfg->sta_cfg.pw_len > MT7697_WIFI_LENGTH_PASSPHRASE) {
+			__func__, wifi_cfg->sta.pw_len);
+		if (wifi_cfg->sta.pw_len > 0) {
+			if (wifi_cfg->sta.pw_len > MT7697_WIFI_LENGTH_PASSPHRASE) {
 				dev_err(cfg->dev, 
 					"%s(): invalid STA passphrase len(%u > %u)\n",
-					__func__,  
-					wifi_cfg->sta_cfg.pw_len, 
+					__func__,  wifi_cfg->sta.pw_len, 
 					MT7697_WIFI_LENGTH_PASSPHRASE);
 				ret = -EINVAL;
 				goto cleanup;
 			}
 
 			dev_dbg(cfg->dev, "%s(): STA passphrase('%s')\n", 
-				__func__, wifi_cfg->sta_cfg.pw);
+				__func__, wifi_cfg->sta.pw);
 		}
 	}
 
 	if ((wifi_cfg->opmode == MT7697_WIFI_MODE_AP_ONLY) || 
 	    (wifi_cfg->opmode == MT7697_WIFI_MODE_REPEATER)) {
 		dev_dbg(cfg->dev, "%s(): AP ssid len(%u)\n", 
-			__func__, wifi_cfg->ap_cfg.ssid_len);
-		if (wifi_cfg->ap_cfg.ssid_len > 0) {
-			if (wifi_cfg->ap_cfg.ssid_len > IEEE80211_MAX_SSID_LEN) {
+			__func__, wifi_cfg->ap.ssid_len);
+		if (wifi_cfg->ap.ssid_len > 0) {
+			if (wifi_cfg->ap.ssid_len > IEEE80211_MAX_SSID_LEN) {
 				dev_err(cfg->dev, 
 					"%s(): invalid AP SSID len(%u > %u)\n",
-					__func__,  
-					wifi_cfg->ap_cfg.ssid_len, 
+					__func__,  wifi_cfg->ap.ssid_len, 
 					IEEE80211_MAX_SSID_LEN);
 				ret = -EINVAL;
 				goto cleanup;
 			}
 
 			dev_dbg(cfg->dev, "%s(): AP ssid('%s')\n", 
-				__func__, wifi_cfg->ap_cfg.ssid);
+				__func__, wifi_cfg->ap.ssid);
 		}
 
 		dev_dbg(cfg->dev, "%s(): AP passphrase len(%u)\n", 
-			__func__, wifi_cfg->ap_cfg.pw_len);
-		if (wifi_cfg->ap_cfg.pw_len > 0) {
-			if (wifi_cfg->ap_cfg.pw_len > MT7697_WIFI_LENGTH_PASSPHRASE) {
+			__func__, wifi_cfg->ap.pw_len);
+		if (wifi_cfg->ap.pw_len > 0) {
+			if (wifi_cfg->ap.pw_len > MT7697_WIFI_LENGTH_PASSPHRASE) {
 				dev_err(cfg->dev, 
 					"%s(): invalid AP passphrase len(%u > %u)\n",
-					__func__, 
-					wifi_cfg->ap_cfg.pw_len, 
+					__func__, wifi_cfg->ap.pw_len, 
 					MT7697_WIFI_LENGTH_PASSPHRASE);
 				ret = -EINVAL;
 				goto cleanup;
 			}
 
 			dev_dbg(cfg->dev, "%s(): AP passphrase('%s')\n", 
-				__func__, wifi_cfg->ap_cfg.pw);
+				__func__, wifi_cfg->ap.pw);
 		}
 
 		dev_dbg(cfg->dev, "%s(): AP auth mode(%u) encrypt type(%u)\n", 
-			__func__, wifi_cfg->ap_cfg.auth_mode, 
-			wifi_cfg->ap_cfg.encrypt_type);
+			__func__, wifi_cfg->ap.auth_mode, 
+			wifi_cfg->ap.encrypt_type);
 		dev_dbg(cfg->dev, "%s(): AP channel(%u) bandwidth(%u)\n",
-			__func__, wifi_cfg->ap_cfg.ch, 
-			wifi_cfg->ap_cfg.bandwidth);
-		if (wifi_cfg->ap_cfg.bandwidth == MT7697_WIFI_IOT_COMMAND_CONFIG_BANDWIDTH_40MHZ) {
+			__func__, wifi_cfg->ap.ch, wifi_cfg->ap.bandwidth);
+		if (wifi_cfg->ap.bandwidth == MT7697_WIFI_IOT_COMMAND_CONFIG_BANDWIDTH_40MHZ) {
 			dev_dbg(cfg->dev, "%s(): AP bandwidth ext(%u)\n", 
-				__func__, wifi_cfg->ap_cfg.bandwidth_ext);
+				__func__, wifi_cfg->ap.bandwidth_ext);
 		}
 	}
 
-	memcpy(&cfg->wifi_cfg, cfg, sizeof(struct mt7697_wifi_config_t));
+	memcpy(&cfg->wifi_cfg, wifi_cfg, sizeof(struct mt7697_wifi_config_t));
+
+	ret = mt7697_cfg80211_get_params(cfg);
+	if (ret < 0) {
+		dev_err(cfg->dev, 
+			"%s(): mt7697_cfg80211_get_params() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
 
 cleanup:
 	if (rd_buf) kfree(rd_buf);
-	return ret;
-}
-
-static int mt7697_proc_get_rx_filter(const struct mt7697q_rsp_hdr* rsp, 
-                                     struct mt7697_cfg80211_info *cfg)
-{
-	u32 rx_filter;
-	int ret = 0;
-
-	dev_dbg(cfg->dev, "%s(): --> GET RX FILTER\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr) != sizeof(u32)) {
-		dev_err(cfg->dev, 
-			"%s(): invalid rx filter rsp len(%u != %u)\n",
-			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr),
-			sizeof(u32));
-		ret = -EINVAL;
-       		goto cleanup;
-	}
-
-	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&rx_filter, 
-		LEN_TO_WORD(sizeof(u32)));
-	if (ret != LEN_TO_WORD(sizeof(u32))) {
-		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(sizeof(rx_filter)));
-		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
-
-	cfg->rx_filter = rx_filter;
-	dev_dbg(cfg->dev, "%s(): rx filter(0x%08x)\n", 
-		__func__, cfg->rx_filter);
-
-cleanup:
-	return ret;
-}
-
-static int mt7697_proc_get_smart_conn_filter(const struct mt7697q_rsp_hdr* rsp, 
-                                             struct mt7697_cfg80211_info *cfg)
-{
-	u32 smart_conn_filter;
-	int ret = 0;
-
-	dev_dbg(cfg->dev, "%s(): --> GET SMART CONN FILTER\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr) != sizeof(smart_conn_filter)) {
-		dev_err(cfg->dev, "%s(): invalid rx filter rsp len(%u != %u)\n",
-			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr),
-			sizeof(smart_conn_filter));
-		ret = -EINVAL;
-       		goto cleanup;
-	}
-
-	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&smart_conn_filter, 
-		LEN_TO_WORD(sizeof(u32)));
-	if (ret != LEN_TO_WORD(sizeof(u32))) {
-		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(sizeof(u32)));
-		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
-
-	cfg->smart_conn_filter = smart_conn_filter;
-	dev_dbg(cfg->dev, "%s(): smart connection filter(%u)\n", 
-		__func__, cfg->smart_conn_filter);
-
-cleanup:
 	return ret;
 }
 
@@ -543,7 +496,7 @@ static int mt7697_proc_scan_rsp(const struct mt7697q_rsp_hdr* rsp,
 		if (!vif) {
 			dev_err(cfg->dev, 
 				"%s(): mt7697_get_vif_by_idx(%u) failed\n",
-				    __func__, if_idx);
+				__func__, if_idx);
 			ret = -EINVAL;
 			goto cleanup;
 		}
@@ -587,28 +540,9 @@ static int mt7697_proc_scan_complete_ind(struct mt7697_cfg80211_info *cfg)
 	dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
 	cfg80211_scan_done(vif->scan_req, false);
 	vif->scan_req = NULL;
-/*
-	ret = mt7697_wr_scan_stop_req(cfg);
-	if (ret < 0) {
-		dev_err(cfg->dev, "%s(): mt7697_wr_scan_stop_req() failed(%d)\n",
-			__func__, ret);
-		goto cleanup;
-	}*/
 
 cleanup:
 	return ret;
-}
-
-static void mt7697_proc_reg_rx_hndlr(struct mt7697_cfg80211_info *cfg)
-{
-    	dev_dbg(cfg->dev, "%s(): --> REGISTER RX HANDLER RSP\n", __func__);
-    	cfg->reg_rx_hndlr = true;
-}
-
-static void mt7697_proc_unreg_rx_hndlr(struct mt7697_cfg80211_info *cfg)
-{
-	dev_dbg(cfg->dev, "%s(): --> UNREGISTER RX HANDLER RSP\n", __func__);
-	cfg->reg_rx_hndlr = false;
 }
 
 static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp, 
@@ -616,7 +550,6 @@ static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp,
 {
 	u8 bssid[LEN32_ALIGNED(ETH_ALEN)];
 	struct mt7697_vif *vif;
-//	enum mt7697_wifi_rx_filter_t rx_filter = cfg->rx_filter;
 	u32 if_idx;
 	u32 channel;
 	int ret;
@@ -662,97 +595,56 @@ static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp,
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
 		DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
 
-	vif = mt7697_get_vif_by_idx(cfg, if_idx);
-	if (!vif) {
-		dev_err(cfg->dev, "%s(): mt7697_get_vif_by_idx(%u) failed\n",
-			__func__, if_idx);
-		ret = -EINVAL;
-		goto cleanup;
-	}
-/*
-	rx_filter &= ~BIT(MT7697_WIFI_RX_FILTER_DROP_NOT_MY_BSSID);
-        rx_filter &= ~BIT(MT7697_WIFI_RX_FILTER_DROP_NOT_UC2ME);
-        rx_filter |= BIT(MT7697_WIFI_RX_FILTER_DROP_PROBE_REQ);
-        rx_filter |= BIT(MT7697_WIFI_RX_FILTER_DROP_STBC_BCN_BC_MC);
-	rx_filter &= ~BIT(MT7697_WIFI_RX_FILTER_DROP_BC_FRAME);
-        rx_filter &= ~BIT(MT7697_WIFI_RX_FILTER_DROP_MC_FRAME);
-	if (rx_filter != cfg->rx_filter) {
-		ret = mt7697_wr_set_rx_filter_req(cfg, cfg->rx_filter);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_rx_filter_req() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
-
-		cfg->rx_filter = rx_filter;
-	}
-
-	if (!cfg->smart_conn_filter) {
-		ret = mt7697_wr_set_smart_conn_filter_req(cfg, true);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_smart_conn_filter_req() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
-
-		cfg->smart_conn_filter = true;
-	}
-*/
-	if (!cfg->reg_rx_hndlr) {
-/*		ret = mt7697_wr_set_op_mode_req(cfg, MT7697_WIFI_MODE_MONITOR);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
-
-		ret = mt7697_wr_reg_rx_hndlr_req(cfg);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_reg_rx_hndlr_req() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}*/
-	}
-
-	dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
-	ret = mt7697_cfg80211_connect_event(vif, bssid, channel);
-	if (ret < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_cfg80211_connect_event() failed(%d)\n", 
-			__func__, ret);
+	if (list_empty(&cfg->vif_list)) {
+		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
        		goto cleanup;
-    	}
+	}
 
-cleanup:
-	return ret;
-}
+	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
+		vif = mt7697_get_vif_by_idx(cfg, if_idx);
+		if (!vif) {
+			dev_err(cfg->dev, "%s(): mt7697_get_vif_by_idx(%u) failed\n",
+				__func__, if_idx);
+			ret = -EINVAL;
+			goto cleanup;
+		}
 
-static int mt7697_proc_disconnect_rsp(struct mt7697_cfg80211_info *cfg)
-{
-	int ret;
-
-	dev_dbg(cfg->dev, "%s(): --> DISCONNECT RSP\n", __func__);
-
-	if (cfg->reg_rx_hndlr) {
-/*		ret = mt7697_wr_set_op_mode_req(cfg, cfg->wifi_cfg.opmode);
+		dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
+		ret = mt7697_cfg80211_connect_event(vif, bssid, channel);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
+				"%s(): mt7697_cfg80211_connect_event() failed(%d)\n", 
 				__func__, ret);
        			goto cleanup;
     		}
-*/
-		ret = mt7697_wr_unreg_rx_hndlr_req(cfg);
+	}
+	else {
+		struct station_info sinfo = {0};
+
+		vif = mt7697_get_vif_by_idx(cfg, 0);
+		if (!vif) {
+			dev_err(cfg->dev, "%s(): mt7697_get_vif_by_idx(%u) failed\n",
+				__func__, if_idx);
+			ret = -EINVAL;
+			goto cleanup;
+		}
+
+		ret = mt7697_cfg80211_new_sta(vif, bssid);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_unreg_rx_hndlr_req() failed(%d)\n", 
+				"%s(): mt7697_cfg80211_new_sta() failed(%d)\n", 
 				__func__, ret);
        			goto cleanup;
     		}
+
+		cfg80211_new_sta(vif->ndev, bssid, &sinfo, GFP_KERNEL);
+
+		/* Update connect & link status atomically */
+		spin_lock_bh(&vif->if_lock);
+		set_bit(CONNECTED, &vif->flags);
+		netif_wake_queue(vif->ndev);
+		netif_carrier_on(vif->ndev);
+		spin_unlock_bh(&vif->if_lock);
 	}
 
 cleanup:
@@ -791,26 +683,70 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
 		DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
 
-	vif = mt7697_get_vif_by_idx(cfg, if_idx);
-	if (!vif) {
-		dev_err(cfg->dev, "%s(): mt7697_get_vif_by_idx(%u) failed\n",
-			    __func__, if_idx);
-		ret = -EINVAL;
-		goto cleanup;
+	if (list_empty(&cfg->vif_list)) {
+		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
+       		goto cleanup;
 	}
 
-	dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
-	if (vif->sme_state == SME_CONNECTING)
-		cfg80211_connect_result(vif->ndev, bssid, 
-					NULL, 0,
-					NULL, 0,
-					WLAN_STATUS_UNSPECIFIED_FAILURE,
-					GFP_KERNEL);
-	else if (vif->sme_state == SME_CONNECTED) {
-		cfg80211_disconnected(vif->ndev, proto_reason,
-				      NULL, 0, GFP_KERNEL);
+	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
+		vif = mt7697_get_vif_by_idx(cfg, if_idx);
+		if (!vif) {
+			dev_err(cfg->dev, "%s(): mt7697_get_vif_by_idx(%u) failed\n",
+				    __func__, if_idx);
+			ret = -EINVAL;
+			goto cleanup;
+		}
+
+		dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
+		if (vif->sme_state == SME_CONNECTING) {
+			ret = mt7697_wr_disconnect_req(vif->cfg, bssid);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+					__func__, ret);
+				goto cleanup;
+			}
+
+			cfg80211_connect_result(vif->ndev, bssid, 
+						NULL, 0,
+						NULL, 0,
+						WLAN_STATUS_UNSPECIFIED_FAILURE,
+						GFP_KERNEL);
+		}
+		else if (vif->sme_state == SME_CONNECTED) {
+			ret = mt7697_wr_disconnect_req(vif->cfg, bssid);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+					__func__, ret);
+				goto cleanup;
+			}
+
+			cfg80211_disconnected(vif->ndev, proto_reason,
+				      	      NULL, 0, GFP_KERNEL);
+		}
+	}
+	else {
+		vif = mt7697_get_vif_by_idx(cfg, 0);
+		if (!vif) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_get_vif_by_idx(%u) failed\n",
+				__func__, if_idx);
+			ret = -EINVAL;
+			goto cleanup;
+		}
+
+//		cfg80211_del_sta(vif->ndev, bssid, GFP_KERNEL);
+		ret = mt7697_cfg80211_del_sta(vif, bssid);
+		if (ret < 0) {
+			dev_err(cfg->dev, 
+				"%s(): mt7697_cfg80211_del_sta() failed(%d)\n",
+				__func__, ret);
+			goto cleanup;
+		}
 	}
 
+	netif_stop_queue(vif->ndev);
 	vif->sme_state = SME_DISCONNECTED;
 	spin_lock_bh(&vif->if_lock);
 	clear_bit(CONNECT_PEND, &vif->flags);
@@ -856,6 +792,14 @@ static int mt7697_rx_raw(const struct mt7697q_rsp_hdr* rsp,
        		goto cleanup;
     	}
 
+//	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET, 
+//		16, 1, cfg->rx_data, rsp->result, 0);
+
+	if (list_empty(&cfg->vif_list)) {
+		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
+       		goto cleanup;
+	}
+
 	/* TODO: interface index come from MT7697 */
 	ret = mt7697_rx_data(cfg, rsp->result, 0);
 	if (ret) {
@@ -899,26 +843,6 @@ int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr* rsp, void* priv)
 		if (ret < 0) {
 			dev_err(cfg->dev, 
 				"%s(): mt7697_proc_get_cfg() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
-		break;
-
-	case MT7697_CMD_GET_RX_FILTER_RSP:
-		ret = mt7697_proc_get_rx_filter(rsp, cfg);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_proc_get_rx_filter() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
-		break;
-
-	case MT7697_CMD_GET_SMART_CONN_FILTER_RSP:
-		ret = mt7697_proc_get_smart_conn_filter(rsp, cfg);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_proc_get_smart_conn_filter() failed(%d)\n", 
 				__func__, ret);
        			goto cleanup;
     		}
@@ -974,29 +898,11 @@ int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr* rsp, void* priv)
     		}
 		break;
 
-	case MT7697_CMD_REGISTER_RX_HNDLR_RSP:
-		mt7697_proc_reg_rx_hndlr(cfg);
-		break;
-
-	case MT7697_CMD_UNREGISTER_RX_HNDLR_RSP:
-		mt7697_proc_unreg_rx_hndlr(cfg);
-		break;
-
 	case MT7697_CMD_CONNECT_IND:
 		ret = mt7697_proc_connect_ind(rsp, cfg);
 		if (ret < 0) {
 			dev_err(cfg->dev, 
 				"%s(): mt7697_proc_connect_ind() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
-		break;
-
-	case MT7697_CMD_DISCONNECT_RSP:
-		ret = mt7697_proc_disconnect_rsp(cfg);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_proc_disconnect_rsp() failed(%d)\n", 
 				__func__, ret);
        			goto cleanup;
     		}
@@ -1019,6 +925,10 @@ int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr* rsp, void* priv)
 				__func__, ret);
        			goto cleanup;
     		}
+		break;
+
+        case MT7697_CMD_SET_OP_MODE_RSP:
+		dev_dbg(cfg->dev, "%s(): --> SET OP MODE\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_PMK_RSP:
@@ -1045,10 +955,6 @@ int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr* rsp, void* priv)
 		dev_dbg(cfg->dev, "%s(): --> SET LISTEN INTERVAL\n", __func__);
 		break;
 
-        case MT7697_CMD_SET_OP_MODE_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET OP MODE\n", __func__);
-		break;
-
 	case MT7697_CMD_SET_WIRELESS_MODE_RSP:
 		dev_dbg(cfg->dev, "%s(): --> SET WIRELESS MODE\n", __func__);
 		break;
@@ -1057,21 +963,16 @@ int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr* rsp, void* priv)
 		dev_dbg(cfg->dev, "%s(): --> SET RADIO STATE\n", __func__);
 		break;
 
-	case MT7697_CMD_SET_RX_FILTER_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET RX FILTER\n", __func__);
-		break;
-
-        case MT7697_CMD_SET_SMART_CONN_FILTER_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET SMART CONN FILTER\n", 
-			__func__);
-		break;
-
 	case MT7697_CMD_SET_SECURITY_MODE_RSP:
 		dev_dbg(cfg->dev, "%s(): --> SET SECURITY MODE\n", __func__);
 		break;
 
 	case MT7697_CMD_SCAN_STOP_RSP:
 		dev_dbg(cfg->dev, "%s(): --> SCAN STOP\n", __func__);
+		break;
+
+	case MT7697_CMD_DISCONNECT_RSP:
+		dev_dbg(cfg->dev, "%s(): --> DISCONNECT RSP\n", __func__);
 		break;
 
 	default:
@@ -1085,7 +986,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_get_wireless_mode_req(struct mt7697_cfg80211_info *cfg, u8 port)
+int mt7697_wr_get_wireless_mode_req(const struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_get_wireless_mode_req req;
 	int ret;
@@ -1093,10 +994,10 @@ int mt7697_wr_get_wireless_mode_req(struct mt7697_cfg80211_info *cfg, u8 port)
 	req.cmd.len = sizeof(struct mt7697_get_wireless_mode_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_GET_WIRELESS_MODE_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 
-	dev_dbg(cfg->dev, "%s(): <-- GET WIRELESS MODE PORT(%u) len(%u)\n", 
-		__func__, port, req.cmd.len);
+	dev_dbg(cfg->dev, "%s(): <-- GET WIRELESS MODE port(%u) len(%u)\n", 
+		__func__, req.port, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(req.cmd.len));
 	if (ret != LEN_TO_WORD(req.cmd.len)) {
@@ -1112,7 +1013,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_wireless_mode_req(struct mt7697_cfg80211_info *cfg, u8 port, 
+int mt7697_wr_set_wireless_mode_req(const struct mt7697_cfg80211_info *cfg, 
                                     u8 mode)
 {
 	struct mt7697_set_wireless_mode_req req;
@@ -1121,11 +1022,11 @@ int mt7697_wr_set_wireless_mode_req(struct mt7697_cfg80211_info *cfg, u8 port,
 	req.cmd.len = sizeof(struct mt7697_set_wireless_mode_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_WIRELESS_MODE_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 	req.mode = mode;
 
 	dev_dbg(cfg->dev, "%s(): <-- SET WIRELESS MODE port(%u) len(%u)\n", 
-		__func__, port, req.cmd.len);
+		__func__, req.port, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(req.cmd.len));
 	if (ret != LEN_TO_WORD(req.cmd.len)) {
@@ -1141,7 +1042,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_pmk_req(struct mt7697_cfg80211_info *cfg, u8 port, 
+int mt7697_wr_set_pmk_req(const struct mt7697_cfg80211_info *cfg, 
 			  const u8 pmk[MT7697_WIFI_LENGTH_PMK])
 {
 	struct mt7697_set_pmk_req req;
@@ -1150,11 +1051,11 @@ int mt7697_wr_set_pmk_req(struct mt7697_cfg80211_info *cfg, u8 port,
 	req.cmd.len = sizeof(struct mt7697_set_pmk_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_PMK_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 	memcpy(req.pmk, pmk, MT7697_WIFI_LENGTH_PMK);
 
 	dev_dbg(cfg->dev, "%s(): <-- SET PMK port(%u) len(%u)\n", 
-		__func__, port, req.cmd.len);
+		__func__, req.port, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(sizeof(struct mt7697_set_pmk_req)));
 	if (ret != LEN_TO_WORD(sizeof(struct mt7697_set_pmk_req))) {
@@ -1171,7 +1072,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_channel_req(struct mt7697_cfg80211_info *cfg, u8 port, u8 ch)
+int mt7697_wr_set_channel_req(const struct mt7697_cfg80211_info *cfg, u8 ch)
 {
 	struct mt7697_set_channel_req req;
 	int ret;
@@ -1179,11 +1080,11 @@ int mt7697_wr_set_channel_req(struct mt7697_cfg80211_info *cfg, u8 port, u8 ch)
 	req.cmd.len = sizeof(struct mt7697_set_channel_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_CHANNEL_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 	req.ch = ch;
 
 	dev_dbg(cfg->dev, "%s(): <-- SET CHANNEL port(%u) len(%u)\n", 
-		__func__, port, req.cmd.len);
+		__func__, req.port, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(sizeof(struct mt7697_set_channel_req)));
 	if (ret != LEN_TO_WORD(sizeof(struct mt7697_set_channel_req))) {
@@ -1200,7 +1101,8 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_bssid_req(struct mt7697_cfg80211_info *cfg, const u8 bssid[ETH_ALEN])
+int mt7697_wr_set_bssid_req(const struct mt7697_cfg80211_info *cfg, 
+                            const u8 bssid[ETH_ALEN])
 {
 	struct mt7697_set_bssid_req req;
 	int ret;
@@ -1228,7 +1130,8 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_ssid_req(struct mt7697_cfg80211_info *cfg, u8 port, u8 len, const u8 ssid[])
+int mt7697_wr_set_ssid_req(const struct mt7697_cfg80211_info *cfg,  
+                           u8 len, const u8 ssid[])
 {
 	struct mt7697_set_ssid_req req;
 	int ret;
@@ -1236,7 +1139,7 @@ int mt7697_wr_set_ssid_req(struct mt7697_cfg80211_info *cfg, u8 port, u8 len, co
 	req.cmd.len = sizeof(struct mt7697_set_ssid_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_SSID_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 	req.len = len;
 	memcpy(req.ssid, ssid, len);
 
@@ -1258,17 +1161,18 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_reload_settings_req(struct mt7697_cfg80211_info* cfg)
+int mt7697_wr_reload_settings_req(const struct mt7697_cfg80211_info* cfg, u8 if_idx)
 {
 	struct mt7697_reload_settings_req req;
 	int ret;
 
-	req.len = sizeof(struct mt7697_reload_settings_req);
-	req.grp = MT7697_CMD_GRP_80211;
-	req.type = MT7697_CMD_RELOAD_SETTINGS_REQ;
+	req.cmd.len = sizeof(struct mt7697_reload_settings_req);
+	req.cmd.grp = MT7697_CMD_GRP_80211;
+	req.cmd.type = MT7697_CMD_RELOAD_SETTINGS_REQ;
+	req.if_idx = if_idx;
 
 	dev_dbg(cfg->dev, "%s(): <-- RELOAD SETTINGS len(%u)\n", 
-		__func__, req.len);
+		__func__, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(sizeof(struct mt7697_reload_settings_req)));
 	if (ret != LEN_TO_WORD(sizeof(struct mt7697_reload_settings_req))) {
@@ -1285,7 +1189,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_mac_addr_req(struct mt7697_cfg80211_info *cfg, u8 port)
+int mt7697_wr_mac_addr_req(const struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_mac_addr_req req;
 	int ret;
@@ -1293,10 +1197,10 @@ int mt7697_wr_mac_addr_req(struct mt7697_cfg80211_info *cfg, u8 port)
 	req.cmd.len = sizeof(struct mt7697_mac_addr_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_MAC_ADDR_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 
 	dev_dbg(cfg->dev, "%s(): <-- GET MAC ADDRESS port(%u) len(%u)\n", 
-		__func__, port, req.cmd.len);
+		__func__, req.port, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(req.cmd.len));
 	if (ret != LEN_TO_WORD(req.cmd.len)) {
@@ -1312,7 +1216,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_op_mode_req(struct mt7697_cfg80211_info* cfg, u8 opmode)
+int mt7697_wr_set_op_mode_req(const struct mt7697_cfg80211_info* cfg)
 {
 	struct mt7697_set_op_mode_req req;
 	int ret;
@@ -1320,10 +1224,10 @@ int mt7697_wr_set_op_mode_req(struct mt7697_cfg80211_info* cfg, u8 opmode)
 	req.cmd.len = sizeof(struct mt7697_set_op_mode_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_OP_MODE_REQ;
-	req.opmode = opmode;
+	req.opmode = cfg->wifi_cfg.opmode;
 
 	dev_dbg(cfg->dev, "%s(): <-- SET OPMODE(%u) len(%u)\n", 
-		__func__, opmode, req.cmd.len);
+		__func__, req.opmode, req.cmd.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(req.cmd.len));
 	if (ret != LEN_TO_WORD(req.cmd.len)) {
@@ -1339,7 +1243,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_cfg_req(struct mt7697_cfg80211_info *cfg)
+int mt7697_wr_cfg_req(const struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_cfg_req req;
 	int ret;
@@ -1348,8 +1252,7 @@ int mt7697_wr_cfg_req(struct mt7697_cfg80211_info *cfg)
 	req.grp = MT7697_CMD_GRP_80211;
 	req.type = MT7697_CMD_GET_CFG_REQ;
 	
-	dev_dbg(cfg->dev, "%s(): <-- GET CONFIG len(%u)\n", 
-		__func__, req.len);
+	dev_dbg(cfg->dev, "%s(): <-- GET CONFIG len(%u)\n", __func__, req.len);
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
 		LEN_TO_WORD(req.len));
 	if (ret != LEN_TO_WORD(req.len)) {
@@ -1365,59 +1268,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_reg_rx_hndlr_req(struct mt7697_cfg80211_info* cfg)
-{
-    	struct mt7697_register_rx_hndlr_req req;
-	int ret;
-
-	req.len = sizeof(struct mt7697_register_rx_hndlr_req);
-	req.grp = MT7697_CMD_GRP_80211;
-	req.type = MT7697_CMD_REGISTER_RX_HNDLR_REQ;
-	
-	dev_dbg(cfg->dev, "%s(): <-- REGISTER RX HANDLER len(%u)\n", 
-		__func__, req.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.len));
-	if (ret != LEN_TO_WORD(req.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_unreg_rx_hndlr_req(struct mt7697_cfg80211_info* cfg)
-{
-    	struct mt7697_unregister_rx_hndlr_req req;
-	int ret;
-
-	req.len = sizeof(struct mt7697_unregister_rx_hndlr_req);
-	req.grp = MT7697_CMD_GRP_80211;
-	req.type = MT7697_CMD_UNREGISTER_RX_HNDLR_REQ;
-	
-	dev_dbg(cfg->dev, "%s(): <-- UNREGISTER RX HANDLER len(%u)\n", 
-		__func__, req.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.len));
-	if (ret != LEN_TO_WORD(req.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_get_radio_state_req(struct mt7697_cfg80211_info* cfg)
+int mt7697_wr_get_radio_state_req(const struct mt7697_cfg80211_info* cfg)
 {
 	struct mt7697_get_radio_state_req req;
 	int ret;
@@ -1443,7 +1294,8 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_radio_state_req(struct mt7697_cfg80211_info* cfg, u8 state)
+int mt7697_wr_set_radio_state_req(const struct mt7697_cfg80211_info* cfg, 
+                                  u8 state)
 {
 	struct mt7697_set_radio_state_req req;
 	int ret;
@@ -1470,115 +1322,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_get_rx_filter_req(struct mt7697_cfg80211_info* cfg)
-{
-	struct mt7697_get_rx_filter_req req;
-	int ret;
-
-	req.len = sizeof(struct mt7697_get_rx_filter_req);
-	req.grp = MT7697_CMD_GRP_80211;
-	req.type = MT7697_CMD_GET_RX_FILTER_REQ;
-	
-	dev_dbg(cfg->dev, "%s(): <-- GET RX FILTER len(%u)\n", 
-		__func__, req.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.len));
-	if (ret != LEN_TO_WORD(req.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_set_rx_filter_req(struct mt7697_cfg80211_info* cfg, 
-				u32 rx_filter)
-{
-	struct mt7697_set_rx_filter_req req;
-	int ret;
-
-	req.cmd.len = sizeof(struct mt7697_set_rx_filter_req);
-	req.cmd.grp = MT7697_CMD_GRP_80211;
-	req.cmd.type = MT7697_CMD_SET_RX_FILTER_REQ;
-	req.rx_filter = rx_filter;
-
-	dev_dbg(cfg->dev, "%s(): <-- SET RX FILTER(0x%08x) len(%u)\n", 
-		__func__, rx_filter, req.cmd.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.cmd.len));
-	if (ret != LEN_TO_WORD(req.cmd.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.cmd.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_get_smart_conn_filter_req(struct mt7697_cfg80211_info* cfg)
-{
-	struct mt7697_get_smart_conn_filter_req req;
-	int ret;
-
-	req.len = sizeof(struct mt7697_get_smart_conn_filter_req);
-	req.grp = MT7697_CMD_GRP_80211;
-	req.type = MT7697_CMD_GET_SMART_CONN_FILTER_REQ;
-	
-	dev_dbg(cfg->dev, "%s(): <-- GET SMART CONN FILTER len(%u)\n", 
-		__func__, req.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.len));
-	if (ret != LEN_TO_WORD(req.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_set_smart_conn_filter_req(struct mt7697_cfg80211_info* cfg, 
-                                        u8 flag)
-{
-	struct mt7697_set_smart_conn_filter_req req;
-	int ret;
-
-	req.cmd.len = sizeof(struct mt7697_set_smart_conn_filter_req);
-	req.cmd.grp = MT7697_CMD_GRP_80211;
-	req.cmd.type = MT7697_CMD_SET_SMART_CONN_FILTER_REQ;
-	req.flag = flag;
-
-	dev_dbg(cfg->dev, "%s(): <-- SET SMART CONN FILTER(%u) len(%u)\n", 
-		__func__, flag, req.cmd.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.cmd.len));
-	if (ret != LEN_TO_WORD(req.cmd.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.cmd.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_get_listen_interval_req(struct mt7697_cfg80211_info* cfg)
+int mt7697_wr_get_listen_interval_req(const struct mt7697_cfg80211_info* cfg)
 {
 	struct mt7697_get_listen_interval_req req;
 	int ret;
@@ -1604,7 +1348,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_listen_interval_req(struct mt7697_cfg80211_info* cfg, 
+int mt7697_wr_set_listen_interval_req(const struct mt7697_cfg80211_info* cfg, 
 				      u32 interval)
 {
 	struct mt7697_set_listen_interval_req req;
@@ -1632,8 +1376,8 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_set_security_mode_req(struct mt7697_cfg80211_info* cfg, 
-                                    u8 port, u8 auth_mode, u8 encrypt_type)
+int mt7697_wr_set_security_mode_req(const struct mt7697_cfg80211_info* cfg, 
+                                    u8 auth_mode, u8 encrypt_type)
 {
 	struct mt7697_set_security_mode_req req;
 	int ret;
@@ -1641,7 +1385,7 @@ int mt7697_wr_set_security_mode_req(struct mt7697_cfg80211_info* cfg,
 	req.cmd.len = sizeof(struct mt7697_set_security_mode_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_SECURITY_MODE_REQ;
-	req.port = port;
+	req.port = cfg->port_type;
 	req.auth_mode = auth_mode;
 	req.encrypt_type = encrypt_type;
 
@@ -1663,8 +1407,8 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_get_security_mode_req(struct mt7697_cfg80211_info* cfg, 
-                                    u32 if_idx, u8 port)
+int mt7697_wr_get_security_mode_req(const struct mt7697_cfg80211_info* cfg, 
+                                    u32 if_idx)
 {
 	struct mt7697_get_security_mode_req req;
 	int ret;
@@ -1673,7 +1417,7 @@ int mt7697_wr_get_security_mode_req(struct mt7697_cfg80211_info* cfg,
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_GET_SECURITY_MODE_REQ;
 	req.if_idx = if_idx;
-	req.port = port;
+	req.port = cfg->port_type;
 
 	dev_dbg(cfg->dev, "%s(): <-- GET SECURITY MODE len(%u)\n", 
 		__func__, req.cmd.len);
@@ -1692,7 +1436,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_scan_req(struct mt7697_cfg80211_info *cfg, u32 if_idx, 
+int mt7697_wr_scan_req(const struct mt7697_cfg80211_info *cfg, u32 if_idx, 
 	               const struct cfg80211_scan_request *req)
 {
 	struct mt7697_scan_req scan_req;
@@ -1736,7 +1480,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_scan_stop_req(struct mt7697_cfg80211_info* cfg)
+int mt7697_wr_scan_stop_req(const struct mt7697_cfg80211_info* cfg)
 {
 	struct mt7697_scan_stop req;
 	int ret;
@@ -1761,8 +1505,8 @@ cleanup:
 	return ret;
 }
 
-int mt7697_wr_disconnect_req(struct mt7697_cfg80211_info *cfg, u32 if_idx, 
-			     const u8 *addr)
+int mt7697_wr_disconnect_req(const struct mt7697_cfg80211_info *cfg, 
+                             const u8 *addr)
 {
 	struct mt7697_disconnect_req req;
 	int ret;
@@ -1771,7 +1515,6 @@ int mt7697_wr_disconnect_req(struct mt7697_cfg80211_info *cfg, u32 if_idx,
 	req.cmd.len = sizeof(struct mt7697_disconnect_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_DISCONNECT_REQ;
-	req.if_idx = if_idx;
 
 	if (addr) {
 		req.port = MT7697_PORT_AP;
@@ -1812,7 +1555,7 @@ int mt7697_wr_tx_raw_packet(struct mt7697_cfg80211_info* cfg,
 	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&cfg->tx_req, 
 		LEN_TO_WORD(LEN32_ALIGNED(cfg->tx_req.cmd.len)));
 	if (ret != LEN_TO_WORD(LEN32_ALIGNED(cfg->tx_req.cmd.len))) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
+		dev_dbg(cfg->dev, "%s(): write() failed(%d != %d)\n", 
 			__func__, ret,
 			LEN_TO_WORD(LEN32_ALIGNED(cfg->tx_req.cmd.len)));
 		ret = (ret < 0) ? ret:-EIO;
