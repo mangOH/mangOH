@@ -78,6 +78,6 @@ kernelModules:
     // Only on mangOH Red DV4
     $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
 
-    // Required for BQ24296 
+    // Required for BQ24296
     $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
 }

@@ -12,9 +12,9 @@ enum ltc294x_id {
 struct ltc294x_platform_data
 {
 	enum ltc294x_id chip_id;
-	int r_sense; 
+	int r_sense;
 	u32 prescaler_exp;
-        const char *name;
+	const char *name;
 };
 
 #endif /* LTC294X_PLATFORM_DATA_H */

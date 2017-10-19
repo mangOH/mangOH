@@ -423,31 +423,23 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 	u32 prescaler_exp;
 	u8 status;
 
-	
-        info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
+
+	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
 	if (info == NULL)
 		return -ENOMEM;
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 	i2c_set_clientdata(client, info);
 
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
-	// DF
 	platform_data = client->dev.platform_data;
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
 
 	info->id = platform_data->chip_id;
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 	info->supply.name = platform_data->name;
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
 	/* r_sense can be negative, when sense+ is connected to the battery
 	 * instead of the sense-. This results in reversed measurements. */
 	info->r_sense = platform_data->r_sense;
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
 	prescaler_exp = platform_data->prescaler_exp;
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 
 	if (info->id == LTC2943_ID) {
 		if (prescaler_exp > LTC2943_MAX_PRESCALER_EXP)
@@ -461,7 +453,6 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 				(128 / (1 << prescaler_exp));
 	}
 
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 	/* Read status register to check for LTC2942 */
 	if (info->id == LTC2941_ID || info->id == LTC2942_ID) {
 		ret = ltc294x_read_regs(client, LTC294X_REG_STATUS, &status, 1);
@@ -495,7 +486,6 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 			ARRAY_SIZE(ltc294x_properties) - 3;
 		break;
 	}
-        dev_err(&client->dev, "reached line at %d\n", __LINE__);
 	info->supply.get_property = ltc294x_get_property;
 	info->supply.set_property = ltc294x_set_property;
 	info->supply.property_is_writeable = ltc294x_property_is_writeable;

@@ -2,7 +2,7 @@ export MANGOH_ROOT = $(shell pwd)
 
 MKSYS_ARGS_COMMON = -s $(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService
 MKSYS_ARGS_GREEN =
-MKSYS_ARGS_RED = -s $(MANGOH_ROOT)/apps/RedSensorToCloud -i $(MANGOH_ROOT)/apps/BatteryService
+MKSYS_ARGS_RED = -s $(MANGOH_ROOT)/apps/RedSensorToCloud
 
 # The comments below are for Developer Studio integration. Do not remove them.
 # DS_CLONE_ROOT(MANGOH_ROOT)

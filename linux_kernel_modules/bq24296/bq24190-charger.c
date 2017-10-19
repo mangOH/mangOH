@@ -1289,7 +1289,7 @@ static int bq24190_hw_init(struct bq24190_dev_info *bdi)
 
 	pm_runtime_get_sync(bdi->dev);
 
-/*	First check that the device really is what its supposed to be */
+	/* First check that the device really is what its supposed to be */
 	ret = bq24190_read_mask(bdi, BQ24190_REG_VPRS,
 			BQ24190_REG_VPRS_PN_MASK,
 			BQ24190_REG_VPRS_PN_SHIFT,
@@ -1301,7 +1301,7 @@ static int bq24190_hw_init(struct bq24190_dev_info *bdi)
 		ret = -ENODEV;
 		goto out;
 	}
-        
+
 	ret = bq24190_register_reset(bdi);
 	if (ret < 0)
 		goto out;
@@ -1364,50 +1364,37 @@ static int bq24190_probe(struct i2c_client *client,
 	struct bq24190_platform_data *pdata = client->dev.platform_data;
 	struct bq24190_dev_info *bdi;
 	int ret;
-          dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE_DATA)) {
 		dev_err(dev, "No support for SMBUS_BYTE_DATA\n");
 		return -ENODEV;
 	}
-          dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	bdi = devm_kzalloc(dev, sizeof(*bdi), GFP_KERNEL);
-          dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	if (!bdi) {
 		dev_err(dev, "Can't alloc bdi struct\n");
 		return -ENOMEM;
 	}
-          dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	bdi->client = client;
 	bdi->dev = dev;
 	bdi->model = id->driver_data;
-        dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	strncpy(bdi->model_name, id->name, I2C_NAME_SIZE);
-         dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	mutex_init(&bdi->f_reg_lock);
 	bdi->first_time = true;
 	bdi->charger_health_valid = false;
 	bdi->battery_health_valid = false;
 	bdi->battery_status_valid = false;
-          dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	i2c_set_clientdata(client, bdi);
-       dev_err(&client->dev,"checking status at %d\n",__LINE__);
- 
-	if (dev->of_node){
 
-          dev_err(&client->dev,"checking status at %d\n",__LINE__);         
-		ret = bq24190_setup_dt(bdi);}
-                
-	else{
-         dev_err(&client->dev,"checking status at %d\n",__LINE__);
-		ret = bq24190_setup_pdata(bdi, pdata);}
-        dev_err(&client->dev,"checking status at %d\n",__LINE__);
-        
+	if (dev->of_node) {
+
+		ret = bq24190_setup_dt(bdi);
+	} else {
+		ret = bq24190_setup_pdata(bdi, pdata);
+	}
+
 	if (ret) {
 		dev_err(&client->dev, "Can't get irq info\n");
-           dev_err(&client->dev,"checking status at %d\n",__LINE__);
 		return -EINVAL;
 	}
-         dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	ret = devm_request_threaded_irq(dev, bdi->irq, NULL,
 			bq24190_irq_handler_thread,
 			IRQF_TRIGGER_RISING | IRQF_ONESHOT,
@@ -1425,7 +1412,7 @@ static int bq24190_probe(struct i2c_client *client,
 		dev_err(dev, "Hardware init failed\n");
 		goto out2;
 	}
-        
+
 	bq24190_charger_init(&bdi->charger);
 
 	ret = power_supply_register(dev, &bdi->charger);
@@ -1441,9 +1428,7 @@ static int bq24190_probe(struct i2c_client *client,
 		dev_err(dev, "Can't register battery\n");
 		goto out3;
 	}
-        dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	ret = bq24190_sysfs_create_group(bdi);
-        dev_err(&client->dev,"checking status at %d\n",__LINE__);
 	if (ret) {
 		dev_err(dev, "Can't create sysfs entries\n");
 		goto out4;
