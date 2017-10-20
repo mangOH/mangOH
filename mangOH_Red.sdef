@@ -45,8 +45,8 @@ interfaceSearch:
 kernelModules:
 {
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
-    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv4
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
 
     // cp2130 required for MT7697 WiFi/BT
     $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
@@ -67,6 +67,8 @@ kernelModules:
     // Used on mangOH Red DV3 and later
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+
+    $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
 
     $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
     $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
