@@ -1,0 +1,9 @@
+sources:
+{
+    iot-slot-core.c
+    iot-slot-eeprom.c
+}
+
+params:
+{
+}

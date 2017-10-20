@@ -10,8 +10,8 @@
  * GNU General Public License for more details.
  *
  */
-#ifndef MANGOH_IOT_EEPROM_1V0_H
-#define MANGOH_IOT_EEPROM_1V0_H
+#ifndef IOT_SLOT_EEPROM_1V0_H
+#define IOT_SLOT_EEPROM_1V0_H
 
 typedef struct eeprom_if_reserved_ {
 	char reserved[63];
@@ -66,4 +66,4 @@ typedef struct eeprom_if_1v0_ {
 
 #define EEPROM_1V0_INTERFACE_OFFSET	192
 
-#endif /* MANGOH_IOT_EEPROM_1V0_H */
+#endif /* IOT_SLOT_EEPROM_1V0_H */

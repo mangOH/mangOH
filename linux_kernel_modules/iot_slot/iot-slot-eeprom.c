@@ -55,8 +55,8 @@
 #include <linux/gpio/driver.h>
 #include <linux/platform_data/at24.h>
 
-#include "eeprom.h"
-#include "eeprom_1v0.h"
+#include "iot-slot-eeprom.h"
+#include "iot-slot-eeprom-1v0.h"
 
 #define HOST_UINT8(buffer, offset)	(*(uint8_t*)(&(buffer)[(offset)]))
 #define HOST_UINT16(buffer, offset)	ntohs(*(uint16_t*)(&(buffer)[(offset)]))
@@ -65,22 +65,6 @@
 #define EEPROM_VERSION(major, minor)	(((major)&0xff) << 8 | ((minor)&0xff))
 #define EEPROM_VERSION_MAJOR(version)	(((version) & 0xff00) >> 8)
 #define EEPROM_VERSION_MINOR(version)	((version) & 0xff)
-
-typedef enum eeprom_if_t_ {
-	eeprom_if_gpio = 0,
-	eeprom_if_i2c = 1,
-	eeprom_if_spi = 2,
-	eeprom_if_usb = 3,
-	eeprom_if_sdio = 4,
-	eeprom_if_adc = 5,
-	eeprom_if_pcm = 6,
-	eeprom_if_clk = 7,
-	eeprom_if_uart = 8,
-	eeprom_if_plat = 9,
-	/* add more interface types here */
-	eeprom_if_last_supported,
-	eeprom_if_last = 0xff
-} eeprom_if_t;
 
 #define IOT_EEPROM_SIZE	4096
 /*
@@ -165,7 +149,7 @@ static void *eeprom_if_first(struct i2c_client *eeprom)
 		uint8_t *buffer = to_eeprom_buffer(eeprom);
 		eeprom_if_1v0 *ifc =
 			(eeprom_if_1v0*)&buffer[EEPROM_1V0_INTERFACE_OFFSET];
-		return (eeprom_if_last == ifc->type ? NULL : ifc);
+		return (ifc->type == EEPROM_IF_LAST ? NULL : ifc);
 	}
 	default:
 		BUG();
@@ -178,7 +162,7 @@ static void *eeprom_if_next(struct i2c_client *eeprom, void *prev)
 	switch (eeprom_version(eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *ifc = (eeprom_if_1v0*)prev;
-		return (eeprom_if_last == ifc->type ? NULL : ++ifc);
+		return (ifc->type == EEPROM_IF_LAST ? NULL : ++ifc);
 	}
 	default:
 		BUG();
@@ -219,18 +203,19 @@ static int eeprom_load_interfaces(struct i2c_client *eeprom)
 }
 
 /* Public functions */
-struct i2c_client *eeprom_load(int slot)
+struct i2c_client *eeprom_load(struct i2c_adapter *i2c_adapter)
 {
-	struct i2c_adapter *adapter;
 	struct i2c_client *eeprom;
 
-	adapter = i2c_get_adapter(1 + slot);
-	if (!adapter)
+	if (!i2c_adapter)
 		return NULL;
 
 	/* This automatically runs the setup() function */
-	eeprom = i2c_new_device(adapter, &at24_eeprom_info);
-	i2c_put_adapter(adapter);
+	eeprom = i2c_new_device(i2c_adapter, &at24_eeprom_info);
+
+	/* If no eeprom is detected, return NULL */
+	if (eeprom == NULL)
+		return NULL;
 
 	/* Validate EEPROM header */
 	if (!to_eeprom_buffer(eeprom)) {
@@ -256,35 +241,30 @@ int eeprom_num_slots(struct i2c_client *eeprom)
 	return 1; /* for now */
 }
 
-#define __DECLARE_IS_IF(bus) \
-	__DECLARE_IS_IF_PROTOTYPE(bus, i) {				\
-		struct eeprom_if_map *m = to_eeprom_if_map(i);		\
-		struct i2c_client *eeprom = m->eeprom;			\
-		switch (eeprom_version(eeprom)) {			\
-		case EEPROM_VERSION(1, 0): {				\
-			eeprom_if_1v0 *i = (eeprom_if_1v0*)m->contents;	\
-			return (eeprom_if_##bus == i->type);		\
-		}							\
-		default:						\
-			BUG();						\
-			return 0;					\
-		}							\
-	}
-
-__DECLARE_IS_IF(gpio)
-__DECLARE_IS_IF(i2c)
-__DECLARE_IS_IF(spi)
-__DECLARE_IS_IF(usb)
-__DECLARE_IS_IF(sdio)
-__DECLARE_IS_IF(adc)
-__DECLARE_IS_IF(pcm)
-__DECLARE_IS_IF(clk)
-__DECLARE_IS_IF(uart)
-__DECLARE_IS_IF(plat)
 
 struct list_head *eeprom_if_list(struct i2c_client *eeprom)
 {
 	return to_eeprom_if_list(eeprom);
+}
+
+enum EepromInterface eeprom_if_type(struct list_head *item)
+{
+	enum EepromInterface result;
+	struct eeprom_if_map *m = to_eeprom_if_map(item);
+	switch (eeprom_version(m->eeprom)) {
+	case EEPROM_VERSION(1, 0):
+	{
+		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
+		result = eif->type;
+		break;
+	}
+	default:
+		BUG();
+		result = EEPROM_IF_LAST;
+		break;
+	}
+
+	return result;
 }
 
 uint8_t eeprom_if_gpio_cfg(struct list_head *item, unsigned int pin)
@@ -293,7 +273,7 @@ uint8_t eeprom_if_gpio_cfg(struct list_head *item, unsigned int pin)
 	switch (eeprom_version(m->eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
-		BUG_ON(eeprom_if_gpio != eif->type);
+		BUG_ON(eif->type != EEPROM_IF_GPIO);
 		BUG_ON(pin >= ARRAY_SIZE(eif->ifc.gpio.cfg));
 		return eif->ifc.gpio.cfg[pin];
 	}
@@ -309,7 +289,7 @@ char *eeprom_if_spi_modalias(struct list_head *item)
 	switch (eeprom_version(m->eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
-		BUG_ON(eeprom_if_spi != eif->type);
+		BUG_ON(eif->type != EEPROM_IF_SPI);
 		return (eif->ifc.spi.modalias);
 	}
 	default:
@@ -325,7 +305,7 @@ int eeprom_if_spi_irq_gpio(struct list_head *item)
 	switch (eeprom_version(m->eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
-		BUG_ON(eeprom_if_spi != eif->type);
+		BUG_ON(eif->type != EEPROM_IF_SPI);
 		return eif->ifc.spi.irq_gpio;
 	}
 	default:
@@ -341,7 +321,7 @@ char *eeprom_if_i2c_modalias(struct list_head *item)
 	switch (eeprom_version(m->eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
-		BUG_ON(eeprom_if_i2c != eif->type);
+		BUG_ON(eif->type != EEPROM_IF_I2C);
 		return (eif->ifc.i2c.modalias);
 	}
 	default:
@@ -357,7 +337,7 @@ int eeprom_if_i2c_irq_gpio(struct list_head *item)
 	switch (eeprom_version(m->eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
-		BUG_ON(eeprom_if_i2c != eif->type);
+		BUG_ON(eif->type != EEPROM_IF_I2C);
 		return eif->ifc.i2c.irq_gpio;
 	}
 	default:
@@ -373,7 +353,7 @@ uint8_t eeprom_if_i2c_address(struct list_head *item)
 	switch (eeprom_version(m->eeprom)) {
 	case EEPROM_VERSION(1, 0): {
 		eeprom_if_1v0 *eif = (eeprom_if_1v0*)m->contents;
-		BUG_ON(eeprom_if_i2c != eif->type);
+		BUG_ON(eif->type != EEPROM_IF_I2C);
 		return (eif->ifc.i2c.address);
 	}
 	default:

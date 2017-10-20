@@ -10,8 +10,8 @@
  * GNU General Public License for more details.
  *
  */
-#ifndef MANGOH_IOT_EEPROM_H
-#define MANGOH_IOT_EEPROM_H
+#ifndef IOT_SLOT_EEPROM_H
+#define IOT_SLOT_EEPROM_H
 
 #include <linux/i2c.h>
 
@@ -24,29 +24,36 @@
 #define EEPROM_GPIO_CFG_OUTPUT_LOW	(0x4)
 #define EEPROM_GPIO_CFG_OUTPUT_HIGH	(0x5)
 
-struct i2c_client *eeprom_load(int slot);
+enum EepromInterface
+{
+	EEPROM_IF_GPIO,
+	EEPROM_IF_I2C,
+	EEPROM_IF_SPI,
+	EEPROM_IF_USB,
+	EEPROM_IF_SDIO,
+	EEPROM_IF_ADC,
+	EEPROM_IF_PCM,
+	EEPROM_IF_CLK,
+	EEPROM_IF_UART,
+	EEPROM_IF_PLAT,
+/* add more interface types here */
+	EEPROM_IF_LAST_SUPPORTED,
+	EEPROM_IF_LAST = 0xFF,
+};
+
+struct i2c_client *eeprom_load(struct i2c_adapter *i2c_adapter);
 void eeprom_unload(struct i2c_client *eeprom);
 struct list_head *eeprom_if_list(struct i2c_client *eeprom);
 int eeprom_num_slots(struct i2c_client *eeprom);
 
-#define __DECLARE_IS_IF_PROTOTYPE(bus, ifc)	\
-	bool eeprom_is_if_##bus(struct list_head *ifc)
-__DECLARE_IS_IF_PROTOTYPE(gpio, ifc);
-__DECLARE_IS_IF_PROTOTYPE(i2c, ifc);
-__DECLARE_IS_IF_PROTOTYPE(spi, ifc);
-__DECLARE_IS_IF_PROTOTYPE(usb, ifc);
-__DECLARE_IS_IF_PROTOTYPE(sdio, ifc);
-__DECLARE_IS_IF_PROTOTYPE(adc, ifc);
-__DECLARE_IS_IF_PROTOTYPE(pcm, ifc);
-__DECLARE_IS_IF_PROTOTYPE(clk, ifc);
-__DECLARE_IS_IF_PROTOTYPE(uart, ifc);
-__DECLARE_IS_IF_PROTOTYPE(plat, ifc);
 
+enum EepromInterface eeprom_if_type(struct list_head *item);
 uint8_t eeprom_if_gpio_cfg(struct list_head *item, unsigned int pin);
 char *eeprom_if_spi_modalias(struct list_head *item);
 int eeprom_if_spi_irq_gpio(struct list_head *item);
 char *eeprom_if_i2c_modalias(struct list_head *item);
 int eeprom_if_i2c_irq_gpio(struct list_head *item);
 uint8_t eeprom_if_i2c_address(struct list_head *item);
-#endif /* MANGOH_IOT_EEPROM_H */
+
+#endif /* IOT_SLOT_EEPROM_H */
 
