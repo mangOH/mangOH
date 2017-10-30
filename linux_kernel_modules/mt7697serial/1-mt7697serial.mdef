@@ -1,0 +1,11 @@
+sources:
+{
+    uart.c
+}
+
+cflags:
+{
+//    -DDEBUG
+    -I$MANGOH_ROOT/linux_kernel_modules/mt7697common
+}
+
