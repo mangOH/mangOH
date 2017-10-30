@@ -35,3 +35,9 @@
 [submodule "apps/Heartbeat"]
 	path = apps/Heartbeat
 	url = https://github.com/mangOH/Heartbeat
+[submodule "apps/BatteryService"]
+	path = apps/BatteryService
+	url = https://github.com/mangOH/BatteryService
+[submodule "samples/BatteryClient"]
+	path = samples/BatteryClient
+	url = https://github.com/mangOH/BatteryClient

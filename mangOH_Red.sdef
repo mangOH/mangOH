@@ -14,8 +14,10 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
-
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+
+    // Disabled until Release 15 is released due to bug in power supply kernel support
+    // $MANGOH_ROOT/apps/BatteryService/batteryService
 
     // The heartbeat app is disabled on mangOH Red because the logging messages
     // from the low power microcontroller make it very difficult to use the
@@ -37,13 +39,14 @@ interfaceSearch:
     $MANGOH_ROOT/apps/DataRouter
     $MANGOH_ROOT/apps/MuxControl
     $MANGOH_ROOT/apps/SocialService/interfaces
+    $MANGOH_ROOT/apps/BatteryService
 }
 
 kernelModules:
 {
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
-    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv4
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
 
     // cp2130 required for MT7697 WiFi/BT
     $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
@@ -65,6 +68,9 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
+    // Don't enable IoT slot driver until failure case testing is complete
+    // $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+
     $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
     $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
     $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
@@ -72,4 +78,10 @@ kernelModules:
     // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
     // loaded.
     $LEGATO_ROOT/drivers/spisvc/spisvc
+
+    // Only on mangOH Red DV4
+    $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
+
+    // Required for BQ24296
+    $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
 }
