@@ -103,7 +103,7 @@ static int iot_slot_enumerate(struct iot_slot *slot)
 	if (eeprom == NULL)
 	{
 		dev_warn(device,
-			 "Card detected on IoT slot %d, but no eeprom was detected\n",
+			 "Card detected on IoT slot %d, but a valid eeprom was not detected\n",
 			 slot_index);
 		goto restore_card_detect;
 	}
