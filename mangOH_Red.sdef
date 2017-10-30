@@ -45,8 +45,8 @@ interfaceSearch:
 kernelModules:
 {
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
-    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
 
     // cp2130 required for MT7697 WiFi/BT
     $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
@@ -79,7 +79,7 @@ kernelModules:
     // loaded.
     $LEGATO_ROOT/drivers/spisvc/spisvc
 
-    // Only on mangOH Red DV4
+    // Not on the mangOH Red DV3
     $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
 
     // Required for BQ24296
