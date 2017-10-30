@@ -14,12 +14,13 @@
  * CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#ifndef _MT7697_INTERRUPT_H_
-#define _MT7697_INTERRUPT_H_
+#ifndef _MT7697_SPI_QUEUE_INTERRUPT_H_
+#define _MT7697_SPI_QUEUE_INTERRUPT_H_
 
 #include <linux/interrupt.h>
 
-irqreturn_t mt7697_isr(int, void*);
-void mt7697_irq_work(struct work_struct*);
+irqreturn_t mt7697q_isr(int, void*);
+void mt7697q_irq_work(struct work_struct*);
+void mt7697q_irq_delayed_work(struct work_struct*);
 
 #endif

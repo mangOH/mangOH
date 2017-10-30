@@ -34,9 +34,9 @@ static int mt7697spi_write_then_read(struct spi_device *spi, const void *txbuf,
 				     void *rxbuf, unsigned len)
 {
 	struct spi_transfer transfer = {
-		.tx_buf		= txbuf,
-		.rx_buf		= rxbuf,
-		.len		= len,
+		.tx_buf	= txbuf,
+		.rx_buf	= rxbuf,
+		.len	= len,
 	};
 
 	return spi_sync_transfer(spi, &transfer, 1);
@@ -123,7 +123,7 @@ static int __init mt7697spi_init(void)
 		goto cleanup;
 	}
 
-	dev_info(&master->dev, "%s(): init dev('%s') mode(%d) max speed(%d) "
+	dev_info(&master->dev, "%s(): dev('%s') mode(%d) max speed(%d) "
 		"CS(%d) bits/word(%d)\n", 
 		__func__, spi->modalias, spi->mode, spi->max_speed_hz, 
 		spi->chip_select, spi->bits_per_word);
@@ -143,8 +143,8 @@ static int __init mt7697spi_init(void)
         qinfo->hw_ops = &hw_ops;
 
 	mutex_init(&qinfo->mutex);
-	INIT_DELAYED_WORK(&qinfo->irq_delayed_work, mt7697_irq_delayed_work);
-	INIT_WORK(&qinfo->irq_work, mt7697_irq_work);
+	INIT_DELAYED_WORK(&qinfo->irq_delayed_work, mt7697q_irq_delayed_work);
+	INIT_WORK(&qinfo->irq_work, mt7697q_irq_work);
 
 	qinfo->irq_workq = alloc_workqueue(DRVNAME"wq", 
 		WQ_HIGHPRI | WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
@@ -155,17 +155,25 @@ static int __init mt7697spi_init(void)
 		goto cleanup;
 	}
 
-	ret = gpio_request(MT7697_SPI_INTR_GPIO_PIN, MT7697_GPIO_IRQ_NAME);
+	qinfo->gpio_pin = MT7697_SPI_INTR_GPIO_PIN;
+	ret = gpio_request(qinfo->gpio_pin, MT7697_SPI_GPIO_IRQ_NAME);
         if (ret < 0) {
-                dev_err(qinfo->dev, "%s(): gpio_request() failed(%d)", 
-			__func__, ret);
-                goto failed_workqueue;
-        }
+		if (ret != -EBUSY) {
+                	dev_err(qinfo->dev, "%s(): gpio_request() failed(%d)", 
+				__func__, ret);
+			goto failed_workqueue;
+		}
 
-	gpio_direction_input(MT7697_SPI_INTR_GPIO_PIN);
-	qinfo->irq = gpio_to_irq(MT7697_SPI_INTR_GPIO_PIN);
+		qinfo->irq = gpio_to_irq(qinfo->gpio_pin);
+		qinfo->gpio_pin = MT7697_SPI_INTR_GPIO_PIN_INVALID;
+        }
+	else {
+		gpio_direction_input(qinfo->gpio_pin);
+		qinfo->irq = gpio_to_irq(qinfo->gpio_pin);
+	}
+
 	dev_info(qinfo->dev, "%s(): request irq(%d)\n", __func__, qinfo->irq);
-	ret = request_irq(qinfo->irq, mt7697_isr, 0, DRVNAME, qinfo);
+	ret = request_irq(qinfo->irq, mt7697q_isr, 0, DRVNAME, qinfo);
         if (ret < 0) {
                 dev_err(qinfo->dev, "%s(): request_irq() failed(%d)", 
 			__func__, ret);
@@ -183,7 +191,7 @@ failed_workqueue:
 	destroy_workqueue(qinfo->irq_workq);
 
 failed_gpio_req:
-	gpio_free(MT7697_SPI_INTR_GPIO_PIN);
+	if (qinfo->gpio_pin > 0) gpio_free(qinfo->gpio_pin);
 
 cleanup:
 	if (qinfo) kfree(qinfo);
@@ -241,7 +249,7 @@ static void __exit mt7697spi_exit(void)
 	destroy_workqueue(qinfo->irq_workq);
 
 	free_irq(qinfo->irq, qinfo);
-	gpio_free(MT7697_SPI_INTR_GPIO_PIN);
+	if (qinfo->gpio_pin > 0) gpio_free(qinfo->gpio_pin);
 	kfree(qinfo);
 
 cleanup:

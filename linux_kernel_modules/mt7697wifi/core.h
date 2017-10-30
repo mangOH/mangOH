@@ -19,6 +19,7 @@
 
 #include <net/cfg80211.h>
 #include <net/iw_handler.h>     /* New driver API */
+#include "mt7697_i.h"
 #include "wifi_api.h"
 #include "wmi.h"
 
@@ -90,7 +91,7 @@ struct mt7697_cfg80211_info {
 	struct semaphore sem;
         
 	struct platform_device *hif_priv;
-	const struct mt7697q_if_ops *hif_ops;
+	const struct mt7697_if_ops *hif_ops;
 
 	void* txq_hdl;
 	void* rxq_hdl;
@@ -219,7 +220,7 @@ int mt7697_notify_tx(void*, u32);
 void mt7697_tx_work(struct work_struct *);
 int mt7697_data_tx(struct sk_buff*, struct net_device*);
 int mt7697_rx_data(struct mt7697_cfg80211_info*, u32, u32);
-int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr*, void*);
+int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr*, void*);
 
 void mt7697_disconnect_timer_hndlr(unsigned long);
 int mt7697_disconnect(struct mt7697_vif*);

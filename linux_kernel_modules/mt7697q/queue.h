@@ -54,7 +54,7 @@ struct mt7697q_spec {
 
 struct mt7697q_info {
 	struct mt7697q_spec 		queues[MT7697_NUM_QUEUES];
-	struct mt7697q_rsp_hdr 		rsp;
+	struct mt7697_rsp_hdr 		rsp;
 	u8 				txBuffer[sizeof(u32)];
 	u8 				rxBuffer[sizeof(u32)];
 	
@@ -68,14 +68,15 @@ struct mt7697q_info {
 	struct work_struct              irq_work;
 	struct delayed_work		irq_delayed_work;
 	atomic_t			blocked_writer;
+	int 				gpio_pin;
 	int 				irq;
 	u8 				s2m_mbox;
 	bool				slave_busy;
 };
 
-void mt7697_irq_delayed_work(struct work_struct*);
-void mt7697_irq_work(struct work_struct*);
-irqreturn_t mt7697_isr(int, void*);
+void mt7697q_irq_delayed_work(struct work_struct*);
+void mt7697q_irq_work(struct work_struct*);
+irqreturn_t mt7697q_isr(int, void*);
 
 int mt7697q_blocked_writer(const struct mt7697q_spec*);
 size_t mt7697q_get_free_words(const struct mt7697q_spec*);

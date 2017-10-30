@@ -7,29 +7,38 @@
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
 
 mt_wifi_start() {
+
+    stty -F /dev/ttyHS0 raw || exit 127
+    stty -F /dev/ttyHS0 921600 || exit 127
+    stty -F /dev/ttyHS0 crtscts || exit 127
+    stty -F /dev/ttyHS0 -echo || exit 127
+
     lsmod | grep 2_mt7697wifi_core >/dev/null                                            
     if [ $? -eq 1 ]; then                         
-        insmod /legato/systems/current/modules/2-mt7697wifi_core.ko itf_idx_start=$1 || exit 127
-        echo "Initialized MT7697 80211 core";                                       
+        insmod /legato/systems/current/modules/2-mt7697wifi_core.ko hw_itf=$1 itf_idx_start=$2 || exit 127
+        echo "Initialized MT7697 WiFi core";                                       
         sleep 2
     fi
-                                                                     
-    ifconfig -a | grep wlan$1 >/dev/null                                         
+                                                                      
+    ifconfig -a | grep wlan$2 >/dev/null                                         
     if [ $? -ne 0 ] ; then                                                      
-        echo "Failed to init MT7697 80211 core"; 
+        echo "Failed to init MT7697 WiFi core"; 
 	exit 127                            
     fi 
                                                                          
-    ifconfig wlan$1 up >/dev/null                                                
+    ifconfig wlan$2 up >/dev/null                                                
     if [ $? -ne 0 ] ; then                                                      
-        echo "Failed to start MT7697 80211 core"; 
+        echo "Failed to start MT7697 WiFi core"; 
 	exit 127                            
-    fi                                                                         
+    fi
+
+    echo "Started MT7697 WiFi $1 core wlan$2";                                                                         
 } 
 
 mt_wifi_stop() { 
     kill -9 $(pidof wpa_supplicant)
-                                                               
+                   
+    echo "Stop MT7697 WiFi core wlan$1";                                             
     ifconfig | grep wlan$1 >/dev/null                                            
     if [ $? -eq 0 ]; then                                                       
        ifconfig wlan$1 down                                                      
@@ -38,20 +47,20 @@ mt_wifi_stop() {
     lsmod | grep 2_mt7697wifi_core >/dev/null                                         
     if [ $? -eq 0 ]; then
         rmmod 2_mt7697wifi_core || exit 127
-        echo "Removed MT7697 80211 core"; exit 127         
+        echo "Removed MT7697 WiFi core"; exit 127         
     fi                                                             
 }                                                                               
                                                                                 
 case "$1" in                                                                    
     start)                                                                      
-        mt_wifi_start $2                                                          
+        mt_wifi_start $2 $3                                                          
         ;;                                                                      
     stop)                                                                       
         mt_wifi_stop $2                                                           
         ;;                                                                      
     restart)                                                                    
         mt_wifi_stop $2                                                          
-        mt_wifi_start $2                                                         
+        mt_wifi_start $2 $3                                                      
         ;;                                                                      
     *)                                                                          
         exit 1                                                                  

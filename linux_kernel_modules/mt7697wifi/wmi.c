@@ -23,7 +23,7 @@
 #include "cfg80211.h"
 #include "wifi_api.h"
 
-static int mt7697_proc_mac_addr(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_mac_addr(const struct mt7697_rsp_hdr* rsp, 
                                 struct mt7697_cfg80211_info *cfg)
 {
 	u8 addr[LEN32_ALIGNED(ETH_ALEN)];
@@ -77,18 +77,18 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_get_wireless_mode(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_get_wireless_mode(const struct mt7697_rsp_hdr* rsp, 
                                          struct mt7697_cfg80211_info *cfg)
 {
 	u32 wireless_mode;
 	int ret = 0;
 
 	dev_dbg(cfg->dev, "%s(): --> WIRELESS MODE\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr) != sizeof(u32)) {
+	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid wireless mode rsp len(%u != %u)\n",
 			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr),
+			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			sizeof(u32));
 		ret = -EINVAL;
        		goto cleanup;
@@ -112,7 +112,7 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_get_cfg(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_get_cfg(const struct mt7697_rsp_hdr* rsp, 
                                struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_wifi_config_t *wifi_cfg;
@@ -120,11 +120,11 @@ static int mt7697_proc_get_cfg(const struct mt7697q_rsp_hdr* rsp,
 	int ret = 0;
 
 	dev_dbg(cfg->dev, "%s(): --> CONFIG\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr) != 
+	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != 
 		LEN32_ALIGNED(sizeof(struct mt7697_wifi_config_t))) {
 		dev_err(cfg->dev, "%s(): invalid cfg rsp len(%u != %u)\n", 
 			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr),
+			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			LEN32_ALIGNED(sizeof(struct mt7697_wifi_config_t)));
 		ret = -EINVAL;
        		goto cleanup;
@@ -264,18 +264,18 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_get_radio_state(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_get_radio_state(const struct mt7697_rsp_hdr* rsp, 
                                        struct mt7697_cfg80211_info *cfg)
 {
 	u32 state;
 	int ret = 0;
 
 	dev_dbg(cfg->dev, "%s(): --> GET RADIO STATE\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr) != sizeof(u32)) {
+	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid get radio state rsp len(%u != %u)\n", 
 			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr),
+			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			sizeof(u32));
 		ret = -EINVAL;
        		goto cleanup;
@@ -298,18 +298,18 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_get_listen_interval(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_get_listen_interval(const struct mt7697_rsp_hdr* rsp, 
                                            struct mt7697_cfg80211_info *cfg)
 {
 	u32 interval;
 	int ret = 0;
 
 	dev_dbg(cfg->dev, "%s(): --> GET LISTEN INTERVAL\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr) != sizeof(u32)) {
+	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid get listen interval rsp len(%u != %u)\n",
 			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697q_rsp_hdr),
+			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			sizeof(u32));
 		ret = -EINVAL;
        		goto cleanup;
@@ -332,7 +332,7 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_scan_ind(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp, 
 	                        struct mt7697_cfg80211_info *cfg)
 {
 	struct ieee80211_mgmt *rx_mgmt_frame;
@@ -471,7 +471,7 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_scan_rsp(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_scan_rsp(const struct mt7697_rsp_hdr* rsp, 
 	                        struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_vif *vif;
@@ -545,7 +545,7 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_connect_ind(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp, 
                                    struct mt7697_cfg80211_info *cfg)
 {
 	u8 bssid[LEN32_ALIGNED(ETH_ALEN)];
@@ -759,17 +759,17 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_rx_raw(const struct mt7697q_rsp_hdr* rsp, 
+static int mt7697_rx_raw(const struct mt7697_rsp_hdr* rsp, 
                          struct mt7697_cfg80211_info *cfg)
 {
 	int ret;
 
 	dev_dbg(cfg->dev, "%s(): --> RX RAW(%u)\n", __func__, rsp->cmd.len);
 
-	if (rsp->cmd.len <= sizeof(struct mt7697q_rsp_hdr)) {
+	if (rsp->cmd.len <= sizeof(struct mt7697_rsp_hdr)) {
 		dev_err(cfg->dev, "%s(): invalid rx raw len(%u <= %u)\n", 
 			__func__, rsp->cmd.len, 
-			sizeof(struct mt7697q_rsp_hdr));
+			sizeof(struct mt7697_rsp_hdr));
 		ret = -EINVAL;
        		goto cleanup;
 	}
@@ -812,7 +812,7 @@ cleanup:
 	return ret;
 }
 
-int mt7697_proc_80211cmd(const struct mt7697q_rsp_hdr* rsp, void* priv)
+int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 {
 	struct mt7697_cfg80211_info *cfg = (struct mt7697_cfg80211_info*)priv;
 	int ret = 0;
@@ -1545,7 +1545,7 @@ int mt7697_wr_tx_raw_packet(struct mt7697_cfg80211_info* cfg,
 {
 	int ret;
 
-	cfg->tx_req.cmd.len = sizeof(struct mt7697q_cmd_hdr) + sizeof(len) + len;
+	cfg->tx_req.cmd.len = sizeof(struct mt7697_cmd_hdr) + sizeof(len) + len;
 	cfg->tx_req.len = len;
 	WARN_ON(len > sizeof(cfg->tx_req.data));
         memcpy(cfg->tx_req.data, data, len);

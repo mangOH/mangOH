@@ -14,5 +14,5 @@ iface wlan0 inet manual
     post-down /etc/init.d/tiwifi stop
 
 iface wlan1 inet manual
-    pre-up /etc/init.d/mtwifi start 1
+    pre-up /etc/init.d/mtwifi start uart 1
     post-down /etc/init.d/mtwifi stop 1

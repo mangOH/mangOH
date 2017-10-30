@@ -22,7 +22,7 @@
 #include "io.h"
 #include "spi.h"
 
-int mt7697_irq_run(struct mt7697q_info *qinfo)
+static int mt7697q_irq_run(struct mt7697q_info *qinfo)
 {
 	int ret;
 	u8 ch;
@@ -80,16 +80,16 @@ cleanup:
 	return ret;
 }
 
-void mt7697_irq_delayed_work(struct work_struct *irq_delayed_work)
+void mt7697q_irq_delayed_work(struct work_struct *irq_delayed_work)
 {
 	struct mt7697q_info *qinfo = container_of(irq_delayed_work, 
 		struct mt7697q_info, irq_delayed_work.work);
 	int ret;
 	
 	dev_dbg(qinfo->dev, "%s(): process work\n", __func__);
-	ret = mt7697_irq_run(qinfo);
+	ret = mt7697q_irq_run(qinfo);
 	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697_irq_run() failed(%d)\n", 
+		dev_err(qinfo->dev, "%s(): mt7697q_irq_run() failed(%d)\n", 
 			__func__, ret);
        		goto cleanup;
 	}
@@ -98,17 +98,17 @@ cleanup:
 	return;
 }
 
-void mt7697_irq_work(struct work_struct *irq_work)
+void mt7697q_irq_work(struct work_struct *irq_work)
 {
 	struct mt7697q_info *qinfo = container_of(irq_work, 
 		struct mt7697q_info, irq_work);
 	int ret;
 	
 	dev_dbg(qinfo->dev, "%s(): process work\n", __func__);
-	ret = mt7697_irq_run(qinfo);
+	ret = mt7697q_irq_run(qinfo);
 	if (ret < 0) {
 		dev_err(qinfo->dev, 
-			"%s(): mt7697_irq_run() failed(%d)\n", 
+			"%s(): mt7697q_irq_run() failed(%d)\n", 
 			__func__, ret);
        		goto cleanup;
 	}
@@ -117,9 +117,9 @@ cleanup:
 	return;
 }
 
-irqreturn_t mt7697_isr(int irq, void *cookie)
+irqreturn_t mt7697q_isr(int irq, void *arg)
 {
-	struct mt7697q_info *qinfo = cookie;
+	struct mt7697q_info *qinfo = (struct mt7697q_info*)arg;
 
 	disable_irq_nosync(qinfo->irq);	
 	if (!queue_work(qinfo->irq_workq, &qinfo->irq_work)) {

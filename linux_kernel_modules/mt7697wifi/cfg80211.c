@@ -1082,12 +1082,25 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 		vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
 	}
 
-	ret = mt7697q_wr_unused(vif->cfg->txq_hdl, vif->cfg->rxq_hdl);
-	if (ret < 0) {
-		dev_err(vif->cfg->dev, 
-			"%s(): mt7697q_wr_unused() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
+	if (vif->cfg->hif_ops->shutdown) {
+		ret = vif->cfg->hif_ops->shutdown(&vif->cfg->txq_hdl, &vif->cfg->rxq_hdl);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): shutdown() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+	}
+	else {
+		ret = vif->cfg->hif_ops->close(vif->cfg->txq_hdl);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): shutdown() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		vif->cfg->rxq_hdl = NULL;
 	}
 
 	/* Stop netdev queues, needed during recovery */

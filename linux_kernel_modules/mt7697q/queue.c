@@ -290,6 +290,40 @@ cleanup:
 	return ret;
 }
 
+static int mt7697q_wr_unused(struct mt7697q_spec *qsM2S, struct mt7697q_spec *qsS2M)
+{
+	struct mt7697_queue_reset_req req;
+	int ret;
+
+	req.cmd.len = sizeof(struct mt7697_queue_reset_req);
+	req.cmd.grp = MT7697_CMD_GRP_QUEUE;
+	req.cmd.type = MT7697_CMD_QUEUE_UNUSED;
+	req.m2s_ch = qsM2S->ch;
+	req.s2m_ch = qsS2M->ch;
+
+	qsM2S->data.flags &= ~BF_GET(qsM2S->data.flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
+		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
+	qsS2M->data.flags &= ~BF_GET(qsS2M->data.flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
+		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
+
+ 	dev_dbg(qsM2S->qinfo->dev, "%s(): <-- QUEUE UNUSED(%u/%u)\n", 
+		__func__, req.m2s_ch, req.s2m_ch);
+	ret = mt7697q_write(qsM2S, (const u32*)&req, 
+		LEN_TO_WORD(req.cmd.len));
+	if (ret != LEN_TO_WORD(req.cmd.len)) {
+		dev_err(qsM2S->qinfo->dev, 
+			"%s(): mt7697q_write() failed(%d != %d)\n", 
+			__func__, ret, LEN_TO_WORD(req.cmd.len));
+		ret = (ret < 0) ? ret:-EIO;
+		goto cleanup;
+	}
+
+	ret = 0;
+
+cleanup:
+	return ret;
+}
+
 __inline size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
 {
     	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
@@ -345,8 +379,8 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 
 	avail = mt7697q_get_num_words(qsS2M);
 	req = (qsS2M->qinfo->rsp.cmd.len > 0) ? 
-		LEN_TO_WORD(qsS2M->qinfo->rsp.cmd.len - sizeof(struct mt7697q_rsp_hdr)) : 
-		LEN_TO_WORD(sizeof(struct mt7697q_rsp_hdr));
+		LEN_TO_WORD(qsS2M->qinfo->rsp.cmd.len - sizeof(struct mt7697_rsp_hdr)) : 
+		LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr));
 	dev_dbg(qsS2M->qinfo->dev, "%s(): avail(%u) len(%u) req(%u)\n", 
 		__func__, avail, qsS2M->qinfo->rsp.cmd.len, req);
 
@@ -360,8 +394,8 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
        				goto cleanup;
     			}
 
-			avail -= LEN_TO_WORD(sizeof(struct mt7697q_rsp_hdr));
-			req = LEN_TO_WORD(qsS2M->qinfo->rsp.cmd.len - sizeof(struct mt7697q_rsp_hdr));
+			avail -= LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr));
+			req = LEN_TO_WORD(qsS2M->qinfo->rsp.cmd.len - sizeof(struct mt7697_rsp_hdr));
 			dev_dbg(qsS2M->qinfo->dev, "%s(): avail(%u) len(%u) req(%u)\n", 
 				__func__, avail, qsS2M->qinfo->rsp.cmd.len, req);
 		}
@@ -404,7 +438,7 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 		}
 		else {
 			WARN_ON(!qsS2M->rx_fcn);			
-			ret = qsS2M->rx_fcn((const struct mt7697q_rsp_hdr*)&qsS2M->qinfo->rsp, qsS2M->priv);
+			ret = qsS2M->rx_fcn((const struct mt7697_rsp_hdr*)&qsS2M->qinfo->rsp, qsS2M->priv);
 			if (ret < 0) {
 				dev_err(qsS2M->qinfo->dev, 
 					"%s(): rx_fcn() failed(%d)\n", 
@@ -414,7 +448,7 @@ int mt7697q_proc_data(struct mt7697q_spec *qsS2M)
 
 		avail -= req;
 		qsS2M->qinfo->rsp.cmd.len = 0;
-		req = LEN_TO_WORD(sizeof(struct mt7697q_rsp_hdr));
+		req = LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr));
 		dev_dbg(qsS2M->qinfo->dev, "%s(): avail(%u) len(%u) req(%u)\n", 
 			__func__, avail, qsS2M->qinfo->rsp.cmd.len, req);
 
@@ -452,44 +486,6 @@ __inline void mt7697q_unblock_writer(void *hndl)
 }
 
 EXPORT_SYMBOL(mt7697q_unblock_writer);
-
-int mt7697q_wr_unused(void *tx_hndl, void* rx_hndl)
-{
-	struct mt7697q_spec *qsM2S = (struct mt7697q_spec*)tx_hndl;
-	struct mt7697q_spec *qsS2M = (struct mt7697q_spec*)rx_hndl;
-	struct mt7697_queue_reset_req req;
-	int ret;
-
-	req.cmd.len = sizeof(struct mt7697_queue_reset_req);
-	req.cmd.grp = MT7697_CMD_GRP_QUEUE;
-	req.cmd.type = MT7697_CMD_QUEUE_UNUSED;
-	req.m2s_ch = qsM2S->ch;
-	req.s2m_ch = qsS2M->ch;
-
-	qsM2S->data.flags &= ~BF_GET(qsM2S->data.flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
-		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
-	qsS2M->data.flags &= ~BF_GET(qsS2M->data.flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET, 
-		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
-
- 	dev_dbg(qsM2S->qinfo->dev, "%s(): <-- QUEUE UNUSED(%u/%u)\n", 
-		__func__, req.m2s_ch, req.s2m_ch);
-	ret = mt7697q_write(qsM2S, (const u32*)&req, 
-		LEN_TO_WORD(req.cmd.len));
-	if (ret != LEN_TO_WORD(req.cmd.len)) {
-		dev_err(qsM2S->qinfo->dev, 
-			"%s(): mt7697q_write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.cmd.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-EXPORT_SYMBOL(mt7697q_wr_unused);
 
 int mt7697q_wr_reset(void *tx_hndl, void* rx_hndl)
 {
@@ -645,6 +641,28 @@ cleanup:
 }
 
 EXPORT_SYMBOL(mt7697q_init);
+
+int mt7697q_shutdown(void **tx_hndl, void **rx_hndl)
+{
+	struct mt7697q_spec *qsM2S = *tx_hndl;
+	struct mt7697q_spec *qsS2M = *rx_hndl;
+	int ret;
+
+ 	ret = mt7697q_wr_unused(qsM2S, qsS2M);
+	if (ret < 0) {
+		dev_err(qsM2S->qinfo->dev, "%s(): mt7697q_wr_unused() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+	*tx_hndl = NULL;
+	*rx_hndl = NULL;
+
+cleanup:
+	return ret;
+}
+
+EXPORT_SYMBOL(mt7697q_shutdown);
 
 size_t mt7697q_read(void *hndl, u32 *buf, size_t num)
 {

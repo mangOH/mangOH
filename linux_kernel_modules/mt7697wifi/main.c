@@ -18,17 +18,34 @@
 #include <linux/kernel.h>
 #include <linux/platform_device.h>
 #include <net/cfg80211.h>
+#include "mt7697_i.h"
 #include "queue_i.h"
+#include "uart_i.h"
 #include "common.h"
 #include "ioctl.h"
 #include "core.h"
 #include "cfg80211.h"
 
-static int itf_idx_start = 1;
-module_param(itf_idx_start, int, S_IRUGO);
-MODULE_PARM_DESC(itf_idx_start, "MT7697 interface start index");
+static char* hw_itf = "spi";
+module_param(hw_itf, charp, S_IRUGO);
+MODULE_PARM_DESC(hw_itf, "MT7697 transport interface (SPI/UART");
 
-static struct platform_device *pdev = NULL;
+static int itf_idx_start = 0;
+module_param(itf_idx_start, int, S_IRUGO);
+MODULE_PARM_DESC(itf_idx_start, "MT7697 WiFi interface start index");
+
+static void mt7697_to_lower(char** in)
+{
+  	char* ptr = (char*)*in;
+  	while (*ptr != '\0') {
+    		if (((*ptr <= 'Z') && (*ptr >= 'A')) ||
+            	    ((*ptr <= 'z') && (*ptr >= 'a')))
+      			*ptr = ((*ptr <= 'Z') && (*ptr >= 'A')) ? 
+				*ptr + 'a' - 'A':*ptr;
+
+    		ptr++;    
+  	}
+}
 
 static int mt7697_open(struct net_device *ndev)
 {
@@ -127,18 +144,30 @@ static void mt7697_init_hw_start(struct work_struct *work)
         struct mt7697_cfg80211_info *cfg = container_of(work, 
 		struct mt7697_cfg80211_info, init_work);
 	int err;
+        
+	if (!strcmp(hw_itf, "spi")) {
+		dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n", 
+			__func__, MT7697_MAC80211_QUEUE_TX, MT7697_MAC80211_QUEUE_RX);
+		err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, 
+		                 	 MT7697_MAC80211_QUEUE_RX, cfg,
+				 	 mt7697_notify_tx, 
+                                 	 mt7697_proc_80211cmd, 
+		                 	 &cfg->txq_hdl, &cfg->rxq_hdl);
+		if (err < 0) {
+			dev_err(cfg->dev, "%s(): queue(%u) init() failed(%d)\n",
+				__func__, MT7697_MAC80211_QUEUE_TX, err);
+			goto failed;
+		}
+	}
+	else {
+		dev_dbg(cfg->dev, "%s(): open mt7697 uart\n", __func__);
+		cfg->txq_hdl = cfg->hif_ops->open(mt7697_proc_80211cmd, cfg);
+		if (!cfg->txq_hdl) {
+			dev_err(cfg->dev, "%s(): open() failed\n", __func__);
+			goto failed;
+		}
 
-	dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n", 
-		__func__, MT7697_MAC80211_QUEUE_TX, MT7697_MAC80211_QUEUE_RX);
-	err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, 
-		                 MT7697_MAC80211_QUEUE_RX, cfg,
-				 mt7697_notify_tx, 
-                                 mt7697_proc_80211cmd, 
-		                 &cfg->txq_hdl, &cfg->rxq_hdl);
-	if (err < 0) {
-		dev_err(cfg->dev, "%s(): queue(%u) init() failed(%d)\n",
-			__func__, MT7697_MAC80211_QUEUE_TX, err);
-		goto failed;
+		cfg->rxq_hdl = cfg->txq_hdl;
 	}
 
 	cfg->radio_state = MT7697_RADIO_STATE_OFF;
@@ -180,11 +209,7 @@ void mt7697_init_netdev(struct net_device *ndev)
         ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
 }
 
-static const struct mt7697q_if_ops if_ops = {
-	.init		= mt7697q_init,
-	.read		= mt7697q_read,
-	.write		= mt7697q_write,
-};
+static struct mt7697_if_ops if_ops;
 
 static int mt7697_probe(struct platform_device *pdev)
 {	
@@ -222,6 +247,29 @@ static int mt7697_probe(struct platform_device *pdev)
 	INIT_LIST_HEAD(&cfg->tx_skb_list);
 	atomic_set(&cfg->tx_skb_pool_idx, 0);
 	memset(cfg->tx_skb_pool, 0, sizeof(cfg->tx_skb_pool));
+
+	mt7697_to_lower(&hw_itf);
+	dev_dbg(&pdev->dev, "%s(): hw_itf('%s')\n", __func__, hw_itf);
+	if (!strcmp(hw_itf, "spi")) {
+		if_ops.init		= mt7697q_init;
+		if_ops.shutdown		= mt7697q_shutdown;
+		if_ops.read		= mt7697q_read;
+		if_ops.write		= mt7697q_write;
+		if_ops.unblock_writer	= mt7697q_unblock_writer;
+	}
+	else if (!strcmp(hw_itf, "uart")) {
+		if_ops.open		= mt7697_uart_open;
+		if_ops.close		= mt7697_uart_close;
+		if_ops.read		= mt7697_uart_read;
+		if_ops.write		= mt7697_uart_write;
+	}
+	else {
+		dev_err(&pdev->dev, 
+			"%s(): invalid hw itf(spi/uart) module paramter('%s')\n", 
+			__func__, hw_itf);
+		err = -EINVAL;
+		goto failed;
+	}
 
 	cfg->hif_ops = &if_ops;
 	cfg->dev = &pdev->dev;
@@ -299,7 +347,7 @@ static int __init mt7697_init(void)
 	if (ret) {
 		pr_err(DRVNAME" %s(): platform_driver_register() failed(%d)\n", 
 			__func__, ret);
-		platform_device_del(pdev);
+		platform_device_del(&mt7697_platform_device);
 		goto cleanup;
 	}
 

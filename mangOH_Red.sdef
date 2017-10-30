@@ -66,6 +66,7 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
     $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
     $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
 
     // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is

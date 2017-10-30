@@ -24,3 +24,4 @@ fi
 echo "Updating MT7697 WiFi init script..."
 cp /tmp/mtwifi /etc/init.d/mtwifi
 chmod +x /etc/init.d/mtwifi
+
