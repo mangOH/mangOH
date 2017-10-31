@@ -203,7 +203,7 @@ struct mt7697_scan_complete_ind {
 struct mt7697_set_pmk_req {
 	struct mt7697_cmd_hdr		cmd;
 	__be32				port;
-	u8				pmk[LEN32_ALIGNED(MT7697_WIFI_LENGTH_PMK)];
+	u8				pmk[LEN32_ALIGNED(MT7697_WIFI_LENGTH_PASSPHRASE)];
 } __attribute__((packed, aligned(4)));
 
 struct mt7697_set_channel_req {

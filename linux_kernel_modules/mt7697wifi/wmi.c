@@ -1046,13 +1046,15 @@ int mt7697_wr_set_pmk_req(const struct mt7697_cfg80211_info *cfg,
 			  const u8 pmk[MT7697_WIFI_LENGTH_PMK])
 {
 	struct mt7697_set_pmk_req req;
-	int ret;
+	int i, ret;
 
 	req.cmd.len = sizeof(struct mt7697_set_pmk_req);
 	req.cmd.grp = MT7697_CMD_GRP_80211;
 	req.cmd.type = MT7697_CMD_SET_PMK_REQ;
 	req.port = cfg->port_type;
-	memcpy(req.pmk, pmk, MT7697_WIFI_LENGTH_PMK);
+
+	for (i = 0; i < MT7697_WIFI_LENGTH_PASSPHRASE / 2; i++)
+  		sprintf(&req.pmk[i*2], "%02x", pmk[i]);
 
 	dev_dbg(cfg->dev, "%s(): <-- SET PMK port(%u) len(%u)\n", 
 		__func__, req.port, req.cmd.len);
