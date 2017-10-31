@@ -122,7 +122,6 @@ static inline uint8_t *to_eeprom_buffer(struct i2c_client *eeprom)
 	if (0xAA != buffer[0] || 0x55 != buffer[1]) {
 		dev_err(&eeprom->dev, "Invalid header: %02x%02x.\n",
 			buffer[0], buffer[1]);
-		BUG();
 		return NULL;
 	}
 	return buffer;

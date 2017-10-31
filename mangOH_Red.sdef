@@ -8,7 +8,10 @@
 
 apps:
 {
-    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
+    // gpioExpanderServiceRed conflicts with the iot_slot driver because the iot_slot driver makes
+    // use of the sx1509 gpio expander kernel driver whereas the gpio expander implements a driver
+    // in user space.
+    // $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
     $MANGOH_ROOT/apps/DataRouter/dataRouter
@@ -45,8 +48,8 @@ interfaceSearch:
 kernelModules:
 {
     // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
-    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
 
     // cp2130 required for MT7697 WiFi/BT
     $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
@@ -68,18 +71,18 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
-    // Don't enable IoT slot driver until failure case testing is complete
-    // $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+    $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
 
-    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
-    $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
-    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+    // Don't enable mt7697 drivers until the appropriate cfg80211 and mac80211 modules are avaialble
+    // $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    // $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
+    // $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
 
     // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
     // loaded.
     $LEGATO_ROOT/drivers/spisvc/spisvc
 
-    // Only on mangOH Red DV4
+    // Not on the mangOH Red DV3
     $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
 
     // Required for BQ24296
