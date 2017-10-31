@@ -7,11 +7,15 @@
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
 
 mt_wifi_start() {
+    shopt -s nocasematch
 
-    stty -F /dev/ttyHS0 raw || exit 127
-    stty -F /dev/ttyHS0 921600 || exit 127
-    stty -F /dev/ttyHS0 crtscts || exit 127
-    stty -F /dev/ttyHS0 -echo || exit 127
+    if [ $1 = "uart" ] ; then
+	echo "Setup MT7697 serial";
+        stty -F /dev/ttyHS0 raw || exit 127
+        stty -F /dev/ttyHS0 921600 || exit 127
+        stty -F /dev/ttyHS0 crtscts || exit 127
+        stty -F /dev/ttyHS0 -echo || exit 127
+    fi
 
     lsmod | grep 2_mt7697wifi_core >/dev/null                                            
     if [ $? -eq 1 ]; then                         
