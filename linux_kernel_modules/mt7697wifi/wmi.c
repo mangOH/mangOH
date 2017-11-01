@@ -31,7 +31,7 @@ static int mt7697_proc_mac_addr(const struct mt7697_rsp_hdr* rsp,
 	struct wireless_dev *wdev;
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s(): --> MAC ADDRESS\n", __func__);
+	dev_dbg(cfg->dev, "%s(): --> GET MAC ADDRESS RSP\n", __func__);
 	if (rsp->cmd.len != sizeof(struct mt7697_mac_addr_rsp)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid MAC address rsp len(%u != %u)\n",
@@ -83,7 +83,7 @@ static int mt7697_proc_get_wireless_mode(const struct mt7697_rsp_hdr* rsp,
 	u32 wireless_mode;
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s(): --> WIRELESS MODE\n", __func__);
+	dev_dbg(cfg->dev, "%s(): --> GET WIRELESS MODE RSP\n", __func__);
 	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid wireless mode rsp len(%u != %u)\n",
@@ -119,7 +119,7 @@ static int mt7697_proc_get_cfg(const struct mt7697_rsp_hdr* rsp,
 	u8* rd_buf = NULL;
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s(): --> CONFIG\n", __func__);
+	dev_dbg(cfg->dev, "%s(): --> GET CONFIG RSP\n", __func__);
 	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != 
 		LEN32_ALIGNED(sizeof(struct mt7697_wifi_config_t))) {
 		dev_err(cfg->dev, "%s(): invalid cfg rsp len(%u != %u)\n", 
@@ -270,7 +270,7 @@ static int mt7697_proc_get_radio_state(const struct mt7697_rsp_hdr* rsp,
 	u32 state;
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s(): --> GET RADIO STATE\n", __func__);
+	dev_dbg(cfg->dev, "%s(): --> GET RADIO STATE RSP\n", __func__);
 	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid get radio state rsp len(%u != %u)\n", 
@@ -304,7 +304,7 @@ static int mt7697_proc_get_listen_interval(const struct mt7697_rsp_hdr* rsp,
 	u32 interval;
 	int ret = 0;
 
-	dev_dbg(cfg->dev, "%s(): --> GET LISTEN INTERVAL\n", __func__);
+	dev_dbg(cfg->dev, "%s(): --> GET LISTEN INTERVAL RSP\n", __func__);
 	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
 		dev_err(cfg->dev, 
 			"%s(): invalid get listen interval rsp len(%u != %u)\n",
@@ -478,8 +478,7 @@ static int mt7697_proc_scan_rsp(const struct mt7697_rsp_hdr* rsp,
 	u32 if_idx;
 	int ret;
 
-	dev_dbg(cfg->dev, "%s(): --> SCAN RSP result(%d)\n", 
-		__func__, rsp->result);
+	dev_dbg(cfg->dev, "%s(): --> SCAN RSP\n", __func__);
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&if_idx, 
 		LEN_TO_WORD(sizeof(u32)));
@@ -928,23 +927,23 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 		break;
 
         case MT7697_CMD_SET_OP_MODE_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET OP MODE\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET OP MODE RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_PMK_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET PMK\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET PMK RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_CHANNEL_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET CHANNEL\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET CHANNEL RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_BSSID_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET BSSID\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET BSSID RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_SSID_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET SSID\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET SSID RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_RELOAD_SETTINGS_RSP:
@@ -952,11 +951,11 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 		break;
 
 	case MT7697_CMD_SET_LISTEN_INTERVAL_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET LISTEN INTERVAL\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET LISTEN INTERVAL RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_WIRELESS_MODE_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET WIRELESS MODE\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET WIRELESS MODE RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_RADIO_STATE_RSP:
@@ -964,11 +963,11 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 		break;
 
 	case MT7697_CMD_SET_SECURITY_MODE_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET SECURITY MODE\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SET SECURITY MODE RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_SCAN_STOP_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SCAN STOP\n", __func__);
+		dev_dbg(cfg->dev, "%s(): --> SCAN STOP RSP\n", __func__);
 		break;
 
 	case MT7697_CMD_DISCONNECT_RSP:

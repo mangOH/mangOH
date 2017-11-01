@@ -39,7 +39,9 @@ mt_wifi_start() {
 } 
 
 mt_wifi_stop() { 
-    echo "Stop MT7697 WiFi core wlan$1";                                             
+    echo "Stop MT7697 WiFi core wlan$1"; 
+    kill `ps -eo pid,args --cols=10000 | awk '/^\/sbin\/wpa_supplicant|-i\swlan$1/ && $1 != PROCINFO["pid"] { print $1 }'`
+                                          
     ifconfig | grep wlan$1 >/dev/null                                            
     if [ $? -eq 0 ]; then                                                       
        ifconfig wlan$1 down                                                      
