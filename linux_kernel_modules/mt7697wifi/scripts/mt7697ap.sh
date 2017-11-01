@@ -77,5 +77,4 @@ echo "Enabling IP forwarding..."
 sysctl -w net.ipv4.ip_forward=1
 
 echo "Start wpa supplicant...."
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
-/mnt/flash/mtwifi/wpa_supplicant -Dwext -i $ITF_LAN -c /etc/mt7697-ap -B
+/sbin/wpa_supplicant -Dwext -i $ITF_LAN -c /etc/mt7697-ap -B

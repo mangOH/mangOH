@@ -15,6 +15,13 @@ mt_wifi_start() {
         stty -F /dev/ttyHS0 -echo || exit 127
     fi
 
+    lsmod | grep mac80211 >/dev/null
+    if [ $? -eq 1 ]; then
+        modprobe mac80211
+	echo "Initialized Linux WiFi modules";
+        sleep 2
+    fi
+
     lsmod | grep 2_mt7697wifi_core >/dev/null                                            
     if [ $? -eq 1 ]; then
 	hw_itf=`echo $1 | tr '[A-Z]' '[a-z]'`                          
