@@ -7,10 +7,8 @@
 #export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
 
 mt_wifi_start() {
-    shopt -s nocasematch
-
-    if [ $1 = "uart" ] ; then
-	echo "Setup MT7697 serial";
+    if [ `echo $1 | tr -s '[:upper:]' '[:lower:]` = `echo "uart" | tr -s '[:upper:]' '[:lower:]` ] ; then
+	echo "Setup MT7697 UART";
         stty -F /dev/ttyHS0 raw || exit 127
         stty -F /dev/ttyHS0 921600 || exit 127
         stty -F /dev/ttyHS0 crtscts || exit 127
@@ -18,8 +16,9 @@ mt_wifi_start() {
     fi
 
     lsmod | grep 2_mt7697wifi_core >/dev/null                                            
-    if [ $? -eq 1 ]; then                         
-        insmod /legato/systems/current/modules/2-mt7697wifi_core.ko hw_itf=$1 itf_idx_start=$2 || exit 127
+    if [ $? -eq 1 ]; then
+	hw_itf=`echo $1 | tr '[A-Z]' '[a-z]'`                          
+        insmod /legato/systems/current/modules/2-mt7697wifi_core.ko hw_itf=$hw_itf itf_idx_start=$2 || exit 127
         echo "Initialized MT7697 WiFi core";                                       
         sleep 2
     fi
@@ -40,8 +39,6 @@ mt_wifi_start() {
 } 
 
 mt_wifi_stop() { 
-    kill -9 $(pidof wpa_supplicant)
-                   
     echo "Stop MT7697 WiFi core wlan$1";                                             
     ifconfig | grep wlan$1 >/dev/null                                            
     if [ $? -eq 0 ]; then                                                       
