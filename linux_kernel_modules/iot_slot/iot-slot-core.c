@@ -4,6 +4,7 @@
 #include <linux/delay.h>
 #include <linux/spi/spi.h>
 #include <linux/i2c.h>
+#include <linux/version.h>
 
 #include "iot-slot-eeprom.h"
 #include "iot-slot.h"
@@ -232,6 +233,11 @@ static int iot_slot_add_gpio(struct iot_slot *slot,
 	char gpio_label[32];
 
 	for (i = 0; i < 4; i++) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 44)
+		struct gpio_desc *gpio_pull;
+#else
+		unsigned gpio_pull;
+#endif
 		uint8_t cfg = eeprom_if_gpio_cfg(gpio_item, i);
 		ret = snprintf(gpio_label, ARRAY_SIZE(gpio_label),
 			       "IoT slot %d gpio %d", slot_index, i);
@@ -249,7 +255,16 @@ static int iot_slot_add_gpio(struct iot_slot *slot,
 				return -EACCES;
 			}
 		}
-
+	/*
+	 * The gpio_pull_* functions are SWI specific. In the 9x15 kernel, the
+	 * functions take an unsigned. In the 9x07 kernel, the functions take a
+	 * struct gpio_desc.
+	 */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 44)
+		gpio_pull = gpio_to_desc(pdata->gpio[i]);
+#else
+		gpio_pull = pdata->gpio[i];
+#endif
 		switch (cfg)
 		{
 		case EEPROM_GPIO_CFG_OUTPUT_LOW:
@@ -260,11 +275,11 @@ static int iot_slot_add_gpio(struct iot_slot *slot,
 			break;
 		case EEPROM_GPIO_CFG_INPUT_PULL_UP:
 			gpio_direction_input(pdata->gpio[i]);
-			gpio_pull_up(pdata->gpio[i]);
+			gpio_pull_up(gpio_pull);
 			break;
 		case EEPROM_GPIO_CFG_INPUT_PULL_DOWN:
 			gpio_direction_input(pdata->gpio[i]);
-			gpio_pull_down(pdata->gpio[i]);
+			gpio_pull_down(gpio_pull);
 			break;
 		case EEPROM_GPIO_CFG_INPUT_FLOATING:
 			gpio_direction_input(pdata->gpio[i]);

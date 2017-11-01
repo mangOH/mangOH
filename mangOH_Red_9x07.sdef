@@ -1,0 +1,85 @@
+//--------------------------------------------------------------------------------------------------
+// mangOH Red system definition that extends the wifi sdef from Legato.
+//
+// Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
+//--------------------------------------------------------------------------------------------------
+
+#include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
+
+apps:
+{
+    // gpioExpanderServiceRed conflicts with the iot_slot driver because the iot_slot driver makes
+    // use of the sx1509 gpio expander kernel driver whereas the gpio expander implements a driver
+    // in user space.
+    // $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
+
+    $MANGOH_ROOT/apps/MqttClient/mqttClient
+    $MANGOH_ROOT/apps/DataRouter/dataRouter
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    $MANGOH_ROOT/apps/SocialService/socialService
+    $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+
+    // Disabled until Release 15 is released due to bug in power supply kernel support
+    // $MANGOH_ROOT/apps/BatteryService/batteryService
+
+    // The heartbeat app is disabled on mangOH Red because the logging messages
+    // from the low power microcontroller make it very difficult to use the
+    // console port.
+    // $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
+
+    $LEGATO_ROOT/apps/tools/devMode
+}
+
+commands:
+{
+    dr = drTool:/bin/dr
+    twitter = socialService:/bin/twitter
+}
+
+interfaceSearch:
+{
+    $MANGOH_ROOT/apps/MqttClient
+    $MANGOH_ROOT/apps/DataRouter
+    $MANGOH_ROOT/apps/MuxControl
+    $MANGOH_ROOT/apps/SocialService/interfaces
+    $MANGOH_ROOT/apps/BatteryService
+}
+
+kernelModules:
+{
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
+
+    // cp2130 required for MT7697 WiFi/BT
+    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
+
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/2-bmp280
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/3-bmp280-i2c
+
+    // Used on mangOH Red DV2
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+
+    // Used on mangOH Red DV3 and later
+    // Don't load bmi160 right now because there's a broken driver built into the wp76 kernel
+    // $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
+    // $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+
+    $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+
+    // Disabled until compliation errors are fixed in wp76 kernel
+    // $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    // $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
+    // $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+
+    // Don't load spisvc right now on wp76 because it tries to create spidev0.0, but should create
+    // spidev1.0
+    // $LEGATO_ROOT/drivers/spisvc/spisvc
+
+    // Not on the mangOH Red DV3
+    $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
+
+    // Required for BQ24296
+    $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
+}

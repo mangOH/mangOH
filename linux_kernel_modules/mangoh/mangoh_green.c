@@ -116,6 +116,7 @@ static void mangoh_green_release(struct device* dev)
 
 static int mangoh_green_probe(struct platform_device* pdev)
 {
+	struct i2c_adapter* adapter;
 	dev_info(&pdev->dev, "In the probe\n");
 
 	/*
@@ -128,7 +129,7 @@ static int mangoh_green_probe(struct platform_device* pdev)
 	platform_set_drvdata(pdev, &mangoh_green_driver_data);
 
 	/* Get the main i2c adapter */
-	struct i2c_adapter* adapter = i2c_get_adapter(0);
+	adapter = i2c_get_adapter(0);
 	if (!adapter) {
 		dev_err(&pdev->dev, "Failed to get I2C adapter 0.\n");
 		return -ENODEV;

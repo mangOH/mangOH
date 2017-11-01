@@ -422,6 +422,7 @@ static int bmp280_read_raw(struct iio_dev *indio_dev,
 	return ret;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 static int bmp280_write_oversampling_ratio_humid(struct bmp280_data *data,
 					       int val)
 {
@@ -472,6 +473,7 @@ static int bmp280_write_oversampling_ratio_press(struct bmp280_data *data,
 	}
 	return -EINVAL;
 }
+#endif
 
 static int bmp280_write_raw(struct iio_dev *indio_dev,
 			    struct iio_chan_spec const *chan,
