@@ -69,7 +69,7 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 	if (tx_skb->skb) {
 		dev_warn(cfg->dev, "%s(): tx pool full\n", 
 			__func__);
-		ret = -EAGAIN;
+		ret = NETDEV_TX_BUSY;
 		goto cleanup;
  	}
 
@@ -89,6 +89,7 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 	if (ret < 0) {
 		dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
 			__func__, ret);
+		ret = NETDEV_TX_BUSY;
 		goto cleanup;
 	}
 
