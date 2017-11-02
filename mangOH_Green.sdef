@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------------------------------------
-// mangOH Green system definition that extends the wifi sdef from Legato.
+// mangOH Red system definition that extends the wifi sdef from Legato.
 //
 // Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
 //--------------------------------------------------------------------------------------------------
@@ -8,45 +8,60 @@
 
 apps:
 {
-    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
-
-    $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
-    $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
+    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
-    $MANGOH_ROOT/apps/DataRouter/dataRouter
-    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
-    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
+    // Data Router is disabled because the published version doesn't build against Legato 17.05
+    // $MANGOH_ROOT/apps/DataRouter/dataRouter
+    // $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
 
-    $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
+    $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+    $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
 
     $LEGATO_ROOT/apps/tools/devMode
 }
 
 commands:
 {
-    mux = muxCtrlTools:/bin/mux
-    dr = drTool:/bin/dr
+    // dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
 }
 
-interfaceSearch:
+buildVars:
 {
-    $MANGOH_ROOT/apps/MqttClient
-    $MANGOH_ROOT/apps/DataRouter
-    $MANGOH_ROOT/apps/MuxControl
-    $MANGOH_ROOT/apps/SocialService/interfaces
+    LEGATO_KERNELROOT = /home/david/kernel
 }
 
 kernelModules:
 {
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_green_dv4
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
 
-    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
-    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
 
-    // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
-    // loaded.
-    $LEGATO_ROOT/drivers/spisvc/spisvc
+    // Required for bmp280 & bmi160
+    $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
+    $MANGOH_ROOT/linux_kernel_modules/iio/1-iio-kfifo-buf
+    // Required for bmi160
+    $MANGOH_ROOT/linux_kernel_modules/iio/2-iio-triggered-buffer
+
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/2-bmp280
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/3-bmp280-i2c
+
+    // Only on mangOH Red DV2
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+
+    // Only on mangOH Red DV3
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+
+    //$MANGOH_ROOT/linux_kernel_modules/fb/1-fb
+    //$MANGOH_ROOT/linux_kernel_modules/fbtft/2-fbtft
+    //$MANGOH_ROOT/linux_kernel_modules/fbtft/3-fb_ili9341
+    //$MANGOH_ROOT/linux_kernel_modules/fbtft/4-fbtft_device
+
+    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
 }
