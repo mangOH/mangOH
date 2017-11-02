@@ -4,8 +4,6 @@
 # MediaTek wireless 7697 specific applications start or stop here
 # MediaTek WIFI IoT board is managed by SPI bus.
 
-#export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/mnt/flash/wifi
-
 mt_wifi_start() {
     if [ `echo $1 | tr -s '[:upper:]' '[:lower:]` = `echo "uart" | tr -s '[:upper:]' '[:lower:]` ] ; then
 	echo "Setup MT7697 UART";
@@ -45,10 +43,13 @@ mt_wifi_start() {
     echo "Started MT7697 WiFi $1 core wlan$2";                                                                         
 } 
 
-mt_wifi_stop() { 
-    echo "Stop MT7697 WiFi core wlan$1"; 
-    kill `ps -eo pid,args --cols=10000 | awk '/^\/sbin\/wpa_supplicant|-i\swlan$1/ && $1 != PROCINFO["pid"] { print $1 }'`
-                                          
+mt_wifi_supplicant_stop() { 
+    echo "Stop MT7697 wpa_supplicant";
+    kill `ps -eo pid,args --cols=10000 | awk '/^\/sbin\/wpa_supplicant|-D\s*wext/ && $1 != PROCINFO["pid"] { print $1 }'`
+    sleep 2
+}
+
+mt_wifi_stop() {                                           
     ifconfig | grep wlan$1 >/dev/null                                            
     if [ $? -eq 0 ]; then                                                       
        ifconfig wlan$1 down                                                      
@@ -65,10 +66,12 @@ case "$1" in
     start)                                                                      
         mt_wifi_start $2 $3                                                          
         ;;                                                                      
-    stop)                                                                       
+    stop) 
+	mt_wifi_supplicant_stop                                                                      
         mt_wifi_stop $2                                                           
         ;;                                                                      
-    restart)                                                                    
+    restart) 
+	mt_wifi_supplicant_stop                                                                   
         mt_wifi_stop $2                                                          
         mt_wifi_start $2 $3                                                      
         ;;                                                                      

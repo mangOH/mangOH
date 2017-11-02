@@ -73,10 +73,10 @@ kernelModules:
 
     $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
 
-    // Don't enable mt7697 drivers until the appropriate cfg80211 and mac80211 modules are avaialble
-    // $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
-    // $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
-    // $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+    // mt7697 drivers
+    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
+    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
 
     // spisvc creates a spidev device which will appear as /dev/spidev0.0 once the spidev module is
     // loaded.

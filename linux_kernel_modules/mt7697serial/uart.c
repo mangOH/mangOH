@@ -217,10 +217,13 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 	unsigned long end = count;
 	int err;
 
-	WARN_ON(!uart_info->fd_hndl);
-
 	oldfs = get_fs();
 	set_fs(get_ds());
+
+	if (!uart_info->fd_hndl) {
+		dev_err(uart_info->dev, "%s(): device closed\n", __func__);
+		goto cleanup;
+	}
 
 	dev_dbg(uart_info->dev, "%s(): len(%u)\n", __func__, len * sizeof(u32));
 	while (offset < end) {
@@ -262,10 +265,13 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 	struct mt7697_uart_info *uart_info = arg;
 	u8* ptr = (u8*)buf;
 
-	WARN_ON(!uart_info->fd_hndl);
-
 	oldfs = get_fs();
 	set_fs(get_ds());
+
+	if (!uart_info->fd_hndl) {
+		dev_err(uart_info->dev, "%s(): device closed\n", __func__);
+		goto cleanup;
+	}
 
 	dev_dbg(uart_info->dev, "%s(): len(%u)\n", __func__, len);
 	while (pos < end) {
