@@ -6,21 +6,22 @@
 #include <linux/delay.h>
 
 #include "lsm6ds3_platform_data.h"
+#include "mangoh_common.h"
 
 /*
  *-----------------------------------------------------------------------------
  * Constants
  *-----------------------------------------------------------------------------
  */
-#define MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID		(1)
-#define MANGOH_GREEN_I2C_SW_PORT_IOT0			(0)
-#define MANGOH_GREEN_I2C_SW_PORT_IOT1			(1)
-#define MANGOH_GREEN_I2C_SW_PORT_IOT2			(2)
-#define MANGOH_GREEN_I2C_SW_PORT_USB_HUB		(3)
-#define MANGOH_GREEN_I2C_SW_PORT_GPIO_EXPANDER1		(4)
-#define MANGOH_GREEN_I2C_SW_PORT_GPIO_EXPANDER2		(5)
-#define MANGOH_GREEN_I2C_SW_PORT_GPIO_EXPANDER3		(6)
-#define MANGOH_GREEN_I2C_SW_PORT_BATTERY_CHARGER	(7)
+#define MANGOH_GREEN_I2C_SW_BUS_BASE		(PRIMARY_I2C_BUS + 1)
+#define MANGOH_GREEN_I2C_BUS_IOT0		(MANGOH_GREEN_I2C_SW_BUS_BASE + 0)
+#define MANGOH_GREEN_I2C_BUS_IOT1		(MANGOH_GREEN_I2C_SW_BUS_BASE + 1)
+#define MANGOH_GREEN_I2C_BUS_IOT2		(MANGOH_GREEN_I2C_SW_BUS_BASE + 2)
+#define MANGOH_GREEN_I2C_BUS_USB_HUB		(MANGOH_GREEN_I2C_SW_BUS_BASE + 3)
+#define MANGOH_GREEN_I2C_BUS_GPIO_EXPANDER1	(MANGOH_GREEN_I2C_SW_BUS_BASE + 4)
+#define MANGOH_GREEN_I2C_BUS_GPIO_EXPANDER2	(MANGOH_GREEN_I2C_SW_BUS_BASE + 5)
+#define MANGOH_GREEN_I2C_BUS_GPIO_EXPANDER3	(MANGOH_GREEN_I2C_SW_BUS_BASE + 6)
+#define MANGOH_GREEN_I2C_BUS_BATTERY_CHARGER	(MANGOH_GREEN_I2C_SW_BUS_BASE + 7)
 
 /*
  *-----------------------------------------------------------------------------
@@ -81,14 +82,14 @@ static struct platform_device mangoh_green_device = {
 };
 
 static struct pca954x_platform_mode mangoh_green_pca954x_adap_modes[] = {
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 0, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 1, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 2, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 3, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 4, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 5, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 6, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_GREEN_I2C_SW_BASE_ADAPTER_ID + 7, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 0, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 1, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 2, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 3, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 4, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 5, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 6, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_GREEN_I2C_SW_BUS_BASE + 7, .deselect_on_exit=1, .class=0},
 };
 static struct pca954x_platform_data mangoh_green_pca954x_pdata = {
 	mangoh_green_pca954x_adap_modes,
@@ -106,7 +107,6 @@ static struct i2c_board_info mangoh_green_lsm6ds3_devinfo = {
 	I2C_BOARD_INFO("lsm6ds3", 0x6A),
 	.platform_data = &mangoh_green_lsm6ds3_platform_data,
 };
-
 
 
 static void mangoh_green_release(struct device* dev)
@@ -129,15 +129,18 @@ static int mangoh_green_probe(struct platform_device* pdev)
 	platform_set_drvdata(pdev, &mangoh_green_driver_data);
 
 	/* Get the main i2c adapter */
-	adapter = i2c_get_adapter(0);
+	adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
 	if (!adapter) {
-		dev_err(&pdev->dev, "Failed to get I2C adapter 0.\n");
+		dev_err(&pdev->dev,
+			"Failed to get the primary I2C adapter (%d).\n",
+			PRIMARY_I2C_BUS);
 		return -ENODEV;
 	}
 
 	/* Map the I2C switch */
 	dev_dbg(&pdev->dev, "mapping i2c switch\n");
-	mangoh_green_driver_data.i2c_switch = i2c_new_device(adapter, &mangoh_green_pca954x_device_info);
+	mangoh_green_driver_data.i2c_switch =
+		i2c_new_device(adapter, &mangoh_green_pca954x_device_info);
 	if (!mangoh_green_driver_data.i2c_switch) {
 		dev_err(
 			&pdev->dev,
@@ -148,12 +151,13 @@ static int mangoh_green_probe(struct platform_device* pdev)
 
 	/* Map the accelerometer */
 	dev_dbg(&pdev->dev, "mapping bmi160 accelerometer\n");
-	adapter = i2c_get_adapter(0);
+	adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
 	if (!adapter) {
 		dev_err(&pdev->dev, "No I2C bus %d.\n", 0);
 		return -ENODEV;
 	}
-	mangoh_green_driver_data.accelerometer = i2c_new_device(adapter, &mangoh_green_lsm6ds3_devinfo);
+	mangoh_green_driver_data.accelerometer =
+		i2c_new_device(adapter, &mangoh_green_lsm6ds3_devinfo);
 	if (!mangoh_green_driver_data.accelerometer) {
 		dev_err(&pdev->dev, "Accelerometer is missing\n");
 		return -ENODEV;

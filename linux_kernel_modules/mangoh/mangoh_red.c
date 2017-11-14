@@ -12,6 +12,7 @@
 #include "bq24190-platform-data.h"
 
 #include "mangoh_red_mux.h"
+#include "mangoh_common.h"
 #include "iot-slot.h"
 
 /*
@@ -19,20 +20,13 @@
  * Constants
  *-----------------------------------------------------------------------------
  */
-#define MANGOH_RED_I2C_SW_BASE_ADAPTER_ID	(1)
-#define MANGOH_RED_I2C_SW_PORT_IOT0		(0)
-#define MANGOH_RED_I2C_SW_PORT_BATTERY_CHARGER	(1)
-#define MANGOH_RED_I2C_SW_PORT_USB_HUB		(1)
-#define MANGOH_RED_I2C_SW_PORT_GPIO_EXPANDER	(2)
-#define MANGOH_RED_I2C_SW_PORT_EXP		(3)	/* expansion header */
+#define MANGOH_RED_I2C_SW_BUS_BASE		(PRIMARY_I2C_BUS + 1)
+#define MANGOH_RED_I2C_BUS_IOT0			(MANGOH_RED_I2C_SW_BUS_BASE + 0)
+#define MANGOH_RED_I2C_BUS_BATTERY_CHARGER	(MANGOH_RED_I2C_SW_BUS_BASE + 1)
+#define MANGOH_RED_I2C_BUS_USB_HUB		(MANGOH_RED_I2C_SW_BUS_BASE + 1)
+#define MANGOH_RED_I2C_BUS_GPIO_EXPANDER	(MANGOH_RED_I2C_SW_BUS_BASE + 2)
+#define MANGOH_RED_I2C_BUS_EXP			(MANGOH_RED_I2C_SW_BUS_BASE + 3)
 
-/* TODO: There should be a better way to convert from WP GPIO numbers to real GPIO numbers */
-#define WPX5_GPIO42	(80)
-#define WPX5_GPIO13	(34)
-#define WPX5_GPIO7	(79)
-#define WPX5_GPIO8	(29)
-#define WPX5_GPIO2	(59)
-#define WPX5_GPIO33	(78)
 
 /*
  *-----------------------------------------------------------------------------
@@ -113,10 +107,10 @@ static struct platform_device mangoh_red_device = {
 };
 
 static struct pca954x_platform_mode mangoh_red_pca954x_adap_modes[] = {
-	{.adap_id=MANGOH_RED_I2C_SW_BASE_ADAPTER_ID + 0, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_RED_I2C_SW_BASE_ADAPTER_ID + 1, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_RED_I2C_SW_BASE_ADAPTER_ID + 2, .deselect_on_exit=1, .class=0},
-	{.adap_id=MANGOH_RED_I2C_SW_BASE_ADAPTER_ID + 3, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_RED_I2C_SW_BUS_BASE + 0, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_RED_I2C_SW_BUS_BASE + 1, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_RED_I2C_SW_BUS_BASE + 2, .deselect_on_exit=1, .class=0},
+	{.adap_id=MANGOH_RED_I2C_SW_BUS_BASE + 3, .deselect_on_exit=1, .class=0},
 };
 static struct pca954x_platform_data mangoh_red_pca954x_pdata = {
 	mangoh_red_pca954x_adap_modes,
@@ -181,9 +175,9 @@ static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 };
 
 static struct iot_slot_platform_data mangoh_red_iot_slot_pdata = {
-	.gpio		  = {WPX5_GPIO42, WPX5_GPIO13, WPX5_GPIO7, WPX5_GPIO8},
-	.reset_gpio	  = WPX5_GPIO2,
-	.card_detect_gpio = WPX5_GPIO33,
+	.gpio		  = {CF3_GPIO42, CF3_GPIO13, CF3_GPIO7, CF3_GPIO8},
+	.reset_gpio	  = CF3_GPIO2,
+	.card_detect_gpio = CF3_GPIO33,
 	.request_i2c	  = mangoh_red_iot_slot_request_i2c,
 	.release_i2c	  = mangoh_red_iot_slot_release_i2c,
 	.request_sdio	  = mangoh_red_iot_slot_request_sdio,
@@ -214,9 +208,10 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	struct gpio_chip *gpio_expander;
 	struct i2c_board_info *accelerometer_board_info;
 	struct i2c_adapter *other_adapter = NULL;
-	struct i2c_adapter *main_adapter = i2c_get_adapter(0);
+	struct i2c_adapter *main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
 	if (!main_adapter) {
-		dev_err(&pdev->dev, "Failed to get I2C adapter 0.\n");
+		dev_err(&pdev->dev, "Failed to get primary I2C adapter (%d).\n",
+			PRIMARY_I2C_BUS);
 		ret = -ENODEV;
 		goto done;
 	}
@@ -244,12 +239,11 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
 	/* Map the GPIO expander */
 	dev_dbg(&pdev->dev, "mapping gpio expander\n");
-	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-					MANGOH_RED_I2C_SW_PORT_GPIO_EXPANDER);
+	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_GPIO_EXPANDER);
 	if (!other_adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n",
-			MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-			MANGOH_RED_I2C_SW_PORT_GPIO_EXPANDER);
+		dev_err(&pdev->dev,
+			"Couldn't get I2C bus %d to add the GPIO expander.\n",
+			MANGOH_RED_I2C_BUS_GPIO_EXPANDER);
 		ret = -ENODEV;
 		goto cleanup;
 	}
@@ -313,12 +307,10 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
         /* Map the I2C BQ24296 driver: for now use the BQ24190 driver code */
         dev_dbg(&pdev->dev, "mapping bq24296 driver\n");
-	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-					MANGOH_RED_I2C_SW_PORT_USB_HUB);
+	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_USB_HUB);
 	if(!other_adapter) {
 		dev_err(&pdev->dev, "No I2C bus %d.\n",
-			MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-			MANGOH_RED_I2C_SW_PORT_USB_HUB);
+			MANGOH_RED_I2C_BUS_USB_HUB);
 		ret = -ENODEV;
 		goto cleanup;
 	}
@@ -335,13 +327,10 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
 		/* Map the I2C ltc2942 battery gauge */
 		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
-		other_adapter = i2c_get_adapter(
-			MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-			MANGOH_RED_I2C_SW_PORT_USB_HUB);
+		other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_USB_HUB);
 		if (!other_adapter) {
 			dev_err(&pdev->dev, "No I2C bus %d.\n",
-				MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-				MANGOH_RED_I2C_SW_PORT_USB_HUB);
+				MANGOH_RED_I2C_BUS_USB_HUB);
 			ret = -ENODEV;
 			goto cleanup;
 		}
@@ -409,8 +398,7 @@ static void mangoh_red_iot_slot_release(struct device *dev) { /* do nothing */ }
 
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter)
 {
-	*adapter = i2c_get_adapter(MANGOH_RED_I2C_SW_BASE_ADAPTER_ID +
-				   MANGOH_RED_I2C_SW_PORT_IOT0);
+	*adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_IOT0);
 	return *adapter != NULL ? 0 : -EINVAL;
 }
 
