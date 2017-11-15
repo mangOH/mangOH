@@ -1024,6 +1024,10 @@ static const struct spi_device_id mcp251x_id_table[] = {
 };
 MODULE_DEVICE_TABLE(spi, mcp251x_id_table);
 
+static struct mcp251x_platform_data msm_mcp2515_pdata = {
+	.oscillator_frequency = 16*1000*1000,
+};
+
 static int mcp251x_can_probe(struct spi_device *spi)
 {
 	const struct of_device_id *of_id = of_match_device(mcp251x_of_match,
@@ -1033,6 +1037,9 @@ static int mcp251x_can_probe(struct spi_device *spi)
 	struct mcp251x_priv *priv;
 	int freq, ret = -ENODEV;
 	struct clk *clk;
+
+	if (!pdata)
+		pdata = &msm_mcp2515_pdata;
 
 	clk = devm_clk_get(&spi->dev, NULL);
 	if (IS_ERR(clk)) {
