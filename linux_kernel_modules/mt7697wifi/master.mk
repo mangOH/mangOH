@@ -19,7 +19,7 @@ DRV_VERSION=1.0.0
 # make line.
 #
 
-# Make sure that arm-poky-linux-gnueabi-gcc is on you path. THe default location is: 
+# Make sure that arm-poky-linux-gnueabi-gcc is on you path. THe default location is:
 # /opt/swi/y17-ext/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi
 
 # The location of the kernel build directory, should be some kind of environment
@@ -33,8 +33,8 @@ TI_DRIVER_ROOT := /home/david/yocto-1.7/build_bin/tmp/work/swi_mdm9x15-poky-linu
 MT7697_QUEUES_ROOT := /home/david/mangOH/legato/drivers/mangoh/mt7697q
 
 # Pass version information to module
-EXTRA_CFLAGS += -DVERSION=\"$(DRV_VERSION)\" -DDEBUG 
-EXTRA_CFLAGS += -DCPTCFG_NL80211_TESTMODE -DCPTCFG_CFG80211_DEFAULT_PS -DCPTCFG_CFG80211_DEBUGFS -DCPTCFG_CFG80211_WEXT 
+EXTRA_CFLAGS += -DVERSION=\"$(DRV_VERSION)\" -DDEBUG
+EXTRA_CFLAGS += -DCPTCFG_NL80211_TESTMODE -DCPTCFG_CFG80211_DEFAULT_PS -DCPTCFG_CFG80211_DEBUGFS -DCPTCFG_CFG80211_WEXT
 EXTRA_CFLAGS += -DCPTCFG_WEXT_CORE -DCPTCFG_WEXT_PROC -DCPTCFG_WEXT_SPY -DCPTCFG_WEXT_PRIV
 
 # Kernel tree comes with some "defined but not used funnctions" warnings and
@@ -78,7 +78,7 @@ dist-clean: clean
 clean:
 	$(MAKE) -C $(KDIR) SUBDIRS=$(PWD) M=$(PWD) ARCH=$(ARCH) \
     CROSS_COMPILE=$(CROSS_COMPILE) clean
-	@rm -f $(TARGET).o 
+	@rm -f $(TARGET).o
 	@rm -f $(TARGET).mod.c
 	@rm -f $(TARGET).mod.o
 	@rm -f $(TARGET).ko
