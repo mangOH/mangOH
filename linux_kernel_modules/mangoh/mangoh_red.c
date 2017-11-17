@@ -180,6 +180,8 @@ static struct iot_slot_platform_data mangoh_red_iot_slot_pdata = {
 	.card_detect_gpio = CF3_GPIO33,
 	.request_i2c	  = mangoh_red_iot_slot_request_i2c,
 	.release_i2c	  = mangoh_red_iot_slot_release_i2c,
+	.request_spi      = mangoh_red_iot_slot_request_spi,
+	.release_spi      = mangoh_red_iot_slot_release_spi,
 	.request_sdio	  = mangoh_red_iot_slot_request_sdio,
 	.release_sdio	  = mangoh_red_iot_slot_release_sdio,
 	.request_pcm	  = mangoh_red_iot_slot_request_pcm,
@@ -407,6 +409,22 @@ static int mangoh_red_iot_slot_release_i2c(struct i2c_adapter **adapter)
 	i2c_put_adapter(*adapter);
 	*adapter = NULL;
 	return 0;
+}
+
+static int mangoh_red_iot_slot_request_spi(struct spi_master **spi_master, int *cs)
+{
+	*spi_master = spi_busnum_to_master(PRIMARY_SPI_BUS);
+	*cs = 0;
+	if (!*spi_master) {
+		return -ENODEV;
+	}
+
+	return 0;
+}
+
+static int mangoh_red_iot_slot_release_spi(void)
+{
+	return 0; /* Nothing to do */
 }
 
 static int mangoh_red_iot_slot_request_sdio(void)
