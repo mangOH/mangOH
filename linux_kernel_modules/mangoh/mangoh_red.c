@@ -4,6 +4,7 @@
 #include <linux/i2c.h>
 #include <linux/i2c/pca954x.h>
 #include <linux/i2c/sx150x.h>
+#include <linux/spi/spi.h>
 #include <linux/delay.h>
 #include <linux/gpio/driver.h>
 
@@ -50,6 +51,8 @@ static int mangoh_red_remove(struct platform_device* pdev);
 static void mangoh_red_iot_slot_release(struct device *dev);
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter);
 static int mangoh_red_iot_slot_release_i2c(struct i2c_adapter **adapter);
+static int mangoh_red_iot_slot_request_spi(struct spi_master **spi_master, int *cs);
+static int mangoh_red_iot_slot_release_spi(void);
 static int mangoh_red_iot_slot_request_sdio(void);
 static int mangoh_red_iot_slot_release_sdio(void);
 static int mangoh_red_iot_slot_request_pcm(void);
