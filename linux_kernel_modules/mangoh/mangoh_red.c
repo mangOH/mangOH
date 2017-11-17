@@ -309,10 +309,10 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
         /* Map the I2C BQ24296 driver: for now use the BQ24190 driver code */
         dev_dbg(&pdev->dev, "mapping bq24296 driver\n");
-	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_USB_HUB);
+	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 	if(!other_adapter) {
 		dev_err(&pdev->dev, "No I2C bus %d.\n",
-			MANGOH_RED_I2C_BUS_USB_HUB);
+			MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 		ret = -ENODEV;
 		goto cleanup;
 	}
@@ -329,10 +329,10 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
 		/* Map the I2C ltc2942 battery gauge */
 		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
-		other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_USB_HUB);
+		other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 		if (!other_adapter) {
 			dev_err(&pdev->dev, "No I2C bus %d.\n",
-				MANGOH_RED_I2C_BUS_USB_HUB);
+				MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 			ret = -ENODEV;
 			goto cleanup;
 		}
