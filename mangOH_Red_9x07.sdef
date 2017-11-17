@@ -82,4 +82,7 @@ kernelModules:
 
     // Required for BQ24296
     $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
+
+    // Support for the CAN IoT card
+    $MANGOH_ROOT/linux_kernel_modules/mcp251x/1-mcp251x.mdef
 }
