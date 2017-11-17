@@ -1,0 +1,5 @@
+sources:
+{
+    mcp251x.c
+}
+

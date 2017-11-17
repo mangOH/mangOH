@@ -1,0 +1,10 @@
+sources:
+{
+    dev.c
+}
+
+cflags:
+{
+    -DCONFIG_CAN_CALC_BITTIMING
+}
+
