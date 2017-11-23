@@ -269,9 +269,16 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 	dev_dbg(cfg->dev, "%s(): band(%u) chan(%u)\n", 
 		__func__, chan->band, chan->center_freq);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+	bss = cfg80211_get_bss(cfg->wiphy, chan, bssid,
+			       vif->ssid, vif->ssid_len,
+			       CFG80211_BSS_FTYPE_UNKNOWN, 
+			       IEEE80211_PRIVACY_ANY);
+#else
 	bss = cfg80211_get_bss(cfg->wiphy, chan, bssid,
 			       vif->ssid, vif->ssid_len,
 			       WLAN_CAPABILITY_ESS, WLAN_CAPABILITY_ESS);
+#endif
 	if (!bss) {
 		/*
 		 * Since cfg80211 may not yet know about the BSS,
@@ -295,10 +302,18 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 		print_hex_dump(KERN_DEBUG, DRVNAME" inform bss BSSID ", 
 			DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+		bss = cfg80211_inform_bss(cfg->wiphy, chan,
+					  CFG80211_BSS_FTYPE_UNKNOWN,
+					  bssid, 0, WLAN_CAPABILITY_ESS, 100,
+					  ie, 2 + vif->ssid_len,
+					  0, GFP_KERNEL);
+#else
 		bss = cfg80211_inform_bss(cfg->wiphy, chan,
 					  bssid, 0, WLAN_CAPABILITY_ESS, 100,
 					  ie, 2 + vif->ssid_len,
 					  0, GFP_KERNEL);
+#endif
 		if (!bss) {
 			dev_err(cfg->dev, 
 				"%s(): cfg80211_inform_bss() failed\n", 
@@ -768,10 +783,17 @@ static int mt7697_cfg80211_change_beacon(struct wiphy *wiphy,
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+static int mt7697_cfg80211_add_station(struct wiphy *wiphy, 
+				       struct net_device *ndev,
+				       const u8 *mac,
+				       struct station_parameters *params)
+#else
 static int mt7697_cfg80211_add_station(struct wiphy *wiphy, 
 				       struct net_device *ndev,
 				       u8 *mac,
 				       struct station_parameters *params)
+#endif
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev, "%s(): ADD STATION\n", __func__);
@@ -784,10 +806,17 @@ static int mt7697_cfg80211_add_station(struct wiphy *wiphy,
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+static int mt7697_cfg80211_get_station(struct wiphy *wiphy, 
+				       struct net_device *ndev,
+			      	       const u8 *mac, 
+				       struct station_info *sinfo)
+#else
 static int mt7697_cfg80211_get_station(struct wiphy *wiphy, 
 				       struct net_device *ndev,
 			      	       u8 *mac, 
 				       struct station_info *sinfo)
+#endif
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev, "%s(): CHANGE STATION\n", __func__);
@@ -800,25 +829,39 @@ static int mt7697_cfg80211_get_station(struct wiphy *wiphy,
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+static int mt7697_cfg80211_del_station(struct wiphy *wiphy, 
+				       struct net_device *ndev,
+                                       struct station_del_parameters *params)
+#else
 static int mt7697_cfg80211_del_station(struct wiphy *wiphy, 
 				       struct net_device *ndev,
                                        u8 *mac)
+#endif
 {
         struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev, "%s(): DEL STATION\n", __func__);
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3,18,44)
 	if (mac) {
 		print_hex_dump(KERN_DEBUG, DRVNAME" MAC ", 
 			DUMP_PREFIX_OFFSET, 16, 1, mac, ETH_ALEN, 0);
 	}
-
+#endif
 	return 0;
 }
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
+					  struct net_device *ndev,
+				 	  const u8 *mac, 
+					  struct station_parameters *params)
+#else
 static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
 					  struct net_device *ndev,
 				 	  u8 *mac, 
 					  struct station_parameters *params)
+#endif
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
@@ -993,7 +1036,12 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 						GFP_KERNEL);
 			break;
 		case SME_CONNECTED:
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+			cfg80211_disconnected(vif->ndev, 0, NULL, 0, 
+				              vif->locally_generated, GFP_KERNEL);
+#else
 			cfg80211_disconnected(vif->ndev, 0, NULL, 0, GFP_KERNEL);
+#endif
 			break;
 		}
 	}
@@ -1082,27 +1130,6 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 		vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
 	}
 
-	if (vif->cfg->hif_ops->shutdown) {
-		ret = vif->cfg->hif_ops->shutdown(&vif->cfg->txq_hdl, &vif->cfg->rxq_hdl);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): shutdown() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-	}
-	else {
-		ret = vif->cfg->hif_ops->close(vif->cfg->txq_hdl);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): shutdown() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		vif->cfg->rxq_hdl = NULL;
-	}
-
 	/* Stop netdev queues, needed during recovery */
 	netif_stop_queue(vif->ndev);
 	netif_carrier_off(vif->ndev);
@@ -1167,11 +1194,31 @@ cleanup:
 static void mt7697_cleanup_vif(struct mt7697_cfg80211_info *cfg)
 {
 	struct mt7697_vif *vif, *vif_next = NULL;
+	int ret;
 
 	spin_lock_bh(&cfg->vif_list_lock);
 	list_for_each_entry_safe(vif, vif_next, &cfg->vif_list, next) {
 		dev_dbg(cfg->dev, "%s(): remove vif(%u)\n", 
 			__func__, vif->fw_vif_idx);
+
+		if (vif->cfg->hif_ops->shutdown) {
+			ret = vif->cfg->hif_ops->shutdown(&vif->cfg->txq_hdl, &vif->cfg->rxq_hdl);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): shutdown() failed(%d)\n", 
+					__func__, ret);
+			}
+		}
+		else {
+			ret = vif->cfg->hif_ops->close(vif->cfg->txq_hdl);
+			if (ret < 0) {
+				dev_err(vif->cfg->dev, 
+					"%s(): shutdown() failed(%d)\n", 
+					__func__, ret);
+			}
+
+			vif->cfg->rxq_hdl = NULL;
+		}
 
 		list_del(&vif->next);
 		WARN_ON(vif->sta_count > 0);
@@ -1378,6 +1425,10 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 
 	spin_lock_bh(&vif->if_lock);
 
+	set_bit(CONNECTED, &vif->flags);
+	clear_bit(CONNECT_PEND, &vif->flags);
+	dev_dbg(cfg->dev, "%s(): vif flags(0x%08lx)\n", __func__, vif->flags);
+
 	if ((channel > 0) && (channel <= MT7697_CH_MAX_2G_CHANNEL))
 		band = wiphy->bands[IEEE80211_BAND_2GHZ];
 	else if ((channel >= MT7697_CH_MIN_5G_CHANNEL) && 
@@ -1434,10 +1485,6 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 				    NULL, 0,  
 				    GFP_KERNEL);
 	}
-
-	set_bit(CONNECTED, &vif->flags);
-	clear_bit(CONNECT_PEND, &vif->flags);
-	dev_dbg(cfg->dev, "%s(): vif flags(0x%08lx)\n", __func__, vif->flags);
 
 	netif_wake_queue(vif->ndev);
 	netif_carrier_on(vif->ndev);

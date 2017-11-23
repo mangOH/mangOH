@@ -276,8 +276,7 @@ struct mt7697_rx_raw_packet {
 
 int mt7697_wr_set_wireless_mode_req(const struct mt7697_cfg80211_info*, u8);
 int mt7697_wr_get_wireless_mode_req(const struct mt7697_cfg80211_info*);
-int mt7697_wr_set_pmk_req(const struct mt7697_cfg80211_info*,  
-                          const u8[MT7697_WIFI_LENGTH_PMK]);
+int mt7697_wr_set_pmk_req(const struct mt7697_cfg80211_info*, const u8*);
 int mt7697_wr_set_channel_req(const struct mt7697_cfg80211_info*, u8);
 int mt7697_wr_set_bssid_req(const struct mt7697_cfg80211_info*, const u8[ETH_ALEN]);
 int mt7697_wr_set_ssid_req(const struct mt7697_cfg80211_info*, u8, const u8[]);

@@ -378,6 +378,11 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 	int ret = 0;
 
 	dev_dbg(vif->cfg->dev, "%s(): disconnect\n", __func__);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+	vif->locally_generated = true;
+#endif
+
 	if (test_bit(CONNECTED, &vif->flags) ||
 	    test_bit(CONNECT_PEND, &vif->flags)) {
 		if (vif->sme_state == SME_CONNECTING)
@@ -387,8 +392,14 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 						WLAN_STATUS_UNSPECIFIED_FAILURE,
 						GFP_KERNEL);
 		else if (vif->sme_state == SME_CONNECTED) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+			cfg80211_disconnected(vif->ndev, 0,
+				      	      NULL, 0, vif->locally_generated, 
+					      GFP_KERNEL);
+#else
 			cfg80211_disconnected(vif->ndev, 0,
 				      	      NULL, 0, GFP_KERNEL);
+#endif
 		}
 
 		ret = mt7697_wr_disconnect_req(vif->cfg, NULL);

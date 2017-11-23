@@ -19,7 +19,11 @@
 
 #include <net/iw_handler.h>     /* New driver API */
 
-#define SUPPORTED_WIRELESS_EXT                  19
+static const long freq_list[] = { 2412, 2417, 2422, 2427, 2432, 2437, 2442,
+                                  2447, 2452, 2457, 2462, 2467, 2472, 2484 };
+
+#define FREQ_COUNT 			ARRAY_SIZE(freq_list)
+#define SUPPORTED_WIRELESS_EXT          19
 
 extern const struct iw_handler_def mt7697_wireless_hndlrs;
 

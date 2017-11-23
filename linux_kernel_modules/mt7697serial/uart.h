@@ -22,9 +22,12 @@
 #include "mt7697_i.h"
 #include "uart_i.h"
 
-#define MT7697_UART_DRVNAME			"mt7697serial"
-#define MT7697_UART_DEVICE			"/dev/ttyHS0"
-#define MT7697_UART_INVALID_FD			NULL
+#define MT7697_UART_DRVNAME		"mt7697serial"
+#define MT7697_UART_DEVICE		"/dev/ttyHS0"
+#define MT7697_UART_INVALID_FD		NULL
+
+#define mt7697_uart_reset_req		mt7697_cmd_hdr
+#define mt7697_uart_reset_rsp		mt7697_rsp_hdr
 
 struct mt7697_uart_info {
 	struct platform_device 		*pdev;
@@ -39,7 +42,7 @@ struct mt7697_uart_info {
 	void				*rx_hndl;
 
 	wait_queue_head_t 		close_wq;
-	int				close;
+	atomic_t			close;
 };
 
 #endif

@@ -26,19 +26,26 @@ static int mt7697_uart_rx_poll(struct mt7697_uart_info* uart_info)
 	int mask;
 	int ret = 0;
 
+	WARN_ON(!uart_info->fd_hndl->f_op->poll);
         poll_initwait(&table);
 
 	while (1) {
-		if (!uart_info->fd_hndl->f_op->poll) {
-			dev_err(uart_info->dev, 
-				"%s(): no poll function\n", __func__);
-			ret = -EINVAL;
+        	mask = uart_info->fd_hndl->f_op->poll(uart_info->fd_hndl, &table.pt);
+		if (mask & POLLERR) {
+			dev_warn(uart_info->dev, 
+				"%s(): poll error\n", __func__);
+			ret = -EIO;
 			goto cleanup;
 		}
-
-        	mask = uart_info->fd_hndl->f_op->poll(uart_info->fd_hndl, &table.pt); 
-        	if (mask & (POLLRDNORM | POLLRDBAND | POLLIN |POLLHUP | POLLERR)) {
-			dev_dbg(uart_info->dev, "%s(): Rx data\n", __func__);
+		else if (mask & POLLHUP) {
+			dev_warn(uart_info->dev, 
+				"%s(): poll hangup\n", __func__);
+			ret = -EPIPE;
+			goto cleanup;
+		}
+		else if (mask & (POLLRDNORM | POLLRDBAND | POLLIN)) {
+			dev_dbg(uart_info->dev, "%s(): Rx data mask(0x%08x)\n", 
+				__func__, mask);
                 	break;
         	}
 
@@ -68,6 +75,7 @@ static void mt7697_uart_rx_work(struct work_struct *rx_work)
 	struct mt7697_uart_info* uart_info = container_of(rx_work, 
 		struct mt7697_uart_info, rx_work);
 	size_t ret;
+	int err;
 	
 	while (1) {
 		ret = mt7697_uart_rx_poll(uart_info);
@@ -78,7 +86,7 @@ static void mt7697_uart_rx_work(struct work_struct *rx_work)
 			goto cleanup;
 		}
 
-		if (uart_info->close) {
+		if (atomic_read(&uart_info->close)) {
 			dev_warn(uart_info->dev, "%s(): closed\n", __func__);
 			goto cleanup;
 		}
@@ -107,18 +115,19 @@ static void mt7697_uart_rx_work(struct work_struct *rx_work)
 		}
 
 		WARN_ON(!uart_info->rx_fcn);			
-		ret = uart_info->rx_fcn((const struct mt7697_rsp_hdr*)&uart_info->rsp, 
+		err = uart_info->rx_fcn((const struct mt7697_rsp_hdr*)&uart_info->rsp, 
 			                uart_info->rx_hndl);
-		if (ret < 0) {
+		dev_dbg(uart_info->dev, "%s(): rx_fcn ret(%d)\n", __func__, err);
+		if (err < 0) {
 			dev_err(uart_info->dev, 
 				"%s(): rx_fcn() failed(%d)\n", 
-				__func__, ret);
+				__func__, err);
     		}
 	}
 
 cleanup:
 	dev_warn(uart_info->dev, "%s(): task ended\n", __func__);
-	uart_info->close = 0;
+	atomic_set(&uart_info->close, 0);
 	wake_up_interruptible(&uart_info->close_wq);
 	return;
 }
@@ -167,6 +176,7 @@ void* mt7697_uart_open(rx_hndlr rx_fcn, void* rx_hndl)
 
 	uart_info->rx_fcn = rx_fcn;
 	uart_info->rx_hndl = rx_hndl;
+	atomic_set(&uart_info->close, 0);
 	schedule_work(&uart_info->rx_work);
 	ret = uart_info;
 
@@ -186,9 +196,14 @@ int mt7697_uart_close(void *arg)
 
 	dev_dbg(uart_info->dev, "%s(): fd_hndl(%p)\n", 
 		__func__, uart_info->fd_hndl);
-	WARN_ON (!uart_info->fd_hndl);
 
-	uart_info->close = 1;
+	if (uart_info->fd_hndl == MT7697_UART_INVALID_FD || 
+	    IS_ERR(uart_info->fd_hndl)) {
+		dev_warn(uart_info->dev, "%s(): device closed\n", __func__);
+		goto cleanup;
+	}
+
+	atomic_set(&uart_info->close, 1);
 	ret = filp_close(uart_info->fd_hndl, 0);
 	if (ret < 0) {
 		dev_err(uart_info->dev, "%s(): filp_close() failed(%d)\n", 
@@ -196,7 +211,7 @@ int mt7697_uart_close(void *arg)
 		goto cleanup;
 	}
 
-	wait_event_interruptible(uart_info->close_wq, !uart_info->close);
+	wait_event_interruptible(uart_info->close_wq, !atomic_read(&uart_info->close));
 	cancel_work_sync(&uart_info->rx_work);
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 
@@ -211,10 +226,8 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 	mm_segment_t oldfs;
 	struct mt7697_uart_info *uart_info = arg;
 	u8* ptr = (u8*)buf;
-	loff_t offset = 0;
 	size_t ret = 0;
 	unsigned long count = len * sizeof(u32);
-	unsigned long end = count;
 	int err;
 
 	oldfs = get_fs();
@@ -226,8 +239,8 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 	}
 
 	dev_dbg(uart_info->dev, "%s(): len(%u)\n", __func__, len * sizeof(u32));
-	while (offset < end) {
-		err = kernel_read(uart_info->fd_hndl, offset, ptr, count);
+	while (1) {
+		err = kernel_read(uart_info->fd_hndl, 0, ptr, count);
 		dev_dbg(uart_info->dev, "%s(): read(%d)\n", __func__, err);
 		if (err < 0) {
 			dev_err(uart_info->dev, "%s(): kernel_read() failed(%d)\n", 
@@ -240,8 +253,9 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 		}
 
 		count -= err;
+		if (!count) break;
+
 		ptr += err;
-		offset += err;
 	}
 
 	ret = len;
@@ -257,8 +271,7 @@ EXPORT_SYMBOL(mt7697_uart_read);
 size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 {
 	mm_segment_t oldfs;
-	loff_t pos = 0;
-	size_t num_write;
+	ssize_t num_write;
 	size_t end = len * sizeof(u32);
 	size_t left = end;
 	size_t ret = 0;
@@ -274,20 +287,26 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 	}
 
 	dev_dbg(uart_info->dev, "%s(): len(%u)\n", __func__, len);
-	while (pos < end) {
-		num_write = kernel_write(uart_info->fd_hndl, ptr, left, pos);
+	while (1) {
+		num_write = kernel_write(uart_info->fd_hndl, ptr, left, 0);
 		dev_dbg(uart_info->dev, "%s(): written(%u)\n", __func__, num_write);
-		if (!num_write) {
-			dev_dbg(uart_info->dev, "%s(): WRITE no data\n", __func__);
+		if (num_write < 0) {
+			dev_err(uart_info->dev, "%s(): kernel_write() failed(%d)\n", 
+				__func__, num_write);
+			goto cleanup;
+		}
+		else if (!num_write) {
+			dev_warn(uart_info->dev, "%s(): CLOSED\n", __func__);
 			goto cleanup;
 		}
 
-		ptr += num_write;
-		pos += num_write;
 		left -= num_write;
+		if (!left) break;
+
+		ptr += num_write;
 	}
 
-	ret = LEN_TO_WORD(pos);
+	ret = len;
 
 cleanup:
 	dev_dbg(uart_info->dev, "%s(): return(%u)\n", __func__, ret);
@@ -312,7 +331,7 @@ static int mt7697_uart_probe(struct platform_device *pdev)
 	}
 
 	memset(uart_info, 0, sizeof(struct mt7697_uart_info));
-        uart_info->pdev = pdev;
+	uart_info->pdev = pdev;
 	uart_info->dev = &pdev->dev;
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 	uart_info->dev_file = MT7697_UART_DEVICE;

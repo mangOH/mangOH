@@ -5,7 +5,7 @@
 # MediaTek WIFI IoT board is managed by SPI bus.
 
 mt_wifi_start() {
-    if [ `echo $1 | tr -s '[:upper:]' '[:lower:]` = `echo "uart" | tr -s '[:upper:]' '[:lower:]` ] ; then
+    if [ `echo $1 | tr -s '[:upper:]' '[:lower:]'` = `echo "uart" | tr -s '[:upper:]' '[:lower:]'` ] ; then
 	echo "Setup MT7697 UART";
         stty -F /dev/ttyHS0 raw || exit 127
         stty -F /dev/ttyHS0 921600 || exit 127
@@ -25,7 +25,7 @@ mt_wifi_start() {
 	hw_itf=`echo $1 | tr '[A-Z]' '[a-z]'`
         insmod /legato/systems/current/modules/2-mt7697wifi_core.ko hw_itf=$hw_itf itf_idx_start=$2 || exit 127
         echo "Initialized MT7697 WiFi core";
-        sleep 2
+        sleep 5
     fi
 
     ifconfig -a | grep wlan$2 >/dev/null

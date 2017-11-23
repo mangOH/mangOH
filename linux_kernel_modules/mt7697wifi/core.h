@@ -17,6 +17,7 @@
 #ifndef _MT7697_CORE_H_
 #define _MT7697_CORE_H_
 
+#include <linux/version.h>
 #include <net/cfg80211.h>
 #include <net/iw_handler.h>     /* New driver API */
 #include "mt7697_i.h"
@@ -189,6 +190,9 @@ struct mt7697_vif {
 	u8 listen_intvl_t;
 
 	struct net_device_stats net_stats;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+	bool locally_generated;
+#endif
 };
 
 static inline struct wiphy *cfg_to_wiphy(struct mt7697_cfg80211_info *cfg)

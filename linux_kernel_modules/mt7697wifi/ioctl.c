@@ -35,6 +35,7 @@ static int mt7697_wext_siwfreq(struct net_device *ndev,
 	struct wireless_dev *wdev = ndev->ieee80211_ptr;
 	struct mt7697_vif *vif = mt7697_vif_from_wdev(wdev);
 	int chan = -1;
+	int ret = 0;
 
 	if ((frq->e == 0) && (frq->m <= 1000)) {
                 /* Setting by channel number */
@@ -42,6 +43,30 @@ static int mt7697_wext_siwfreq(struct net_device *ndev,
 		dev_dbg(cfg->dev, "%s(): freq(%u)\n", __func__, frq->m);
         } else {
                 /* Setting by frequency */
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+        	if (frq->e == 1 &&
+            	    frq->m / 100000 >= freq_list[0] &&
+            	    frq->m / 100000 <= freq_list[FREQ_COUNT - 1]) {
+                	int ch;
+                	int fr = frq->m / 100000;
+                	for (ch = 0; ch < FREQ_COUNT; ch++) {
+                        	if (fr == freq_list[ch]) {
+                                	frq->e = 0;
+                                	frq->m = ch + 1;
+                                	break;
+                        	}
+                	}
+        	}
+
+        	if (frq->e != 0 || frq->m < 1 || frq->m > FREQ_COUNT) {
+			dev_err(cfg->dev, "%s(): unsupported frequency(%u/%u)\n", 
+				__func__, frq->e, frq->m);
+                	ret = -EINVAL;
+			goto cleanup;
+		}
+
+        	chan = frq->m;
+#else
                 int denom = 1;
                 int i;
 
@@ -50,11 +75,16 @@ static int mt7697_wext_siwfreq(struct net_device *ndev,
                         denom *= 10;
 
                 chan = ieee80211_freq_to_dsss_chan(frq->m / denom);
+#endif
 		dev_dbg(cfg->dev, "%s(): chan(%u)\n", __func__, chan);
         }
 
 	vif->ch_hint = chan;
-	return 0;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
+cleanup:
+#endif
+	return ret;
 }
 
 static int mt7697_wext_giwfreq(struct net_device *ndev,
