@@ -69,9 +69,9 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
 
     // Disabled until compliation errors are fixed in wp76 kernel
-    // $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
-    // $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
-    // $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
+    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
 
     // Don't load spisvc right now on wp76 because it tries to create spidev0.0, but should create
     // spidev1.0
@@ -83,6 +83,13 @@ kernelModules:
     // Required for BQ24296
     $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
 
-    // Support for the CAN IoT card
-    $MANGOH_ROOT/linux_kernel_modules/mcp251x/1-mcp251x.mdef
+    // Support for the CAN IoT card - CAN subsytem
+    // $MANGOH_ROOT/linux_kernel_modules/can/0-can.mdef
+    // $MANGOH_ROOT/linux_kernel_modules/can/1-can-raw.mdef
+    // $MANGOH_ROOT/linux_kernel_modules/can/1-can-bcm.mdef
+
+    // Support for the CAN IoT card - CAN drivers
+    // $MANGOH_ROOT/linux_kernel_modules/can/2-can-dev.mdef
+    // $MANGOH_ROOT/linux_kernel_modules/can/2-vcan.mdef
+    // $MANGOH_ROOT/linux_kernel_modules/can/3-mcp251x.mdef
 }
