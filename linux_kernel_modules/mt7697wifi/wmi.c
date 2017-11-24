@@ -498,7 +498,7 @@ static int mt7697_proc_scan_rsp(const struct mt7697_rsp_hdr* rsp,
     	}
 	dev_dbg(cfg->dev, "%s(): if idx(%d)\n", __func__, if_idx);
 
-	if (rsp->result < 0) {
+	if ((rsp->result < 0) && (vif->scan_req != NULL)) {
 		vif = mt7697_get_vif_by_idx(cfg, if_idx);
 		if (!vif) {
 			dev_err(cfg->dev, 
@@ -546,9 +546,12 @@ static int mt7697_proc_scan_complete_ind(struct mt7697_cfg80211_info *cfg)
 		goto cleanup;
 	}
 
-	dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
-	cfg80211_scan_done(vif->scan_req, false);
-	vif->scan_req = NULL;
+	if (vif->scan_req != NULL) {
+		dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
+		cfg80211_scan_done(vif->scan_req, false);
+		vif->scan_req = NULL;
+	}
+
 	ret = 0;
 
 cleanup:
