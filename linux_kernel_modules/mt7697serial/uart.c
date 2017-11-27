@@ -20,6 +20,34 @@
 #include <asm/uaccess.h>
 #include "uart.h"
 
+static int mt7697_uart_snd_shutdown_req(struct mt7697_uart_info* uart_info)
+{
+	struct mt7697_uart_shutdown_req req;
+	int ret;
+
+	req.len = sizeof(struct mt7697_uart_shutdown_req);
+	req.grp = MT7697_CMD_GRP_UART;
+	req.type = MT7697_CMD_UART_SHUTDOWN_REQ;
+
+	dev_dbg(uart_info->dev, "%s(): <-- UART SHUTDOWN len(%u)\n", 
+		__func__, req.len);
+	ret = mt7697_uart_write(uart_info, (const u32*)&req, 
+		LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req)));
+	if (ret != LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req))) {
+		dev_err(uart_info->dev, 
+			"%s(): mt7697_uart_write() failed(%d != %d)\n", 
+			__func__, ret, 
+			LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req)));
+		ret = (ret < 0) ? ret:-EIO;
+		goto cleanup;
+	}
+
+	ret = 0;
+
+cleanup:
+	return ret;
+}
+
 static int mt7697_uart_rx_poll(struct mt7697_uart_info* uart_info)
 {
 	struct poll_wqueues table;
@@ -86,11 +114,6 @@ static void mt7697_uart_rx_work(struct work_struct *rx_work)
 			goto cleanup;
 		}
 
-		if (atomic_read(&uart_info->close)) {
-			dev_warn(uart_info->dev, "%s(): closed\n", __func__);
-			goto cleanup;
-		}
-
 		ret = mt7697_uart_read(uart_info, (u32*)&uart_info->rsp, 
 			LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr)));
 		if (ret != LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr))) {
@@ -114,15 +137,34 @@ static void mt7697_uart_rx_work(struct work_struct *rx_work)
 				uart_info->rsp.result);
 		}
 
-		WARN_ON(!uart_info->rx_fcn);			
-		err = uart_info->rx_fcn((const struct mt7697_rsp_hdr*)&uart_info->rsp, 
-			                uart_info->rx_hndl);
-		dev_dbg(uart_info->dev, "%s(): rx_fcn ret(%d)\n", __func__, err);
-		if (err < 0) {
-			dev_err(uart_info->dev, 
-				"%s(): rx_fcn() failed(%d)\n", 
-				__func__, err);
-    		}
+		if (uart_info->rsp.cmd.grp == MT7697_CMD_GRP_UART) {
+			if (uart_info->rsp.cmd.type == MT7697_CMD_UART_SHUTDOWN_RSP) {
+				dev_dbg(uart_info->dev, 
+					"%s(): --> UART SHUTDOWN RSP\n", 
+					__func__);
+			}
+			else {
+				dev_err(uart_info->dev, 
+					"%s(): Rx invalid message type(%d)\n", 
+					__func__, uart_info->rsp.cmd.type);
+			}
+
+			if (atomic_read(&uart_info->close)) {
+				dev_warn(uart_info->dev, "%s(): closed\n", __func__);
+				goto cleanup;
+			}
+		}
+		else {
+			WARN_ON(!uart_info->rx_fcn);			
+			err = uart_info->rx_fcn((const struct mt7697_rsp_hdr*)&uart_info->rsp, 
+			                	uart_info->rx_hndl);
+			dev_dbg(uart_info->dev, "%s(): rx_fcn ret(%d)\n", __func__, err);
+			if (err < 0) {
+				dev_err(uart_info->dev, 
+					"%s(): rx_fcn() failed(%d)\n", 
+					__func__, err);
+    			}
+		}
 	}
 
 cleanup:
@@ -204,6 +246,16 @@ int mt7697_uart_close(void *arg)
 	}
 
 	atomic_set(&uart_info->close, 1);
+	ret = mt7697_uart_snd_shutdown_req(uart_info);
+	if (ret < 0) {
+		dev_err(uart_info->dev, 
+			"%s(): mt7697_uart_snd_shutdown_req() failed(%d)\n", 
+			__func__, ret);
+		goto cleanup;
+	}
+
+	wait_event_interruptible(uart_info->close_wq, !atomic_read(&uart_info->close));
+
 	ret = filp_close(uart_info->fd_hndl, 0);
 	if (ret < 0) {
 		dev_err(uart_info->dev, "%s(): filp_close() failed(%d)\n", 
@@ -211,8 +263,6 @@ int mt7697_uart_close(void *arg)
 		goto cleanup;
 	}
 
-	wait_event_interruptible(uart_info->close_wq, !atomic_read(&uart_info->close));
-	cancel_work_sync(&uart_info->rx_work);
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 
 cleanup:

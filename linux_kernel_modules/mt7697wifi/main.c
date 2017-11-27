@@ -26,7 +26,7 @@
 #include "core.h"
 #include "cfg80211.h"
 
-static char* hw_itf = "spi";
+static char* hw_itf = "uart";
 module_param(hw_itf, charp, S_IRUGO);
 MODULE_PARM_DESC(hw_itf, "MT7697 transport interface (SPI/UART");
 

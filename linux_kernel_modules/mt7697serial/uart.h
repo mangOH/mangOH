@@ -26,8 +26,13 @@
 #define MT7697_UART_DEVICE		"/dev/ttyHS0"
 #define MT7697_UART_INVALID_FD		NULL
 
-#define mt7697_uart_reset_req		mt7697_cmd_hdr
-#define mt7697_uart_reset_rsp		mt7697_rsp_hdr
+#define mt7697_uart_shutdown_req	mt7697_cmd_hdr
+#define mt7697_uart_shutdown_rsp	mt7697_rsp_hdr
+
+enum mt7697_uart_cmd_types {
+	MT7697_CMD_UART_SHUTDOWN_REQ = 0,
+	MT7697_CMD_UART_SHUTDOWN_RSP,
+};
 
 struct mt7697_uart_info {
 	struct platform_device 		*pdev;

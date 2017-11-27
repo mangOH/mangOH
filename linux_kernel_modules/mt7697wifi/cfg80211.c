@@ -1139,6 +1139,14 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 		vif->scan_req = NULL;
 	}
 
+	ret = vif->cfg->hif_ops->close(vif->cfg->txq_hdl);
+	if (ret < 0) {
+		dev_err(vif->cfg->dev, "%s(): close() failed(%d)\n", 
+			__func__, ret);
+	}
+
+	vif->cfg->rxq_hdl = NULL;
+
 cleanup:
 	return ret;
 }
@@ -1208,16 +1216,6 @@ static void mt7697_cleanup_vif(struct mt7697_cfg80211_info *cfg)
 					"%s(): shutdown() failed(%d)\n", 
 					__func__, ret);
 			}
-		}
-		else {
-			ret = vif->cfg->hif_ops->close(vif->cfg->txq_hdl);
-			if (ret < 0) {
-				dev_err(vif->cfg->dev, 
-					"%s(): shutdown() failed(%d)\n", 
-					__func__, ret);
-			}
-
-			vif->cfg->rxq_hdl = NULL;
 		}
 
 		list_del(&vif->next);
