@@ -7,10 +7,7 @@
 mt_wifi_start() {
     if [ `echo $1 | tr -s '[:upper:]' '[:lower:]'` = `echo "uart" | tr -s '[:upper:]' '[:lower:]'` ] ; then
 	echo "Setup MT7697 UART";
-        stty -F /dev/ttyHS0 raw || exit 127
-        stty -F /dev/ttyHS0 921600 || exit 127
-        stty -F /dev/ttyHS0 crtscts || exit 127
-        stty -F /dev/ttyHS0 -echo || exit 127
+        stty -F /dev/ttyHS0 raw 921600 crtscts ignbrk -echo || exit 127
     fi
 
     lsmod | grep mac80211 >/dev/null
