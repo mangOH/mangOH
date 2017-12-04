@@ -74,4 +74,4 @@ content:
         size: 32
         fill: 0x00
         content:
-          - mcp251x
+          - mcp2515
