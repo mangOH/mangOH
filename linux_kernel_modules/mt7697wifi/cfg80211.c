@@ -286,7 +286,7 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 		 * event becomes available.
 		 *
 		 */
-		ie = kmalloc(2 + vif->ssid_len, GFP_KERNEL);
+		ie = kmalloc(2 + vif->ssid_len, GFP_ATOMIC);
 		if (ie == NULL) {
 			dev_err(cfg->dev, "%s(): kmalloc() failed\n", 
 				__func__);
@@ -307,12 +307,12 @@ static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
 					  CFG80211_BSS_FTYPE_UNKNOWN,
 					  bssid, 0, WLAN_CAPABILITY_ESS, 100,
 					  ie, 2 + vif->ssid_len,
-					  0, GFP_KERNEL);
+					  0, GFP_ATOMIC);
 #else
 		bss = cfg80211_inform_bss(cfg->wiphy, chan,
 					  bssid, 0, WLAN_CAPABILITY_ESS, 100,
 					  ie, 2 + vif->ssid_len,
-					  0, GFP_KERNEL);
+					  0, GFP_ATOMIC);
 #endif
 		if (!bss) {
 			dev_err(cfg->dev, 
@@ -1474,14 +1474,14 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 		cfg80211_connect_result(vif->ndev, bssid,
 					NULL, 0,
 					NULL, 0, 
-					WLAN_STATUS_SUCCESS, GFP_KERNEL);
+					WLAN_STATUS_SUCCESS, GFP_ATOMIC);
 		cfg80211_put_bss(cfg->wiphy, bss);
 	} else if (vif->sme_state == SME_CONNECTED) {
 		/* inform roam event to cfg80211 */		
 		cfg80211_roamed_bss(vif->ndev, bss,
 				    NULL, 0,
 				    NULL, 0,  
-				    GFP_KERNEL);
+				    GFP_ATOMIC);
 	}
 
 	netif_wake_queue(vif->ndev);
