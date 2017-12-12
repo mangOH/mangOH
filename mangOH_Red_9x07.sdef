@@ -17,7 +17,9 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
-    $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+    //$MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+
+    $MANGOH_ROOT/samples/Demos/MobileAssetTracker/mobileAssetTracker
 
     // Disabled until Release 15 is released due to bug in power supply kernel support
     // $MANGOH_ROOT/apps/BatteryService/batteryService
@@ -63,8 +65,8 @@ kernelModules:
 
     // Used on mangOH Red DV3 and later
     // Don't load bmi160 right now because there's a broken driver built into the wp76 kernel
-    // $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
-    // $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
     $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
 
