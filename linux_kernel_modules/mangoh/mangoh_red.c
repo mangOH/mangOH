@@ -169,12 +169,8 @@ static struct i2c_board_info mangoh_red_battery_gauge_devinfo = {
 	.platform_data = &mangoh_red_battery_gauge_platform_data,
 };
 
-static struct bq24190_platform_data mangoh_red_battery_charger_platform_data = {
-        .gpio_int = 49,
-};
 static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq24190", 0x6B),
-        .platform_data = &mangoh_red_battery_charger_platform_data,
 };
 
 static struct iot_slot_platform_data mangoh_red_iot_slot_pdata = {
