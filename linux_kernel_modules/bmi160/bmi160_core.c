@@ -22,54 +22,247 @@
 #include <linux/iio/buffer.h>
 #include <linux/iio/sysfs.h>
 #include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+#include <linux/bitfield.h>
+#else
+#define __bf_shf(x) (__builtin_ffsll(x) - 1)
+#define FIELD_PREP(_mask, _val)						\
+	({								\
+		((typeof(_mask))(_val) << __bf_shf(_mask)) & (_mask);	\
+	})
+#endif
 
 #include "bmi160.h"
 
-#define BMI160_REG_CHIP_ID	0x00
-#define BMI160_CHIP_ID_VAL	0xD1
+#define BMI160_REG_CHIP_ID			0x00
+#define BMI160_CHIP_ID_VAL			0xD1
 
-#define BMI160_REG_PMU_STATUS	0x03
+#define BMI160_REG_PMU_STATUS			0x03
 
 /* X axis data low byte address, the rest can be obtained using axis offset */
-#define BMI160_REG_DATA_MAGN_XOUT_L	0x04
-#define BMI160_REG_DATA_GYRO_XOUT_L	0x0C
-#define BMI160_REG_DATA_ACCEL_XOUT_L	0x12
+#define BMI160_REG_DATA_MAGN_XOUT_L		0x04
+#define BMI160_REG_DATA_GYRO_XOUT_L		0x0C
+#define BMI160_REG_DATA_ACCEL_XOUT_L		0x12
 
-#define BMI160_REG_ACCEL_CONFIG		0x40
-#define BMI160_ACCEL_CONFIG_ODR_MASK	GENMASK(3, 0)
-#define BMI160_ACCEL_CONFIG_BWP_MASK	GENMASK(6, 4)
+#define BMI160_REG_STATUS			0x1B
+#define BMI160_STATUS_GYR_SELF_TEST_OK		BIT(1)
+#define BMI160_STATUS_MAG_MAN_OP		BIT(2)
+#define BMI160_STATUS_FOC_RDY			BIT(3)
+#define BMI160_STATUS_NVM_RDY			BIT(4)
+#define BMI160_STATUS_DRDY_MAG			BIT(5)
+#define BMI160_STATUS_DRDY_GYR			BIT(6)
+#define BMI160_STATUS_DRDY_ACC			BIT(7)
 
-#define BMI160_REG_ACCEL_RANGE		0x41
-#define BMI160_ACCEL_RANGE_2G		0x03
-#define BMI160_ACCEL_RANGE_4G		0x05
-#define BMI160_ACCEL_RANGE_8G		0x08
-#define BMI160_ACCEL_RANGE_16G		0x0C
+#define BMI160_REG_INT_STATUS_0			0x1C
+#define BMI160_INT_STATUS_0_STEP		BIT(0)
+#define BMI160_INT_STATUS_0_SIGMOT		BIT(1)
+#define BMI160_INT_STATUS_0_ANYM		BIT(2)
+#define BMI160_INT_STATUS_0_PMU_TRIGGER		BIT(3)
+#define BMI160_INT_STATUS_0_DTAP		BIT(4)
+#define BMI160_INT_STATUS_0_STAP		BIT(5)
+#define BMI160_INT_STATUS_0_ORIENT		BIT(6)
+#define BMI160_INT_STATUS_0_FLAT		BIT(7)
 
-#define BMI160_REG_GYRO_CONFIG		0x42
-#define BMI160_GYRO_CONFIG_ODR_MASK	GENMASK(3, 0)
-#define BMI160_GYRO_CONFIG_BWP_MASK	GENMASK(5, 4)
+#define BMI160_REG_INT_STATUS_1			0x1D
+#define BMI160_INT_STATUS_1_HIGHG		BIT(2)
+#define BMI160_INT_STATUS_1_LOWG		BIT(3)
+#define BMI160_INT_STATUS_1_DRDY		BIT(4)
+#define BMI160_INT_STATUS_1_FFULL		BIT(5)
+#define BMI160_INT_STATUS_1_FWM			BIT(6)
+#define BMI160_INT_STATUS_1_NOMO		BIT(7)
 
-#define BMI160_REG_GYRO_RANGE		0x43
-#define BMI160_GYRO_RANGE_2000DPS	0x00
-#define BMI160_GYRO_RANGE_1000DPS	0x01
-#define BMI160_GYRO_RANGE_500DPS	0x02
-#define BMI160_GYRO_RANGE_250DPS	0x03
-#define BMI160_GYRO_RANGE_125DPS	0x04
+#define BMI160_REG_INT_STATUS_2			0x1E
+#define BMI160_INT_STATUS_2_ANYM_FIRST_X	BIT(0)
+#define BMI160_INT_STATUS_2_ANYM_FIRST_Y	BIT(1)
+#define BMI160_INT_STATUS_2_ANYM_FIRST_Z	BIT(2)
+#define BMI160_INT_STATUS_2_ANYM_SIGN		BIT(3)
+#define BMI160_INT_STATUS_2_TAP_FIRST_X		BIT(4)
+#define BMI160_INT_STATUS_2_TAP_FIRST_Y		BIT(5)
+#define BMI160_INT_STATUS_2_TAP_FIRST_Z		BIT(6)
+#define BMI160_INT_STATUS_2_TAP_SIGN		BIT(7)
 
-#define BMI160_REG_CMD			0x7E
-#define BMI160_CMD_ACCEL_PM_SUSPEND	0x10
-#define BMI160_CMD_ACCEL_PM_NORMAL	0x11
-#define BMI160_CMD_ACCEL_PM_LOW_POWER	0x12
-#define BMI160_CMD_GYRO_PM_SUSPEND	0x14
-#define BMI160_CMD_GYRO_PM_NORMAL	0x15
-#define BMI160_CMD_GYRO_PM_FAST_STARTUP	0x17
-#define BMI160_CMD_SOFTRESET		0xB6
+#define BMI160_REG_INT_STATUS_3			0x1F
+#define BMI160_INT_STATUS_3_HIGHG_FIRST_X	BIT(0)
+#define BMI160_INT_STATUS_3_HIGHG_FIRST_Y	BIT(1)
+#define BMI160_INT_STATUS_3_HIGHG_FIRST_Z	BIT(2)
+#define BMI160_INT_STATUS_3_HIGHG_SIGN		BIT(3)
+/*
+ * TODO: It's weird that the datasheet reports a 2-bit field for x & y and a
+ * 1-bit field for z
+ */
+#define BMI160_INT_STATUS_3_ORIENT_XY		GENMASK(5, 4)
+#define BMI160_INT_STATUS_3_ORIENT_Z		BIT(6)
+#define BMI160_INT_STATUS_3_FLAT		BIT(7)
 
-#define BMI160_REG_DUMMY		0x7F
+#define BMI160_REG_TEMPERATURE_0		0x20
+#define BMI160_REG_TEMPERATURE_1		0x21
 
-#define BMI160_ACCEL_PMU_MIN_USLEEP	3800
-#define BMI160_GYRO_PMU_MIN_USLEEP	80000
-#define BMI160_SOFTRESET_USLEEP		1000
+#define BMI160_REG_ACCEL_CONFIG			0x40
+#define BMI160_ACCEL_CONFIG_ODR_MASK		GENMASK(3, 0)
+#define BMI160_ACCEL_CONFIG_BWP_MASK		GENMASK(6, 4)
+
+#define BMI160_REG_ACCEL_RANGE			0x41
+#define BMI160_ACCEL_RANGE_2G			0x03
+#define BMI160_ACCEL_RANGE_4G			0x05
+#define BMI160_ACCEL_RANGE_8G			0x08
+#define BMI160_ACCEL_RANGE_16G			0x0C
+
+#define BMI160_REG_GYRO_CONFIG			0x42
+#define BMI160_GYRO_CONFIG_ODR_MASK		GENMASK(3, 0)
+#define BMI160_GYRO_CONFIG_BWP_MASK		GENMASK(5, 4)
+
+#define BMI160_REG_GYRO_RANGE			0x43
+#define BMI160_GYRO_RANGE_2000DPS		0x00
+#define BMI160_GYRO_RANGE_1000DPS		0x01
+#define BMI160_GYRO_RANGE_500DPS		0x02
+#define BMI160_GYRO_RANGE_250DPS		0x03
+#define BMI160_GYRO_RANGE_125DPS		0x04
+
+#define BMI160_REG_INT_EN_0			0x50
+#define BMI160_INT_EN_0_ANYM_X			BIT(0)
+#define BMI160_INT_EN_0_ANYM_Y			BIT(1)
+#define BMI160_INT_EN_0_ANYM_Z			BIT(2)
+#define BMI160_INT_EN_0_DTAP			BIT(4)
+#define BMI160_INT_EN_0_STAP			BIT(5)
+#define BMI160_INT_EN_0_ORIENT			BIT(6)
+#define BMI160_INT_EN_0_FLAT			BIT(7)
+
+#define BMI160_REG_INT_EN_1			0x51
+#define BMI160_INT_EN_1_HIGHX			BIT(0)
+#define BMI160_INT_EN_1_HIGHY			BIT(1)
+#define BMI160_INT_EN_1_HIGHZ			BIT(2)
+#define BMI160_INT_EN_1_LOW			BIT(3)
+#define BMI160_INT_EN_1_DRDY			BIT(4)
+#define BMI160_INT_EN_1_FFULL			BIT(5)
+#define BMI160_INT_EN_1_FWM			BIT(6)
+
+#define BMI160_REG_INT_EN_2			0x52
+#define BMI160_INT_EN_2_NOMOX			BIT(0)
+#define BMI160_INT_EN_2_NOMOY			BIT(1)
+#define BMI160_INT_EN_2_NOMOZ			BIT(2)
+#define BMI160_INT_EN_2_STEP_DET		BIT(3)
+
+#define BMI160_REG_INT_OUT_CTRL			0x53
+#define BMI160_INT_OUT_CTRL_INT1_EDGE		BIT(0)
+#define BMI160_INT_OUT_CTRL_INT1_LVL		BIT(1)
+#define BMI160_INT_OUT_CTRL_INT1_OD		BIT(2)
+#define BMI160_INT_OUT_CTRL_INT1_OUTPUT_EN	BIT(3)
+#define BMI160_INT_OUT_CTRL_INT2_EDGE		BIT(4)
+#define BMI160_INT_OUT_CTRL_INT2_LVL		BIT(5)
+#define BMI160_INT_OUT_CTRL_INT2_OD		BIT(6)
+#define BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN	BIT(7)
+
+#define BMI160_REG_INT_LATCH			0x54
+#define BMI160_INT_LATCH_MODE			GENMASK(3, 0)
+#define BMI160_INT_LATCH_MODE_NON_LATCHED	0
+#define BMI160_INT_LATCH_MODE_TMP_312500_NS	1
+#define BMI160_INT_LATCH_MODE_TMP_625_US	2
+#define BMI160_INT_LATCH_MODE_TMP_1250_US	3
+#define BMI160_INT_LATCH_MODE_TMP_2500_US	4
+#define BMI160_INT_LATCH_MODE_TMP_5_MS		5
+#define BMI160_INT_LATCH_MODE_TMP_10_MS		61
+#define BMI160_INT_LATCH_MODE_TMP_20_MS		7
+#define BMI160_INT_LATCH_MODE_TMP_40_MS		8
+#define BMI160_INT_LATCH_MODE_TMP_80_MS		9
+#define BMI160_INT_LATCH_MODE_TMP_160_MS	10
+#define BMI160_INT_LATCH_MODE_TMP_320_MS	11
+#define BMI160_INT_LATCH_MODE_TMP_640_MS	12
+#define BMI160_INT_LATCH_MODE_TMP_1280_MS	13
+#define BMI160_INT_LATCH_MODE_TMP_2560_MS	14
+#define BMI160_INT_LATCH_MODE_LATCHED		15
+#define BMI160_INT_LATCH_INT1_INPUT_EN		BIT(4)
+#define BMI160_INT_LATCH_INT2_INPUT_EN		BIT(5)
+
+#define BMI160_REG_INT_MAP_0			0x55
+#define BMI160_INT_MAP_0_INT1_LOWG_STEP_DET	BIT(0)
+#define BMI160_INT_MAP_0_INT1_HIGHG		BIT(1)
+#define BMI160_INT_MAP_0_INT1_ANYM_SIGMOT	BIT(2)
+#define BMI160_INT_MAP_0_INT1_NOMO		BIT(3)
+#define BMI160_INT_MAP_0_INT1_DTAP		BIT(4)
+#define BMI160_INT_MAP_0_INT1_STAP		BIT(5)
+#define BMI160_INT_MAP_0_INT1_ORIENTATION	BIT(6)
+#define BMI160_INT_MAP_0_INT1_FLAT		BIT(7)
+
+#define BMI160_REG_INT_MAP_1			0x56
+#define BMI160_INT_MAP_1_INT2_PMU_TRIGGER	BIT(0)
+#define BMI160_INT_MAP_1_INT2_FFULL		BIT(1)
+#define BMI160_INT_MAP_1_INT2_FWM		BIT(2)
+#define BMI160_INT_MAP_1_INT2_DRDY		BIT(3)
+#define BMI160_INT_MAP_1_INT1_PMU_TRIGGER	BIT(4)
+#define BMI160_INT_MAP_1_INT1_FFULL		BIT(5)
+#define BMI160_INT_MAP_1_INT1_FWM		BIT(6)
+#define BMI160_INT_MAP_1_INT1_DRDY		BIT(7)
+
+#define BMI160_REG_INT_MAP_2			0x57
+#define BMI160_INT_MAP_2_INT2_LOWG_STEP_DET	BIT(0)
+#define BMI160_INT_MAP_2_INT2_HIGHG		BIT(1)
+#define BMI160_INT_MAP_2_INT2_ANYM_SIGMOT	BIT(2)
+#define BMI160_INT_MAP_2_INT2_NOMO		BIT(3)
+#define BMI160_INT_MAP_2_INT2_DTAP		BIT(4)
+#define BMI160_INT_MAP_2_INT2_STAP		BIT(5)
+#define BMI160_INT_MAP_2_INT2_ORIENTATION	BIT(6)
+#define BMI160_INT_MAP_2_INT2_FLAT		BIT(7)
+
+#define BMI160_REG_INT_DATA_0			0x58
+#define BMI160_INT_DATA_0_TAP_SRC		BIT(3)
+#define BMI160_INT_DATA_0_LOW_HIGH_SRC		BIT(7)
+
+#define BMI160_REG_INT_DATA_1			0x59
+#define BMI160_INT_DATA_1_MOTION_SRC		BIT(7)
+
+#define BMI160_REG_INT_MOTION_0			0x5F
+#define BMI160_INT_MOTION_0_ANYM_DUR		GENMASK(1, 0)
+#define BMI160_INT_MOTION_0_SLO_NO_MOT_DUR	GENMASK(7, 2)
+
+#define BMI160_REG_INT_MOTION_1			0x60
+#define BMI160_INT_MOTION_1_ANYM_TH		GENMASK(7, 0)
+/*
+ * All 8-bits represent an acceleration slope which must be maintained for
+ * int_anym_dur + 1 samples in order to trigger the interrupt. It seems that
+ * each unit in this register represents:
+ * (n * (MAX_ACCEL - * MIN_ACCEL)) / (256 * 4).
+ * There is a special case for n==0 which is basically computed as though n==1/2
+ */
+
+#define BMI160_REG_INT_MOTION_2			0x61
+#define BMI160_INT_MOTION_2_SLO_NO_MOT_TH	GENMASK(7, 0)
+
+#define BMI160_REG_INT_MOTION_3			0x62
+#define BMI160_INT_MOTION_3_NO_MOT_SEL		BIT(0)
+#define BMI160_INT_MOTION_3_SIG_MOT_SEL		BIT(1)
+#define BMI160_INT_MOTION_3_SIG_MOT_SKIP	GENMASK(3, 2)
+#define BMI160_SIG_MOT_SKIP_TIME_1500_MS	0
+#define BMI160_SIG_MOT_SKIP_TIME_3000_MS	1
+#define BMI160_SIG_MOT_SKIP_TIME_6000_MS	2
+#define BMI160_SIG_MOT_SKIP_TIME_12000_MS	3
+#define BMI160_INT_MOTION_3_SIG_MOT_PROOF	GENMASK(5, 4)
+#define BMI160_SIG_MOT_PROOF_TIME_250_MS	0
+#define BMI160_SIG_MOT_PROOF_TIME_500_MS	1
+#define BMI160_SIG_MOT_PROOF_TIME_1000_MS	2
+#define BMI160_SIG_MOT_PROOF_TIME_2000_MS	3
+
+#define BMI160_REG_CMD				0x7E
+#define BMI160_CMD_START_FOC			0x03
+#define BMI160_CMD_ACCEL_PM_SUSPEND		0x10
+#define BMI160_CMD_ACCEL_PM_NORMAL		0x11
+#define BMI160_CMD_ACCEL_PM_LOW_POWER		0x12
+#define BMI160_CMD_GYRO_PM_SUSPEND		0x14
+#define BMI160_CMD_GYRO_PM_NORMAL		0x15
+#define BMI160_CMD_GYRO_PM_FAST_STARTUP		0x17
+#define BMI160_CMD_MAG_PM_SUSPEND		0x19
+#define BMI160_CMD_MAG_PM_NORMAL		0x1A
+#define BMI160_CMD_MAG_PM_LOW_POWER		0x1B
+#define BMI160_CMD_PROG_NVM			0xA0
+#define BMI160_CMD_FIFO_FLUSH			0xB0
+#define BMI160_CMD_INT_RESET			0xB1
+#define BMI160_CMD_STEP_CNT_CLR			0xB2
+#define BMI160_CMD_SOFTRESET			0xB6
+
+#define BMI160_REG_DUMMY			0x7F
+
+#define BMI160_ACCEL_PMU_MIN_USLEEP		3800
+#define BMI160_GYRO_PMU_MIN_USLEEP		80000
+#define BMI160_SOFTRESET_USLEEP			1000
 
 #define BMI160_CHANNEL(_type, _axis, _index) {			\
 	.type = _type,						\
@@ -100,6 +293,7 @@ enum bmi160_scan_axis {
 	BMI160_SCAN_ACCEL_Y,
 	BMI160_SCAN_ACCEL_Z,
 	BMI160_SCAN_TIMESTAMP,
+	BMI160_SCAN_TEMPERATURE,
 };
 
 enum bmi160_sensor_type {
@@ -107,6 +301,14 @@ enum bmi160_sensor_type {
 	BMI160_GYRO,
 	BMI160_EXT_MAGN,
 	BMI160_NUM_SENSORS /* must be last */
+};
+
+enum bmi160_pmu_state {
+	BMI160_PMU_STATE_SUSPEND = 0,
+	BMI160_PMU_STATE_NORMAL,
+	BMI160_PMU_STATE_LOW_POWER,
+	BMI160_PMU_STATE_FAST_STARTUP,
+	BMI160_PMU_STATE_COUNT /* Special last element */
 };
 
 struct bmi160_data {
@@ -132,8 +334,7 @@ struct bmi160_regs {
 	u8 config_odr_mask;
 	u8 config_bwp_mask;
 	u8 range;
-	u8 pmu_cmd_normal;
-	u8 pmu_cmd_suspend;
+	enum bmi160_pmu_state pmu_cmds[BMI160_PMU_STATE_COUNT];
 };
 
 static struct bmi160_regs bmi160_regs[] = {
@@ -143,17 +344,27 @@ static struct bmi160_regs bmi160_regs[] = {
 		.config_odr_mask = BMI160_ACCEL_CONFIG_ODR_MASK,
 		.config_bwp_mask = BMI160_ACCEL_CONFIG_BWP_MASK,
 		.range	= BMI160_REG_ACCEL_RANGE,
-		.pmu_cmd_normal = BMI160_CMD_ACCEL_PM_NORMAL,
-		.pmu_cmd_suspend = BMI160_CMD_ACCEL_PM_SUSPEND,
+		.pmu_cmds = {
+			[BMI160_PMU_STATE_SUSPEND] =
+				BMI160_CMD_ACCEL_PM_SUSPEND,
+			[BMI160_PMU_STATE_NORMAL] = BMI160_CMD_ACCEL_PM_NORMAL,
+			[BMI160_PMU_STATE_LOW_POWER] =
+				BMI160_CMD_ACCEL_PM_LOW_POWER,
+		},
 	},
 	[BMI160_GYRO] = {
 		.data	= BMI160_REG_DATA_GYRO_XOUT_L,
 		.config	= BMI160_REG_GYRO_CONFIG,
 		.config_odr_mask = BMI160_GYRO_CONFIG_ODR_MASK,
 		.config_bwp_mask = BMI160_GYRO_CONFIG_BWP_MASK,
-		.range	= BMI160_REG_GYRO_RANGE,
-		.pmu_cmd_normal = BMI160_CMD_GYRO_PM_NORMAL,
-		.pmu_cmd_suspend = BMI160_CMD_GYRO_PM_SUSPEND,
+		.range	= BMI160_REG_GYRO_RANGE ,
+		.pmu_cmds = {
+			[BMI160_PMU_STATE_SUSPEND] =
+				BMI160_CMD_GYRO_PM_SUSPEND,
+			[BMI160_PMU_STATE_NORMAL] = BMI160_CMD_GYRO_PM_NORMAL,
+			[BMI160_PMU_STATE_FAST_STARTUP] =
+				BMI160_CMD_GYRO_PM_FAST_STARTUP,
+		},
 	},
 };
 
@@ -254,6 +465,25 @@ static const struct iio_chan_spec bmi160_channels[] = {
 	BMI160_CHANNEL(IIO_ANGL_VEL, Y, BMI160_SCAN_GYRO_Y),
 	BMI160_CHANNEL(IIO_ANGL_VEL, Z, BMI160_SCAN_GYRO_Z),
 	IIO_CHAN_SOFT_TIMESTAMP(BMI160_SCAN_TIMESTAMP),
+	/*
+	 * The temperature sensor is somewhat linked to the gyro. If the gyro is
+	 * in normal mode, the temperature is updated every 10ms. When the gyro
+	 * is in suspended or fast power up mode, then the temperature is
+	 * updated every 1.28s.
+	 */
+	{
+		.type = IIO_TEMP,
+		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
+		                      BIT(IIO_CHAN_INFO_SCALE) |
+		                      BIT(IIO_CHAN_INFO_OFFSET),
+		.scan_index = BMI160_SCAN_TEMPERATURE,
+		.scan_type = {
+			.sign = 's',
+			.realbits = 16,
+			.storagebits = 16,
+			.endianness = IIO_LE,
+		},
+	},
 };
 
 static enum bmi160_sensor_type bmi160_to_sensor(enum iio_chan_type iio_type)
@@ -270,15 +500,17 @@ static enum bmi160_sensor_type bmi160_to_sensor(enum iio_chan_type iio_type)
 
 static
 int bmi160_set_mode(struct bmi160_data *data, enum bmi160_sensor_type t,
-		    bool mode)
+		    enum bmi160_pmu_state mode)
 {
 	int ret;
 	u8 cmd;
 
-	if (mode)
-		cmd = bmi160_regs[t].pmu_cmd_normal;
-	else
-		cmd = bmi160_regs[t].pmu_cmd_suspend;
+	if (mode < 0 || mode >= BMI160_PMU_STATE_COUNT)
+		return -EINVAL;
+
+	cmd = bmi160_regs[t].pmu_cmds[mode];
+	if (cmd == 0)
+		return -EINVAL;
 
 	ret = regmap_write(data->regmap, BMI160_REG_CMD, cmd);
 	if (ret < 0)
@@ -417,6 +649,18 @@ done:
 	return IRQ_HANDLED;
 }
 
+static int bmi160_read_temperature_reg(struct regmap *regmap, int *val)
+{
+	int ret;
+	__le16 sample;
+	const unsigned int reg = BMI160_REG_TEMPERATURE_0;
+	ret = regmap_bulk_read(regmap, reg, &sample, sizeof(sample));
+	if (ret < 0)
+		return ret;
+	*val = sign_extend32(le16_to_cpu(sample), 15);
+	return IIO_VAL_INT;
+}
+
 static int bmi160_read_raw(struct iio_dev *indio_dev,
 			   struct iio_chan_spec const *chan,
 			   int *val, int *val2, long mask)
@@ -424,21 +668,61 @@ static int bmi160_read_raw(struct iio_dev *indio_dev,
 	int ret;
 	struct bmi160_data *data = iio_priv(indio_dev);
 
-	switch (mask) {
-	case IIO_CHAN_INFO_RAW:
-		ret = bmi160_get_data(data, chan->type, chan->channel2, val);
-		if (ret < 0)
-			return ret;
-		return IIO_VAL_INT;
-	case IIO_CHAN_INFO_SCALE:
-		*val = 0;
-		ret = bmi160_get_scale(data,
-				       bmi160_to_sensor(chan->type), val2);
-		return ret < 0 ? ret : IIO_VAL_INT_PLUS_MICRO;
-	case IIO_CHAN_INFO_SAMP_FREQ:
-		ret = bmi160_get_odr(data, bmi160_to_sensor(chan->type),
-				     val, val2);
-		return ret < 0 ? ret : IIO_VAL_INT_PLUS_MICRO;
+	switch (chan->type) {
+	case IIO_ACCEL:
+	case IIO_ANGL_VEL:
+		switch (mask) {
+		case IIO_CHAN_INFO_RAW:
+			ret = bmi160_get_data(data, chan->type, chan->channel2, val);
+			if (ret < 0)
+				return ret;
+			return IIO_VAL_INT;
+
+		case IIO_CHAN_INFO_SCALE:
+			*val = 0;
+			ret = bmi160_get_scale(data,
+					       bmi160_to_sensor(chan->type), val2);
+			return ret < 0 ? ret : IIO_VAL_INT_PLUS_MICRO;
+
+		case IIO_CHAN_INFO_SAMP_FREQ:
+			ret = bmi160_get_odr(data, bmi160_to_sensor(chan->type),
+					     val, val2);
+			return ret < 0 ? ret : IIO_VAL_INT_PLUS_MICRO;
+
+		default:
+			return -EINVAL;
+		}
+		break;
+
+	case IIO_TEMP:
+		switch (mask) {
+		case IIO_CHAN_INFO_RAW:
+			return bmi160_read_temperature_reg(data->regmap, val);
+
+		case IIO_CHAN_INFO_SCALE:
+			/* 1000x multiplier to convert to milli-degrees celcius */
+			*val = 1 * 1000;
+			/*
+			 * datasheet says 1/(2**9) degrees celcius per unit in
+			 * the register
+			 */
+			*val2 = (1 << 9);
+			return IIO_VAL_FRACTIONAL;
+
+		case IIO_CHAN_INFO_OFFSET:
+			/*
+			 * 0x0000 in the register means 23 degrees celcius and
+			 * (1 << 9) is how many register values make up one
+			 * degree.
+			 */
+			*val = 23 * (1 << 9);
+			return IIO_VAL_INT;
+
+		default:
+			return -EINVAL;
+		}
+		break;
+
 	default:
 		return -EINVAL;
 	}
@@ -465,6 +749,81 @@ static int bmi160_write_raw(struct iio_dev *indio_dev,
 	}
 
 	return 0;
+}
+
+static int bmi160_setup_sigmot_int(struct bmi160_data *data)
+{
+	int ret = 0;
+	/* Route any motion/significant motion interrupt to int2 */
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_MAP_0,
+		0);
+	if (ret < 0)
+		return ret;
+
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_MAP_1,
+		0);
+	if (ret < 0)
+		return ret;
+
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_MAP_2,
+		BMI160_INT_MAP_2_INT2_ANYM_SIGMOT);
+	if (ret < 0)
+		return ret;
+	/*
+	 * Select the significant motion interrupt instead of anymotion and set
+	 * "skip" which is the minimum time between two anymotion events and
+	 * "proof" which is the duration of motion required to trigger the
+	 * significant motion event.
+	 */
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_MOTION_3,
+		(BMI160_INT_MOTION_3_SIG_MOT_SEL |
+		 FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_SKIP,
+			    BMI160_SIG_MOT_SKIP_TIME_6000_MS) |
+		 FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_PROOF,
+			    BMI160_SIG_MOT_PROOF_TIME_1000_MS)));
+	if (ret < 0)
+		return ret;
+
+	/* Enable 20 ms latch of int1 interrupt pin */
+	/* TODO: are we setting int2 as an input? */
+	/* TODO: cleaner way to set the latch mode since it is a multi-bit field */
+	/* Disabling bit BMI160_INT_LATCH_INT2_INPUT_EN */
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_LATCH,
+		(FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_PROOF,
+			    BMI160_INT_LATCH_MODE_TMP_2560_MS)));
+	if (ret < 0)
+		return ret;
+
+	/* Enable edge interrupt on INT2 pin */
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_OUT_CTRL,
+		(BMI160_INT_OUT_CTRL_INT2_EDGE |
+		 BMI160_INT_OUT_CTRL_INT2_LVL |
+		 BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN));
+	if (ret < 0)
+		return ret;
+
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_EN_0,
+		(BMI160_INT_EN_0_ANYM_X|
+		 BMI160_INT_EN_0_ANYM_Y|
+		 BMI160_INT_EN_0_ANYM_Z));
+	if (ret < 0)
+		return ret;
+
+	return ret;
 }
 
 static
@@ -547,11 +906,15 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 		return -ENODEV;
 	}
 
-	ret = bmi160_set_mode(data, BMI160_ACCEL, true);
+	ret = bmi160_set_mode(data, BMI160_ACCEL, BMI160_PMU_STATE_NORMAL);
 	if (ret < 0)
 		return ret;
 
-	ret = bmi160_set_mode(data, BMI160_GYRO, true);
+	ret = bmi160_set_mode(data, BMI160_GYRO, BMI160_PMU_STATE_NORMAL);
+	if (ret < 0)
+		return ret;
+
+	ret = bmi160_setup_sigmot_int(data);
 	if (ret < 0)
 		return ret;
 
@@ -560,8 +923,13 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 
 static void bmi160_chip_uninit(struct bmi160_data *data)
 {
-	bmi160_set_mode(data, BMI160_GYRO, false);
-	bmi160_set_mode(data, BMI160_ACCEL, false);
+	/*
+	 * Putting the gyro in suspend and the accelerometer in lower power mode
+	 * still allows the significant motion interrupt to fire while linux is
+	 * powered down.
+	 */
+	bmi160_set_mode(data, BMI160_GYRO, BMI160_PMU_STATE_SUSPEND);
+	bmi160_set_mode(data, BMI160_ACCEL, BMI160_PMU_STATE_LOW_POWER);
 }
 
 int bmi160_core_probe(struct device *dev, struct regmap *regmap,
