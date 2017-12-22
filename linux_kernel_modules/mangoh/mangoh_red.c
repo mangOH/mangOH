@@ -159,7 +159,6 @@ static struct i2c_board_info mangoh_red_pressure_devinfo = {
 };
 
 static struct ltc294x_platform_data mangoh_red_battery_gauge_platform_data = {
-	.chip_id = LTC2942_ID,
 	.r_sense = 18,
 	.prescaler_exp = 32,
         .name = "LTC2942",
