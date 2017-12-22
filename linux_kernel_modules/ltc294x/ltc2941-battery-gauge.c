@@ -476,7 +476,7 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 		break;
 	case LTC2942_ID:
 		info->supply.num_properties =
-			ARRAY_SIZE(ltc294x_properties);
+			ARRAY_SIZE(ltc294x_properties) - 1;
 		break;
 	case LTC2941_ID:
 	default:
