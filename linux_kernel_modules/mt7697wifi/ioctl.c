@@ -110,6 +110,16 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
         switch (*mode) {
 	case IW_MODE_MASTER:
 		if (cfg->wifi_cfg.opmode != MT7697_WIFI_MODE_AP_ONLY) {
+			if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
+			    (test_bit(CONNECTED, &vif->flags) || 
+			     test_bit(CONNECT_PEND, &vif->flags))) {
+				dev_err(cfg->dev, 
+					"%s(): STA interface connected\n", 
+					__func__);
+				ret = -EBUSY;
+       				goto cleanup;
+			}
+
 			cfg->wifi_cfg.opmode = MT7697_WIFI_MODE_AP_ONLY;
 			cfg->port_type = MT7697_PORT_AP;
 			vif->wdev.iftype = NL80211_IFTYPE_AP;	
@@ -118,6 +128,15 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
                 break;
         case IW_MODE_INFRA:
 		if (cfg->wifi_cfg.opmode != MT7697_WIFI_MODE_STA_ONLY) {
+			if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_AP_ONLY) &&
+			    !list_empty(&cfg->vif_list)) {
+				dev_err(cfg->dev, 
+					"%s(): AP interface connected STAs\n", 
+					__func__);
+				ret = -EBUSY;
+       				goto cleanup;
+			}
+
 			cfg->wifi_cfg.opmode = MT7697_WIFI_MODE_STA_ONLY;
 			cfg->port_type = MT7697_PORT_STA;
 			vif->wdev.iftype = NL80211_IFTYPE_STATION;
