@@ -792,14 +792,13 @@ static int bmi160_setup_sigmot_int(struct bmi160_data *data)
 	if (ret < 0)
 		return ret;
 
-	/* Enable 20 ms latch of int1 interrupt pin */
-	/* TODO: are we setting int2 as an input? */
-	/* TODO: cleaner way to set the latch mode since it is a multi-bit field */
-	/* Disabling bit BMI160_INT_LATCH_INT2_INPUT_EN */
+	/*
+	 * Enable a long latch period to easily catch the signal while polling.
+	 */
 	ret = regmap_write(
 		data->regmap,
 		BMI160_REG_INT_LATCH,
-		(FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_PROOF,
+		(FIELD_PREP(BMI160_INT_LATCH_MODE,
 			    BMI160_INT_LATCH_MODE_TMP_2560_MS)));
 	if (ret < 0)
 		return ret;
