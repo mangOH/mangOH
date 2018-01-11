@@ -1384,12 +1384,12 @@ static int bq24190_probe(struct i2c_client *client,
 	bdi->battery_status_valid = false;
 	i2c_set_clientdata(client, bdi);
 
-	if (dev->of_node) {
-
+	if (dev->of_node)
 		ret = bq24190_setup_dt(bdi);
-	} else {
+	else if (pdata)
 		ret = bq24190_setup_pdata(bdi, pdata);
-	}
+	else
+		goto no_irq;
 
 	if (ret) {
 		dev_err(&client->dev, "Can't get irq info\n");
@@ -1404,6 +1404,7 @@ static int bq24190_probe(struct i2c_client *client,
 		goto out1;
 	}
 
+no_irq:
 	pm_runtime_enable(dev);
 	pm_runtime_resume(dev);
 

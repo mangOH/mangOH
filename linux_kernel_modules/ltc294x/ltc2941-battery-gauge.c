@@ -45,13 +45,12 @@ enum ltc294x_reg {
 	LTC2943_REG_TEMPERATURE_LSB	= 0x15,
 };
 
-/*enum ltc294x_id {
+enum ltc294x_id {
 	LTC2941_ID,
 	LTC2942_ID,
 	LTC2943_ID,
 	LTC2944_ID,
 };
-*/
 
 #define LTC2941_REG_STATUS_CHIP_ID	BIT(7)
 
@@ -423,16 +422,15 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 	u32 prescaler_exp;
 	u8 status;
 
-
 	info = devm_kzalloc(&client->dev, sizeof(*info), GFP_KERNEL);
 	if (info == NULL)
 		return -ENOMEM;
+
 	i2c_set_clientdata(client, info);
 
 	platform_data = client->dev.platform_data;
 
-
-	info->id = platform_data->chip_id;
+	info->id = (enum ltc294x_id)id->driver_data;
 	info->supply.name = platform_data->name;
 
 	/* r_sense can be negative, when sense+ is connected to the battery
@@ -478,7 +476,7 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 		break;
 	case LTC2942_ID:
 		info->supply.num_properties =
-			ARRAY_SIZE(ltc294x_properties);
+			ARRAY_SIZE(ltc294x_properties) - 1;
 		break;
 	case LTC2941_ID:
 	default:
@@ -491,7 +489,6 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 	info->supply.property_is_writeable = ltc294x_property_is_writeable;
 	info->supply.external_power_changed	= NULL;
 
-
 	INIT_DELAYED_WORK(&info->work, ltc294x_work);
 
 	ret = ltc294x_reset(info, prescaler_exp);
@@ -501,7 +498,7 @@ static int ltc294x_i2c_probe(struct i2c_client *client,
 	}
 
 	ret = power_supply_register(&client->dev, &info->supply);
-	if (ret < 0) {
+	if (ret) {
 		dev_err(&client->dev, "failed to register ltc2941\n");
 		return ret;
 	} else {

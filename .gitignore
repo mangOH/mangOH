@@ -1,3 +1,11 @@
+# Command line build stuff
+/_build_mangOH_Red/
+/_build_mangOH_Green/
+/_build_mangOH_Red_9x07/
+/_build_mangOH_Green_9x07/
+/mangOH_*.wp*.update
+
+# Developer Studio stuff
 /Target_Legato_Release/
 /Target_Legato_Debug/
 /.settings/
