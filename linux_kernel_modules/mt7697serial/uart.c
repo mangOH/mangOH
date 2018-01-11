@@ -331,8 +331,9 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 	oldfs = get_fs();
 	set_fs(get_ds());
 
-	if (!uart_info->fd_hndl) {
-		dev_err(uart_info->dev, "%s(): device closed\n", __func__);
+        if (uart_info->fd_hndl == MT7697_UART_INVALID_FD || 
+	    IS_ERR(uart_info->fd_hndl)) {
+		dev_warn(uart_info->dev, "%s(): device closed\n", __func__);
 		goto cleanup;
 	}
 
