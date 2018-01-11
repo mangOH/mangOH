@@ -55,6 +55,17 @@ static int mt7697_open(struct net_device *ndev)
 
 	dev_dbg(cfg->dev, "%s(): open net device\n", __func__);
 
+        if (!cfg->rxq_hdl && !cfg->txq_hdl) {
+                dev_dbg(cfg->dev, "%s(): open mt7697 uart\n", __func__);
+		cfg->txq_hdl = cfg->hif_ops->open(mt7697_proc_80211cmd, cfg);
+		if (!cfg->txq_hdl) {
+			dev_err(cfg->dev, "%s(): open() failed\n", __func__);
+			goto cleanup;
+		}
+
+		cfg->rxq_hdl = cfg->txq_hdl;
+        }
+
 	if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
 	    (cfg->radio_state == MT7697_RADIO_STATE_OFF)) {
 		ret = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_ON);

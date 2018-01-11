@@ -213,7 +213,7 @@ void* mt7697_uart_open(rx_hndlr rx_fcn, void* rx_hndl)
 		goto cleanup;
 	}
 
-	dev_dbg(uart_info->dev, "%s(): fd_hndl(%p)\n", 
+	dev_dbg(uart_info->dev, "%s(): fd_hndl(0x%p)\n", 
 		__func__, uart_info->fd_hndl);
 
 	uart_info->rx_fcn = rx_fcn;
@@ -236,7 +236,7 @@ int mt7697_uart_close(void *arg)
 	struct mt7697_uart_info *uart_info = arg;
 	int ret = 0;
 
-	dev_dbg(uart_info->dev, "%s(): fd_hndl(%p)\n", 
+	dev_dbg(uart_info->dev, "%s(): fd_hndl(0x%p)\n", 
 		__func__, uart_info->fd_hndl);
 
 	if (uart_info->fd_hndl == MT7697_UART_INVALID_FD || 

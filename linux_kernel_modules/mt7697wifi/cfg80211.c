@@ -1145,6 +1145,7 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 			__func__, ret);
 	}
 
+        vif->cfg->txq_hdl = NULL;
 	vif->cfg->rxq_hdl = NULL;
 
 cleanup:
