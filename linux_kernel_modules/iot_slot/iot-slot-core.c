@@ -39,6 +39,9 @@ struct iot_slot_interface_data {
 		struct {
 			struct spi_device* device;
 		} spi;
+		struct {
+			char gpio_label[4][20];
+		} gpio;
 	} data;
 };
 
@@ -49,6 +52,8 @@ struct iot_slot {
 
 	struct i2c_adapter *i2c_adapter;
 
+	char gpio_label_reset[24];
+	char gpio_label_card_detect[24];
 	unsigned int num_interfaces;
 	struct iot_slot_interface_data interfaces[
 		CONFIG_IOT_SLOT_MAX_INTERFACES_PER_CARD];
@@ -230,7 +235,6 @@ static int iot_slot_add_gpio(struct iot_slot *slot,
 	struct iot_slot_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	int slot_index = pdev->id;
 	int ret = 0;
-	char gpio_label[32];
 
 	for (i = 0; i < 4; i++) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 18, 44)
@@ -239,12 +243,15 @@ static int iot_slot_add_gpio(struct iot_slot *slot,
 		unsigned gpio_pull;
 #endif
 		uint8_t cfg = eeprom_if_gpio_cfg(gpio_item, i);
-		ret = snprintf(gpio_label, ARRAY_SIZE(gpio_label),
-			       "IoT slot %d gpio %d", slot_index, i);
-		BUG_ON(ret >= ARRAY_SIZE(gpio_label));
-		ret = devm_gpio_request_one(device,
-					    pdata->gpio[i],
-					    GPIOF_IN, gpio_label);
+		ret = snprintf(
+			slot->interfaces[slot->num_interfaces].data.gpio.gpio_label[i],
+			ARRAY_SIZE(slot->interfaces[slot->num_interfaces].data.gpio.gpio_label[i]),
+			"IoT slot %d gpio %d", slot_index, i);
+		BUG_ON(ret >= ARRAY_SIZE(
+			       slot->interfaces[slot->num_interfaces].data.gpio.gpio_label[i]));
+		ret = devm_gpio_request_one(
+			device, pdata->gpio[i], GPIOF_IN,
+			slot->interfaces[slot->num_interfaces].data.gpio.gpio_label[i]);
 		if (ret != 0) {
 			int j;
 			dev_err(device,
@@ -560,30 +567,32 @@ static int iot_slot_request_essential_resources(struct iot_slot *slot)
 	struct device* device;
 	struct iot_slot_platform_data *pdata;
 	int slot_index;
-	char gpio_label[32];
 
 	device = &slot->pdev->dev;
 	pdata = dev_get_platdata(device);
 	slot_index = slot->pdev->id;
 
-	ret = snprintf(gpio_label, ARRAY_SIZE(gpio_label), "IoT slot %d reset",
-		      slot_index);
-	BUG_ON(ret >= ARRAY_SIZE(gpio_label));
+	ret = snprintf(
+		slot->gpio_label_reset,
+		ARRAY_SIZE(slot->gpio_label_reset),
+		"IoT slot %d reset", slot_index);
+	BUG_ON(ret >= ARRAY_SIZE(slot->gpio_label_reset));
 	ret = devm_gpio_request_one(device, pdata->reset_gpio,
 				    (GPIOF_OUT_INIT_HIGH | GPIOF_ACTIVE_LOW),
-				    gpio_label);
+				    slot->gpio_label_reset);
 	if (ret != 0) {
 		dev_err(device, "Couldn't acquire reset gpio on IoT slot %d\n",
 			slot_index);
 		goto cleanup;
 	}
 
-	ret = snprintf(gpio_label, ARRAY_SIZE(gpio_label),
-		      "IoT slot %d card detect", slot_index);
-	BUG_ON(ret >= ARRAY_SIZE(gpio_label));
-	ret = devm_gpio_request_one(device,
-				    pdata->card_detect_gpio,
-				    GPIOF_IN, gpio_label);
+	ret = snprintf(
+		slot->gpio_label_card_detect,
+		ARRAY_SIZE(slot->gpio_label_card_detect),
+		"IoT slot %d card detect", slot_index);
+	BUG_ON(ret >= ARRAY_SIZE(slot->gpio_label_card_detect));
+	ret = devm_gpio_request_one(device, pdata->card_detect_gpio, GPIOF_IN,
+				    slot->gpio_label_card_detect);
 	if (ret != 0) {
 		dev_err(device,
 			 "Couldn't acquire card detect gpio on IoT slot %d\n",
