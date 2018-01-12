@@ -1012,6 +1012,8 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 	struct mt7697_sta *sta, *sta_next;
 	int ret = 0;
 
+        mt7697_tx_stop(vif->cfg);
+
 	if ((vif->cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
 	    (vif->cfg->radio_state == MT7697_RADIO_STATE_ON)) {
 		ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);

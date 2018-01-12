@@ -119,10 +119,7 @@ void mt7697_tx_work(struct work_struct *work)
         	if (tx_pkt->skb->len < sizeof(*hdr)) {
 			dev_err(cfg->dev, "%s(): invalid skb len(%u < %u)\n", 
 				__func__, tx_pkt->skb->len, sizeof(*hdr));
-
 			vif->net_stats.tx_errors++;
-                	ret = -EINVAL;
-                	goto cleanup;
         	}
 
 		ret = mt7697_wr_tx_raw_packet(cfg, tx_pkt->skb->data, 
@@ -131,7 +128,7 @@ void mt7697_tx_work(struct work_struct *work)
 			dev_dbg(cfg->dev, 
 				"%s(): mt7697_wr_tx_raw_packet() failed(%d)\n", 
 				__func__, ret);
-			goto cleanup;
+			vif->net_stats.tx_errors++;
 		}
 
 		dev_dbg(cfg->dev, "%s(): tx complete pkt(%p)\n", __func__, tx_pkt->skb);
@@ -150,6 +147,23 @@ void mt7697_tx_work(struct work_struct *work)
 
 cleanup:
 	return;
+}
+
+void mt7697_tx_stop(struct mt7697_cfg80211_info *cfg)
+{
+        struct mt7697_tx_pkt *tx_pkt, *tx_pkt_next = NULL;
+
+	list_for_each_entry_safe(tx_pkt, tx_pkt_next, &cfg->tx_skb_list, next) {
+		struct mt7697_vif *vif = netdev_priv(tx_pkt->skb->dev);
+		WARN_ON(!vif);
+
+		dev_dbg(cfg->dev, "%s(): tx drop pkt(%p)\n", __func__, tx_pkt->skb);
+		vif->net_stats.tx_dropped++;
+
+		spin_lock_bh(&cfg->tx_skb_list_lock);
+		list_del(&tx_pkt->next);
+		spin_unlock_bh(&cfg->tx_skb_list_lock);
+	}
 }
 
 int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
