@@ -144,9 +144,6 @@ void mt7697_tx_work(struct work_struct *work)
 	}
 
 	__skb_queue_purge(&cfg->tx_skb_queue);
-
-cleanup:
-	return;
 }
 
 void mt7697_tx_stop(struct mt7697_cfg80211_info *cfg)
