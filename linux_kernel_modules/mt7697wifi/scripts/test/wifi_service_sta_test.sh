@@ -7,7 +7,7 @@ export CLIENT_REF="0x10000001"
 export PASSPHRASE="@iPr1m3"
 export SECURITY_PROTO="3"
 
-echo "Start wifi client..." 
+echo "Start wifi client..."
 wifi client start $ITF_LAN
 
 echo "Begin wifi client scan..."

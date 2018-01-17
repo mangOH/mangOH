@@ -59,9 +59,10 @@ static int mt7697_wext_siwfreq(struct net_device *ndev,
         	}
 
         	if (frq->e != 0 || frq->m < 1 || frq->m > FREQ_COUNT) {
-			dev_err(cfg->dev, "%s(): unsupported frequency(%u/%u)\n", 
+			dev_err(cfg->dev,
+				"%s(): unsupported frequency(%u/%u)\n",
 				__func__, frq->e, frq->m);
-                	ret = -EINVAL;
+			ret = -EINVAL;
 			goto cleanup;
 		}
 
@@ -97,7 +98,7 @@ static int mt7697_wext_giwfreq(struct net_device *ndev,
 	return 0;
 }
 
-static int mt7697_wext_siwmode(struct net_device *ndev, 
+static int mt7697_wext_siwmode(struct net_device *ndev,
 			       struct iw_request_info *info,
                                u32 *mode, char *extra)
 {
@@ -111,10 +112,10 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
 	case IW_MODE_MASTER:
 		if (cfg->wifi_cfg.opmode != MT7697_WIFI_MODE_AP_ONLY) {
 			if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
-			    (test_bit(CONNECTED, &vif->flags) || 
+			    (test_bit(CONNECTED, &vif->flags) ||
 			     test_bit(CONNECT_PEND, &vif->flags))) {
-				dev_err(cfg->dev, 
-					"%s(): STA interface connected\n", 
+				dev_err(cfg->dev,
+					"%s(): STA interface connected\n",
 					__func__);
 				ret = -EBUSY;
        				goto cleanup;
@@ -122,7 +123,7 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
 
 			cfg->wifi_cfg.opmode = MT7697_WIFI_MODE_AP_ONLY;
 			cfg->port_type = MT7697_PORT_AP;
-			vif->wdev.iftype = NL80211_IFTYPE_AP;	
+			vif->wdev.iftype = NL80211_IFTYPE_AP;
 		}
 
                 break;
@@ -130,8 +131,8 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
 		if (cfg->wifi_cfg.opmode != MT7697_WIFI_MODE_STA_ONLY) {
 			if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_AP_ONLY) &&
 			    !list_empty(&cfg->vif_list)) {
-				dev_err(cfg->dev, 
-					"%s(): AP interface connected STAs\n", 
+				dev_err(cfg->dev,
+					"%s(): AP interface connected STAs\n",
 					__func__);
 				ret = -EBUSY;
        				goto cleanup;
@@ -144,7 +145,7 @@ static int mt7697_wext_siwmode(struct net_device *ndev,
 
                 break;
         default:
-                dev_err(cfg->dev, "%s(): unsupported mode(%u)\n", 
+                dev_err(cfg->dev, "%s(): unsupported mode(%u)\n",
 			__func__, *mode);
                 ret = -EINVAL;
 		goto cleanup;
@@ -154,7 +155,7 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_wext_giwrange(struct net_device *ndev, 
+static int mt7697_wext_giwrange(struct net_device *ndev,
 		                struct iw_request_info *info,
                                 struct iw_point *dwrq, char *extra)
 {
@@ -215,31 +216,37 @@ static int mt7697_wext_giwrange(struct net_device *ndev,
         range->enc_capa = IW_ENC_CAPA_WPA | IW_ENC_CAPA_WPA2 |
                           IW_ENC_CAPA_CIPHER_TKIP | IW_ENC_CAPA_4WAY_HANDSHAKE;
 
-        range->num_channels = wiphy->bands[IEEE80211_BAND_2GHZ]->n_channels + 
+        range->num_channels = wiphy->bands[IEEE80211_BAND_2GHZ]->n_channels +
 			      wiphy->bands[IEEE80211_BAND_5GHZ]->n_channels;
-        range->num_frequency = wiphy->bands[IEEE80211_BAND_2GHZ]->n_channels + 
+        range->num_frequency = wiphy->bands[IEEE80211_BAND_2GHZ]->n_channels +
 			       wiphy->bands[IEEE80211_BAND_5GHZ]->n_channels;
 
         for (i = 0; i < wiphy->bands[IEEE80211_BAND_2GHZ]->n_channels; i++) {
-                range->freq[i].m = wiphy->bands[IEEE80211_BAND_2GHZ]->channels[i].center_freq;
-                range->freq[i].e = 6;
-                range->freq[i].i = wiphy->bands[IEEE80211_BAND_2GHZ]->channels[i].hw_value;
-        }
-        
-	for (i = 0; i < wiphy->bands[IEEE80211_BAND_5GHZ]->n_channels; i++) {
-                range->freq[i].m = wiphy->bands[IEEE80211_BAND_5GHZ]->channels[i].center_freq;
-                range->freq[i].e = 6;
-                range->freq[i].i = wiphy->bands[IEEE80211_BAND_5GHZ]->channels[i].hw_value;
+                range->freq[i].m =
+			wiphy->bands[IEEE80211_BAND_2GHZ]->channels[i].center_freq;
+		range->freq[i].e = 6;
+                range->freq[i].i =
+			wiphy->bands[IEEE80211_BAND_2GHZ]->channels[i].hw_value;
         }
 
-	range->num_bitrates = wiphy->bands[IEEE80211_BAND_2GHZ]->n_bitrates + 
+	for (i = 0; i < wiphy->bands[IEEE80211_BAND_5GHZ]->n_channels; i++) {
+                range->freq[i].m =
+			wiphy->bands[IEEE80211_BAND_5GHZ]->channels[i].center_freq;
+                range->freq[i].e = 6;
+                range->freq[i].i =
+			wiphy->bands[IEEE80211_BAND_5GHZ]->channels[i].hw_value;
+        }
+
+	range->num_bitrates = wiphy->bands[IEEE80211_BAND_2GHZ]->n_bitrates +
                               wiphy->bands[IEEE80211_BAND_5GHZ]->n_bitrates;
         for (i = 0; i < wiphy->bands[IEEE80211_BAND_2GHZ]->n_bitrates; i++) {
-                range->bitrate[i] = wiphy->bands[IEEE80211_BAND_2GHZ]->bitrates[i].bitrate * 100000;
+                range->bitrate[i] =
+			wiphy->bands[IEEE80211_BAND_2GHZ]->bitrates[i].bitrate * 100000;
         }
 
         for (i = 0; i < wiphy->bands[IEEE80211_BAND_5GHZ]->n_bitrates; i++) {
-                range->bitrate[i] = wiphy->bands[IEEE80211_BAND_5GHZ]->bitrates[i].bitrate * 100000;
+                range->bitrate[i] =
+			wiphy->bands[IEEE80211_BAND_5GHZ]->bitrates[i].bitrate * 100000;
         }
 
         return 0;
@@ -257,7 +264,7 @@ static int mt7697_wext_siwap(struct net_device *ndev,
 
 	dev_dbg(cfg->dev, "%s():\n", __func__);
 	if (bssid) {
-		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ",
 			DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
 
 		memcpy(vif->req_bssid, bssid, ETH_ALEN);
@@ -297,13 +304,13 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
         size_t len = data->length;
         int ret = 0;
 
-	dev_dbg(cfg->dev, "%s(): iftype(%u) ssid('%s')\n", 
+	dev_dbg(cfg->dev, "%s(): iftype(%u) ssid('%s')\n",
 		__func__, wdev->iftype, ssid);
 
         /* call only for station! */
-        if (WARN_ON((wdev->iftype != NL80211_IFTYPE_STATION) && 
+        if (WARN_ON((wdev->iftype != NL80211_IFTYPE_STATION) &&
 		    (wdev->iftype != NL80211_IFTYPE_AP))) {
-		dev_warn(cfg->dev, "%s(): unsupported iftype(%u)\n", 
+		dev_warn(cfg->dev, "%s(): unsupported iftype(%u)\n",
 			__func__, wdev->iftype);
                 ret = -EINVAL;
 		goto cleanup;
@@ -326,8 +333,8 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 	if (vif->ssid_len > 0) {
 		ret = mt7697_wr_set_op_mode_req(cfg);
 		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n", 
+			dev_err(cfg->dev,
+				"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n",
 				__func__, ret);
        			goto cleanup;
     		}
@@ -335,57 +342,56 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 
 	ret = mt7697_wr_set_ssid_req(cfg, len, ssid);
 	if (ret < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_set_ssid_req() failed(%d)\n", 
+		dev_err(cfg->dev,
+			"%s(): mt7697_wr_set_ssid_req() failed(%d)\n",
 			__func__, ret);
 		goto cleanup;
 	}
 
 	if (vif->ssid_len > 0) {
-                if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
-		        ret = mt7697_wr_set_bssid_req(cfg, vif->req_bssid);
-		        if (ret < 0) {
-			        dev_err(cfg->dev, 
-			        	"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
-			        	__func__, ret);
-			        goto cleanup;
-		        }
-	        }
-
-                if (vif->ch_hint > 0) {
-		        ret = mt7697_wr_set_channel_req(cfg, vif->ch_hint);
-		        if (ret < 0) {
-			        dev_err(cfg->dev, 
-			        	"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
-			        	__func__, ret);
-			        goto cleanup;
-		        }
-	        }
-
-                if (memcmp(pmk, vif->pmk, sizeof(pmk))) {
-		        ret = mt7697_wr_set_pmk_req(cfg, vif->pmk);
-		        if (ret < 0) {
-			        dev_err(cfg->dev, 
-				        "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
+		if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
+			ret = mt7697_wr_set_bssid_req(cfg, vif->req_bssid);
+			if (ret < 0) {
+				dev_err(cfg->dev,
+				        "%s(): mt7697_wr_set_channel_req() failed(%d)\n",
 				        __func__, ret);
-			        goto cleanup;
-		        }
-                }
-                else {
-                        ret = mt7697_wr_set_security_mode_req(cfg, 
-                	        MT7697_WIFI_AUTH_MODE_OPEN, 
-			        MT7697_WIFI_ENCRYPT_TYPE_ENCRYPT_DISABLED);
-		        if (ret < 0) {
-			        dev_err(cfg->dev, 
-			        	"%s(): mt7697_wr_set_security_mode_req() failed(%d)\n", 
-			        	__func__, ret);
-			        goto cleanup;
-		        }
-                }
+				goto cleanup;
+			}
+		}
+
+		if (vif->ch_hint > 0) {
+			ret = mt7697_wr_set_channel_req(cfg, vif->ch_hint);
+			if (ret < 0) {
+				dev_err(cfg->dev,
+				        "%s(): mt7697_wr_set_channel_req() failed(%d)\n",
+				        __func__, ret);
+				goto cleanup;
+			}
+		}
+
+		if (memcmp(pmk, vif->pmk, sizeof(pmk))) {
+			ret = mt7697_wr_set_pmk_req(cfg, vif->pmk);
+			if (ret < 0) {
+				dev_err(cfg->dev,
+				        "%s(): mt7697_wr_set_pmk_req() failed(%d)\n",
+				        __func__, ret);
+				goto cleanup;
+			}
+		} else {
+			ret = mt7697_wr_set_security_mode_req(
+				cfg, MT7697_WIFI_AUTH_MODE_OPEN,
+				MT7697_WIFI_ENCRYPT_TYPE_ENCRYPT_DISABLED);
+			if (ret < 0) {
+				dev_err(cfg->dev,
+				        "%s(): mt7697_wr_set_security_mode_req() failed(%d)\n",
+				        __func__, ret);
+				goto cleanup;
+			}
+		}
 
 		if (test_bit(CONNECTED, &vif->flags)) {
-			dev_dbg(cfg->dev, "%s(): already connected\n", 
-				__func__);
+			dev_dbg(cfg->dev, "%s(): already connected\n",
+			        __func__);
 			goto cleanup;
 		}
 
@@ -393,7 +399,7 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 		vif->sme_state = SME_CONNECTING;
 
 		if (test_bit(DESTROY_IN_PROGRESS, &cfg->flag)) {
-			dev_err(cfg->dev, "%s(): busy, destroy in progress\n", 
+			dev_err(cfg->dev, "%s(): busy, destroy in progress\n",
 				__func__);
 			ret = -EBUSY;
 			goto cleanup;
@@ -412,8 +418,8 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
                 ret = mt7697_wr_disconnect_req(vif->cfg, NULL);
 		if (ret < 0) {
 			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
-				__func__, ret);
+			        "%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+			        __func__, ret);
 			goto cleanup;
 		}
         }
@@ -542,7 +548,7 @@ static int mt7697_wext_siwencodeext(struct net_device *ndev,
 	dev_dbg(cfg->dev, "%s(): iftype(%u)\n", __func__, wdev->iftype);
         if (wdev->iftype != NL80211_IFTYPE_STATION &&
             wdev->iftype != NL80211_IFTYPE_AP) {
-		dev_err(cfg->dev, "%s(): iftype(%d) not supported\n", 
+		dev_err(cfg->dev, "%s(): iftype(%d) not supported\n",
 			__func__, wdev->iftype);
                 ret = -EOPNOTSUPP;
 		goto cleanup;
@@ -550,7 +556,7 @@ static int mt7697_wext_siwencodeext(struct net_device *ndev,
 
 	dev_dbg(cfg->dev, "%s(): alg(%u)\n", __func__, ext->alg);
 	if (ext->alg == IW_ENCODE_ALG_PMK) {
-		print_hex_dump(KERN_DEBUG, DRVNAME" PMK ", 
+		print_hex_dump(KERN_DEBUG, DRVNAME" PMK ",
 			DUMP_PREFIX_OFFSET, 16, 1, ext->key, ext->key_len, 0);
 		memcpy(vif->pmk, ext->key, ext->key_len);
         }
@@ -607,4 +613,3 @@ const struct iw_handler_def mt7697_wireless_hndlrs = {
         .standard = (iw_handler *) mt7697_wireless_handler,
 	.get_wireless_stats = NULL,
 };
-

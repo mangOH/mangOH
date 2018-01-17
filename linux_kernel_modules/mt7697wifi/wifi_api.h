@@ -50,7 +50,7 @@
 
 /**
 * @brief Repeater mode. There are two virtual ports in repeater mode, one is #WIFI_PORT_AP, and the other is #WIFI_PORT_APCLI.
-* Both ports should be configured to operate on the same channel with the same bandwidth, while their other settings can be different. 
+* Both ports should be configured to operate on the same channel with the same bandwidth, while their other settings can be different.
 * For example, both ports can have different MAC addresses and security modes.
 */
 #define MT7697_WIFI_MODE_REPEATER      (3)
