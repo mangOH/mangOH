@@ -116,7 +116,7 @@ static int __init mt7697spi_init(void)
 		goto cleanup;
 	}
 
-	spi = container_of(dev, struct spi_device, dev);
+	spi = to_spi_device(dev);
 	if (!spi) {
 		dev_err(&master->dev, "%s(): get SPI device failed\n",
 			__func__);
@@ -229,7 +229,7 @@ static void __exit mt7697spi_exit(void)
 		goto cleanup;
 	}
 
-	spi = container_of(dev, struct spi_device, dev);
+	spi = to_spi_device(dev);
 	if (!spi) {
 		dev_err(dev, "%s():  get SPI device failed\n",
 			__func__);
