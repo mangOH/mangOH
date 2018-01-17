@@ -17,10 +17,8 @@
 #ifndef _MT7697_I_H_
 #define _MT7697_I_H_
 
-#define LEN32_ALIGNED(x)		(((x) / sizeof(u32) + \
-					 ((x) % sizeof(u32) ? 1:0)) * sizeof(u32))
-#define LEN_TO_WORD(x)			((x) / sizeof(u32) + \
-					 ((x) % sizeof(u32) ? 1:0))
+#define LEN_TO_WORD(x)   ((x) / sizeof(u32) + ((x) % sizeof(u32) ? 1 : 0))
+#define LEN32_ALIGNED(x) (LEN_TO_WORD(x) * sizeof(u32))
 
 enum mt7697_cmd_grp {
 	MT7697_CMD_GRP_QUEUE = 0,
