@@ -137,7 +137,6 @@ static int __init mt7697spi_init(void)
 		goto cleanup;
 	}
 
-	memset(qinfo, 0, sizeof(struct mt7697q_info));
 	qinfo->dev = &spi->dev;
 
         qinfo->hw_priv = spi;
