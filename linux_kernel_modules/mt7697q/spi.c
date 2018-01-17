@@ -186,11 +186,11 @@ static int __init mt7697spi_init(void)
 	dev_info(qinfo->dev, "%s(): '%s' initialized\n", __func__, DRVNAME);
 	return 0;
 
-failed_workqueue:
-	destroy_workqueue(qinfo->irq_workq);
-
 failed_gpio_req:
 	if (qinfo->gpio_pin > 0) gpio_free(qinfo->gpio_pin);
+
+failed_workqueue:
+	destroy_workqueue(qinfo->irq_workq);
 
 cleanup:
 	if (qinfo) kfree(qinfo);
