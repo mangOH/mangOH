@@ -20,8 +20,8 @@
 #include <linux/ieee80211.h>
 #include <linux/if_ether.h>
 
-#include "mt7697_i.h" 
-#include "wifi_api.h" 
+#include "mt7697_i.h"
+#include "wifi_api.h"
 
 #define MT7697_WOW_MAX_FILTERS_PER_LIST 	4
 #define MT7697_WOW_PATTERN_SIZE	 		64
@@ -33,7 +33,7 @@
 #define mt7697_get_smart_conn_filter_req	mt7697_cmd_hdr
 #define mt7697_scan_stop			mt7697_cmd_hdr
 
-#define mt7697_set_wireless_mode_rsp		mt7697_rsp_hdr	
+#define mt7697_set_wireless_mode_rsp		mt7697_rsp_hdr
 #define mt7697_set_op_mode_rsp			mt7697_rsp_hdr
 #define mt7697_set_rx_filter_rsp		mt7697_rsp_hdr
 #define mt7697_set_smart_conn_filter_rsp	mt7697_rsp_hdr
@@ -77,7 +77,7 @@ enum mt7697_wifi_cmd_types {
 	MT7697_CMD_SET_SECURITY_MODE_REQ,
 	MT7697_CMD_SET_SECURITY_MODE_RSP,
 	MT7697_CMD_GET_SECURITY_MODE_REQ,
-	MT7697_CMD_GET_SECURITY_MODE_RSP,	
+	MT7697_CMD_GET_SECURITY_MODE_RSP,
 	MT7697_CMD_SCAN_IND,
 	MT7697_CMD_SCAN_REQ,
 	MT7697_CMD_SCAN_RSP,
@@ -111,7 +111,7 @@ struct mt7697_mac_addr_req {
 } __attribute__((packed, aligned(4)));
 
 struct mt7697_mac_addr_rsp {
-	struct mt7697_rsp_hdr		rsp;	
+	struct mt7697_rsp_hdr		rsp;
 	u8				addr[LEN32_ALIGNED(ETH_ALEN)];
 } __attribute__((packed, aligned(4)));
 
@@ -155,7 +155,7 @@ struct mt7697_reload_settings_req {
 	struct mt7697_cmd_hdr		cmd;
 	__be32 				if_idx;
 } __attribute__((packed, aligned(4)));
-		
+
 struct mt7697_scan_req {
 	struct mt7697_cmd_hdr		cmd;
 	__be32 				if_idx;
@@ -274,7 +274,7 @@ int mt7697_wr_scan_req(const struct mt7697_cfg80211_info*, u32,
 	               const struct cfg80211_scan_request*);
 int mt7697_wr_set_security_mode_req(const struct mt7697_cfg80211_info*, u8, u8);
 int mt7697_wr_get_security_mode_req(const struct mt7697_cfg80211_info*, u32);
-int mt7697_wr_scan_stop_req(const struct mt7697_cfg80211_info*); 
+int mt7697_wr_scan_stop_req(const struct mt7697_cfg80211_info*);
 int mt7697_wr_disconnect_req(const struct mt7697_cfg80211_info*, const u8*);
 int mt7697_wr_tx_raw_packet(struct mt7697_cfg80211_info*, const u8*, u32);
 int mt7697_proc_data(void*);

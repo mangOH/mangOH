@@ -40,7 +40,7 @@ struct mt7697q_data {
 	u16 				rd_offset;
 	u16				reserved1;
 	u16 				wr_offset;
-	u16 				reserved2; 		
+	u16 				reserved2;
 };
 
 struct mt7697q_spec {
@@ -57,14 +57,14 @@ struct mt7697q_info {
 	struct mt7697_rsp_hdr 		rsp;
 	u8 				txBuffer[sizeof(u32)];
 	u8 				rxBuffer[sizeof(u32)];
-	
+
 	struct device			*dev;
 	void 				*hw_priv;
         const struct mt7697spi_hw_ops   *hw_ops;
 
 	struct mutex                    mutex;
 	struct workqueue_struct 	*irq_workq;
-	
+
 	struct work_struct              irq_work;
 	struct delayed_work		irq_delayed_work;
 	atomic_t			blocked_writer;

@@ -25,13 +25,14 @@ int mt7697_notify_tx(void* priv, u32 free)
 
 	spin_lock_bh(&cfg->tx_skb_list_lock);
 	if (!list_empty(&cfg->tx_skb_list)) {
-		struct mt7697_tx_pkt *tx_pkt = list_entry(&cfg->tx_skb_list, 
+		struct mt7697_tx_pkt *tx_pkt = list_entry(&cfg->tx_skb_list,
 			struct mt7697_tx_pkt, next);
 		if (tx_pkt->skb->len >= free) {
 			cfg->hif_ops->unblock_writer(cfg->txq_hdl);
 			ret = queue_work(cfg->tx_workq, &cfg->tx_work);
 			if (ret < 0) {
-				dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
+				dev_err(cfg->dev,
+					"%s(): queue_work() failed(%d)\n",
 					__func__, ret);
 				goto cleanup;
 			}
@@ -52,7 +53,7 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 
 	dev_dbg(cfg->dev, "%s(): tx len(%u)\n", __func__, skb->len);
 
-	dev_dbg(cfg->dev, "%s(): headroom skb/needed(%u/%u)\n", 
+	dev_dbg(cfg->dev, "%s(): headroom skb/needed(%u/%u)\n",
 		__func__, skb_headroom(skb), ndev->needed_headroom);
 	if (skb_headroom(skb) < ndev->needed_headroom) {
 		struct sk_buff *tmp_skb = skb;
@@ -67,18 +68,18 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 
 	tx_skb = &cfg->tx_skb_pool[atomic_read(&cfg->tx_skb_pool_idx)];
 	if (tx_skb->skb) {
-		dev_warn(cfg->dev, "%s(): tx pool full\n", 
+		dev_warn(cfg->dev, "%s(): tx pool full\n",
 			__func__);
 		ret = NETDEV_TX_BUSY;
 		goto cleanup;
  	}
 
 	tx_skb->skb = skb;
-	dev_dbg(cfg->dev, "%s(): tx pkt(%u/%p)\n", 
+	dev_dbg(cfg->dev, "%s(): tx pkt(%u/%p)\n",
 		__func__, atomic_read(&cfg->tx_skb_pool_idx), tx_skb->skb);
 
 	atomic_inc(&cfg->tx_skb_pool_idx);
-	if (atomic_read(&cfg->tx_skb_pool_idx) >= MT7697_TX_PKT_POOL_LEN) 
+	if (atomic_read(&cfg->tx_skb_pool_idx) >= MT7697_TX_PKT_POOL_LEN)
 		atomic_set(&cfg->tx_skb_pool_idx, 0);
 
 	spin_lock_bh(&cfg->tx_skb_list_lock);
@@ -87,7 +88,7 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 
 	ret = queue_work(cfg->tx_workq, &cfg->tx_work);
 	if (ret < 0) {
-		dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): queue_work() failed(%d)\n",
 			__func__, ret);
 		ret = NETDEV_TX_BUSY;
 		goto cleanup;
@@ -105,7 +106,7 @@ cleanup:
 
 void mt7697_tx_work(struct work_struct *work)
 {
-        struct mt7697_cfg80211_info *cfg = container_of(work, 
+        struct mt7697_cfg80211_info *cfg = container_of(work,
 		struct mt7697_cfg80211_info, tx_work);
 	struct mt7697_tx_pkt *tx_pkt, *tx_pkt_next = NULL;
 	struct ieee80211_hdr *hdr;
@@ -117,21 +118,22 @@ void mt7697_tx_work(struct work_struct *work)
 
        		/* validate length for ether packet */
         	if (tx_pkt->skb->len < sizeof(*hdr)) {
-			dev_err(cfg->dev, "%s(): invalid skb len(%u < %u)\n", 
+			dev_err(cfg->dev, "%s(): invalid skb len(%u < %u)\n",
 				__func__, tx_pkt->skb->len, sizeof(*hdr));
 			vif->net_stats.tx_errors++;
         	}
 
-		ret = mt7697_wr_tx_raw_packet(cfg, tx_pkt->skb->data, 
+		ret = mt7697_wr_tx_raw_packet(cfg, tx_pkt->skb->data,
 			tx_pkt->skb->len);
 		if (ret < 0) {
-			dev_dbg(cfg->dev, 
-				"%s(): mt7697_wr_tx_raw_packet() failed(%d)\n", 
+			dev_dbg(cfg->dev,
+				"%s(): mt7697_wr_tx_raw_packet() failed(%d)\n",
 				__func__, ret);
 			vif->net_stats.tx_errors++;
 		}
 
-		dev_dbg(cfg->dev, "%s(): tx complete pkt(%p)\n", __func__, tx_pkt->skb);
+		dev_dbg(cfg->dev, "%s(): tx complete pkt(%p)\n", __func__,
+			tx_pkt->skb);
 		vif->net_stats.tx_packets++;
 		vif->net_stats.tx_bytes += tx_pkt->skb->len;
 
@@ -154,7 +156,8 @@ void mt7697_tx_stop(struct mt7697_cfg80211_info *cfg)
 		struct mt7697_vif *vif = netdev_priv(tx_pkt->skb->dev);
 		WARN_ON(!vif);
 
-		dev_dbg(cfg->dev, "%s(): tx drop pkt(%p)\n", __func__, tx_pkt->skb);
+		dev_dbg(cfg->dev, "%s(): tx drop pkt(%p)\n", __func__,
+			tx_pkt->skb);
 		vif->net_stats.tx_dropped++;
 
 		spin_lock_bh(&cfg->tx_skb_list_lock);
@@ -186,7 +189,7 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 	}
 
 	if ((len < sizeof(*hdr)) || (len > IEEE80211_MAX_FRAME_LEN)) {
-		dev_warn(cfg->dev, "%s(): invalid Rx frame size(%u)\n", 
+		dev_warn(cfg->dev, "%s(): invalid Rx frame size(%u)\n",
 			__func__, len);
 		vif->net_stats.rx_length_errors++;
 		ret = -EINVAL;
@@ -209,7 +212,7 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 
 	skb->protocol = eth_type_trans(skb, skb->dev);
 	skb->ip_summed = CHECKSUM_UNNECESSARY;
-	dev_dbg(cfg->dev, "%s(): rx frame protocol(%u) type(%u)\n", 
+	dev_dbg(cfg->dev, "%s(): rx frame protocol(%u) type(%u)\n",
 		__func__, skb->protocol, skb->pkt_type);
 
 	ret = netif_rx_ni(skb);
@@ -221,7 +224,8 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 			goto cleanup;
 		}
 
-		dev_err(cfg->dev, "%s(): netif_rx_ni() failed(%d)\n", __func__, ret);
+		dev_err(cfg->dev, "%s(): netif_rx_ni() failed(%d)\n", __func__,
+			ret);
 		goto cleanup;
 	}
 
