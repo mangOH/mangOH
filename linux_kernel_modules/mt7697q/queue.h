@@ -71,7 +71,6 @@ struct mt7697q_info {
 	int 				gpio_pin;
 	int 				irq;
 	u8 				s2m_mbox;
-	bool				slave_busy;
 };
 
 void mt7697q_irq_delayed_work(struct work_struct*);
