@@ -21,7 +21,7 @@
 #include "io.h"
 #include "spi.h"
 
-static __inline bool mt7697io_busy(u16 value)
+static bool mt7697io_busy(u16 value)
 {
 	return BF_GET(value, MT7697_IO_STATUS_REG_BUSY_OFFSET,
 		      MT7697_IO_STATUS_REG_BUSY_WIDTH) ==
@@ -162,14 +162,14 @@ cleanup:
     	return ret;
 }
 
-static __inline u8 mt7697io_get_s2m_mbox(u16 value)
+static u8 mt7697io_get_s2m_mbox(u16 value)
 {
 	return BF_GET(value,
 		MT7697_IO_S2M_MAILBOX_REG_MAILBOX_OFFSET,
 		MT7697_IO_S2M_MAILBOX_REG_MAILBOX_WIDTH);
 }
 
-static __inline u16 mt7697io_set_s2m_mbox(u8 value)
+static u16 mt7697io_set_s2m_mbox(u8 value)
 {
 	return BF_DEFINE(value,
 		MT7697_IO_S2M_MAILBOX_REG_MAILBOX_OFFSET,

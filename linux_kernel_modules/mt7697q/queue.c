@@ -21,7 +21,7 @@
 #include "queue.h"
 #include "spi.h"
 
-static __inline ssize_t mt7697q_buf_diff(u32 size, u32 from, u32 to)
+static ssize_t mt7697q_buf_diff(u32 size, u32 from, u32 to)
 {
 	if (from >= size) {
 		pr_info("%s(): ERROR from(%u) >= size(%u)\n",
@@ -38,13 +38,13 @@ static __inline ssize_t mt7697q_buf_diff(u32 size, u32 from, u32 to)
     	return (from <= to) ? (to - from):((size - from) + to);
 }
 
-static __inline size_t mt7697q_get_capacity(const struct mt7697q_spec *qs)
+static size_t mt7697q_get_capacity(const struct mt7697q_spec *qs)
 {
     	return BF_GET(qs->data.flags, MT7697_QUEUE_FLAGS_NUM_WORDS_OFFSET,
 		MT7697_QUEUE_FLAGS_NUM_WORDS_WIDTH) - 1;
 }
 
-static __inline size_t mt7697q_get_num_words(const struct mt7697q_spec *qs)
+static size_t mt7697q_get_num_words(const struct mt7697q_spec *qs)
 {
     	return mt7697q_buf_diff(BF_GET(qs->data.flags,
 			MT7697_QUEUE_FLAGS_NUM_WORDS_OFFSET,
@@ -325,7 +325,7 @@ cleanup:
 	return ret;
 }
 
-__inline size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
+size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
 {
     	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
 }
@@ -359,7 +359,7 @@ cleanup:
     	return ret;
 }
 
-__inline int mt7697q_blocked_writer(const struct mt7697q_spec *qs)
+int mt7697q_blocked_writer(const struct mt7697q_spec *qs)
 {
     return atomic_read(&qs->qinfo->blocked_writer);
 }
@@ -484,7 +484,7 @@ cleanup:
 	return ret;
 }
 
-__inline void mt7697q_unblock_writer(void *hndl)
+void mt7697q_unblock_writer(void *hndl)
 {
 	struct mt7697q_spec *qs = (struct mt7697q_spec*)hndl;
     	atomic_set(&qs->qinfo->blocked_writer, false);
@@ -888,13 +888,13 @@ cleanup:
 
 EXPORT_SYMBOL(mt7697q_write);
 
-__inline u32 mt7697q_flags_get_in_use(u32 flags)
+u32 mt7697q_flags_get_in_use(u32 flags)
 {
 	return BF_GET(flags, MT7697_QUEUE_FLAGS_IN_USE_OFFSET,
 		MT7697_QUEUE_FLAGS_IN_USE_WIDTH);
 }
 
-__inline u32 mt7697q_flags_get_dir(u32 flags)
+u32 mt7697q_flags_get_dir(u32 flags)
 {
 	return BF_GET(flags,MT7697_QUEUE_FLAGS_DIR_OFFSET,
 		MT7697_QUEUE_FLAGS_DIR_WIDTH);
