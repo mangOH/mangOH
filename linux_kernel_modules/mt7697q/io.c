@@ -21,10 +21,11 @@
 #include "io.h"
 #include "spi.h"
 
-static __inline u8 mt7697io_busy(u16 value)
+static __inline bool mt7697io_busy(u16 value)
 {
 	return BF_GET(value, MT7697_IO_STATUS_REG_BUSY_OFFSET,
-		MT7697_IO_STATUS_REG_BUSY_WIDTH);
+		      MT7697_IO_STATUS_REG_BUSY_WIDTH) ==
+		MT7697_IO_STATUS_REG_BUSY_VAL_BUSY;
 }
 
 static int mt7697io_write16(struct mt7697q_info *qinfo, u8 reg, u16 value)
@@ -124,7 +125,7 @@ cleanup:
     return ret;
 }
 
-static int mt7697io_chk_slave_busy(struct mt7697q_info *qinfo)
+static int mt7697io_chk_slave_busy(struct mt7697q_info *qinfo, bool *slave_busy)
 {
 	int ret;
     	u16 value;
@@ -136,8 +137,7 @@ static int mt7697io_chk_slave_busy(struct mt7697q_info *qinfo)
        		goto cleanup;
     	}
 
-	qinfo->slave_busy =
-		mt7697io_busy(value) == MT7697_IO_STATUS_REG_BUSY_VAL_BUSY;
+	*slave_busy = mt7697io_busy(value);
 
 cleanup:
     	return ret;
@@ -146,19 +146,17 @@ cleanup:
 static int mt7697io_slave_wait(struct mt7697q_info *qinfo)
 {
 	int ret;
-
-	qinfo->slave_busy = true;
-	while (qinfo->slave_busy) {
-            	ret = mt7697io_chk_slave_busy(qinfo);
+	bool slave_busy;
+	do {
+		ret = mt7697io_chk_slave_busy(qinfo, &slave_busy);
 		if (ret < 0) {
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_chk_slave_busy() failed(%d)\n",
 				__func__, ret);
        			goto cleanup;
     		}
-
 		udelay(1);
-        };
+	} while (slave_busy);
 
 cleanup:
     	return ret;
