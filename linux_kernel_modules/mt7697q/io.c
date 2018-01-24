@@ -53,24 +53,20 @@ cleanup:
 static int mt7697io_write32(struct mt7697q_info *qinfo, u8 reg, u32 value)
 {
 	int ret;
-
     	WARN_ON(reg % sizeof(u32));
 
 	ret = mt7697io_write16(qinfo, reg, BF_GET(value, 0, 16));
-    	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n",
-			__func__, ret);
-       		goto cleanup;
-    	}
-
+    	if (ret < 0)
+       		goto fail;
     	ret = mt7697io_write16(qinfo, reg + 2, BF_GET(value, 16, 16));
-	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n",
-			__func__, ret);
-       		goto cleanup;
-    	}
+	if (ret < 0)
+       		goto fail;
 
-cleanup:
+	return ret;
+
+fail:
+	dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n", __func__,
+		ret);
     	return ret;
 }
 
@@ -102,26 +98,22 @@ static int mt7697io_read32(struct mt7697q_info *qinfo, u8 reg, u32 *value)
 	int ret;
 	u16 low;
 	u16 high;
-
 	WARN_ON(reg % sizeof(u32));
+
     	ret = mt7697io_read16(qinfo, reg, &low);
-    	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_read16() failed(%d)\n",
-			__func__, ret);
-       		goto cleanup;
-    	}
-
+    	if (ret < 0)
+       		goto fail;
     	ret = mt7697io_read16(qinfo, reg + sizeof(u16), &high);
-	if (ret < 0) {
-		dev_err(qinfo->dev, "%s(): mt7697io_read16() failed(%d)\n",
-			__func__, ret);
-       		goto cleanup;
-    	}
-
+	if (ret < 0)
+       		goto fail;
     	*value = (low | (high << 16));
 
-cleanup:
-    return ret;
+	return ret;
+
+fail:
+	dev_err(qinfo->dev, "%s(): mt7697io_read16() failed(%d)\n", __func__,
+		ret);
+	return ret;
 }
 
 static int mt7697io_chk_slave_busy(struct mt7697q_info *qinfo, bool *slave_busy)
