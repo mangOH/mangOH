@@ -31,16 +31,15 @@ static bool mt7697io_busy(u16 value)
 static int mt7697io_write16(struct mt7697q_info *qinfo, u8 reg, u16 value)
 {
 	int ret;
+	u8 txBuffer[] = {
+		MT7697_IO_CMD_WRITE,
+		reg,
+		((value >> 8) & 0xFF),
+		value & 0xFF,
+	};
 
     	WARN_ON(reg % sizeof(u16));
-
-	qinfo->txBuffer[0] = MT7697_IO_CMD_WRITE;
-    	qinfo->txBuffer[1] = reg;
-	qinfo->txBuffer[2] = ((value >> 8) & 0xFF);
-	qinfo->txBuffer[3] = value & 0xFF;
-
-	ret = qinfo->hw_ops->write(qinfo->hw_priv, qinfo->txBuffer,
-		sizeof(qinfo->txBuffer));
+	ret = qinfo->hw_ops->write(qinfo->hw_priv, txBuffer, sizeof(txBuffer));
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): write() failed(%d)\n",
 			__func__, ret);
@@ -78,21 +77,21 @@ cleanup:
 static int mt7697io_read16(struct mt7697q_info *qinfo, u8 reg, u16 *value)
 {
     	int ret;
+	u8 spi_buffer[4] = {
+		MT7697_IO_CMD_READ,
+		reg,
+	};
 
 	WARN_ON(reg % sizeof(u16));
-
-	qinfo->txBuffer[0] = MT7697_IO_CMD_READ;
-	qinfo->txBuffer[1] = reg;
-
-	ret = qinfo->hw_ops->write_then_read(qinfo->hw_priv,
-		qinfo->txBuffer, qinfo->rxBuffer, sizeof(u16) + sizeof(u16));
+	ret = qinfo->hw_ops->write_then_read(qinfo->hw_priv, spi_buffer,
+					     spi_buffer, sizeof(spi_buffer));
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): write_then_read() failed(%d)\n",
 			__func__, ret);
        		goto cleanup;
     	}
 
-	*value = ((qinfo->rxBuffer[2] << 8) | qinfo->rxBuffer[3]);
+	*value = ((spi_buffer[2] << 8) | spi_buffer[3]);
 
 cleanup:
     	return ret;
