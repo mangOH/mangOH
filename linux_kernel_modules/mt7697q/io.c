@@ -189,7 +189,7 @@ cleanup:
     	return ret;
 }
 
-int mt7697io_rd_s2m_mbx(struct mt7697q_info *qinfo)
+int mt7697io_rd_s2m_mbx(struct mt7697q_info *qinfo, u8 *s2m_mbx)
 {
 	int ret;
     	u16 value;
@@ -201,27 +201,25 @@ int mt7697io_rd_s2m_mbx(struct mt7697q_info *qinfo)
        		goto cleanup;
     	}
 
-	qinfo->s2m_mbox = mt7697io_get_s2m_mbox(value);
+	*s2m_mbx = mt7697io_get_s2m_mbox(value);
 	dev_dbg(qinfo->dev, "%s(): s2m mbx(0x%02x)\n",
-		__func__, qinfo->s2m_mbox);
+		__func__, *s2m_mbx);
 
 cleanup:
     	return ret;
 }
 
-int mt7697io_clr_s2m_mbx(struct mt7697q_info *qinfo)
+int mt7697io_clr_s2m_mbx(struct mt7697q_info *qinfo, u8 s2m_mbx)
 {
-	const u16 value = mt7697io_set_s2m_mbox(qinfo->s2m_mbox);
+	const u16 value = mt7697io_set_s2m_mbox(s2m_mbx);
 	int ret;
 
     	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_S2M, value);
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
     	}
 
-cleanup:
     	return ret;
 }
 

@@ -330,24 +330,21 @@ size_t mt7697q_get_free_words(const struct mt7697q_spec *qs)
     	return mt7697q_get_capacity(qs) - mt7697q_get_num_words(qs);
 }
 
-int mt7697q_get_s2m_mbx(struct mt7697q_info *qinfo, u8* s2m_mbox)
+int mt7697q_get_s2m_mbx(struct mt7697q_info *qinfo, u8 *s2m_mbox)
 {
 	int ret;
 
 	mutex_lock(&qinfo->mutex);
 
-    	ret = mt7697io_rd_s2m_mbx(qinfo);
-    	if (ret < 0) {
+	ret = mt7697io_rd_s2m_mbx(qinfo, s2m_mbox);
+	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_rd_s2m_mbx() failed(%d)\n",
 			__func__, ret);
-
        		goto cleanup;
     	}
 
-    	*s2m_mbox = qinfo->s2m_mbox;
-
-    	ret = mt7697io_clr_s2m_mbx(qinfo);
-    	if (ret < 0) {
+	ret = mt7697io_clr_s2m_mbx(qinfo, *s2m_mbox);
+	if (ret < 0) {
 		dev_err(qinfo->dev,
 			"%s(): mt7697io_clr_s2m_mbx() failed(%d)\n",
 			__func__, ret);
