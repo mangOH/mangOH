@@ -68,7 +68,6 @@ struct mt7697q_info {
 	atomic_t			blocked_writer;
 	int 				gpio_pin;
 	int 				irq;
-	u8 				s2m_mbox;
 };
 
 void mt7697q_irq_delayed_work(struct work_struct*);
