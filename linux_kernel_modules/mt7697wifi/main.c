@@ -66,19 +66,6 @@ static int mt7697_open(struct net_device *ndev)
 		cfg->rxq_hdl = cfg->txq_hdl;
         }
 
-	if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
-	    (cfg->radio_state == MT7697_RADIO_STATE_OFF)) {
-		ret = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_ON);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		cfg->radio_state = MT7697_RADIO_STATE_ON;
-	}
-
 	set_bit(WLAN_ENABLED, &vif->flags);
 
 	if (test_bit(CONNECTED, &vif->flags)) {
@@ -179,15 +166,6 @@ static void mt7697_init_hw_start(struct work_struct *work)
 		}
 
 		cfg->rxq_hdl = cfg->txq_hdl;
-	}
-
-	cfg->radio_state = MT7697_RADIO_STATE_OFF;
-	err = mt7697_wr_set_radio_state_req(cfg, MT7697_RADIO_STATE_OFF);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
 	}
 
 	err = mt7697_wr_cfg_req(cfg);

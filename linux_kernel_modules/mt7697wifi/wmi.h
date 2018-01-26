@@ -28,14 +28,12 @@
 #define MT7697_PASSPHRASE_LEN			64
 
 #define mt7697_cfg_req				mt7697_cmd_hdr
-#define mt7697_get_radio_state_req		mt7697_cmd_hdr
 #define mt7697_get_rx_filter_req		mt7697_cmd_hdr
 #define mt7697_get_listen_interval_req		mt7697_cmd_hdr
 #define mt7697_get_smart_conn_filter_req	mt7697_cmd_hdr
 #define mt7697_scan_stop			mt7697_cmd_hdr
 
 #define mt7697_set_wireless_mode_rsp		mt7697_rsp_hdr	
-#define mt7697_set_radio_state_rsp		mt7697_rsp_hdr
 #define mt7697_set_op_mode_rsp			mt7697_rsp_hdr
 #define mt7697_set_rx_filter_rsp		mt7697_rsp_hdr
 #define mt7697_set_smart_conn_filter_rsp	mt7697_rsp_hdr
@@ -72,10 +70,6 @@ enum mt7697_wifi_cmd_types {
 	MT7697_CMD_SET_WIRELESS_MODE_RSP,
 	MT7697_CMD_SET_OP_MODE_REQ,
 	MT7697_CMD_SET_OP_MODE_RSP,
-	MT7697_CMD_GET_RADIO_STATE_REQ,
-	MT7697_CMD_GET_RADIO_STATE_RSP,
-	MT7697_CMD_SET_RADIO_STATE_REQ,
-	MT7697_CMD_SET_RADIO_STATE_RSP,	
 	MT7697_CMD_GET_LISTEN_INTERVAL_REQ,
 	MT7697_CMD_GET_LISTEN_INTERVAL_RSP,
 	MT7697_CMD_SET_LISTEN_INTERVAL_REQ,
@@ -145,16 +139,6 @@ struct mt7697_cfg_rsp {
 struct mt7697_set_op_mode_req {
 	struct mt7697_cmd_hdr		cmd;
 	__be32				opmode;
-} __attribute__((packed, aligned(4)));
-
-struct mt7697_get_radio_state_rsp {
-	struct mt7697_rsp_hdr		rsp;
-	__be32				state;
-} __attribute__((packed, aligned(4)));
-
-struct mt7697_set_radio_state_req {
-	struct mt7697_cmd_hdr		cmd;
-	__be32				state;
 } __attribute__((packed, aligned(4)));
 
 struct mt7697_get_listen_interval_rsp {
@@ -284,8 +268,6 @@ int mt7697_wr_reload_settings_req(const struct mt7697_cfg80211_info*, u8);
 int mt7697_wr_mac_addr_req(const struct mt7697_cfg80211_info*);
 int mt7697_wr_cfg_req(const struct mt7697_cfg80211_info*);
 int mt7697_wr_set_op_mode_req(const struct mt7697_cfg80211_info*);
-int mt7697_wr_get_radio_state_req(const struct mt7697_cfg80211_info*);
-int mt7697_wr_set_radio_state_req(const struct mt7697_cfg80211_info*, u8);
 int mt7697_wr_get_listen_interval_req(const struct mt7697_cfg80211_info*);
 int mt7697_wr_set_listen_interval_req(const struct mt7697_cfg80211_info*, u32);
 int mt7697_wr_scan_req(const struct mt7697_cfg80211_info*, u32,

@@ -112,7 +112,6 @@ struct mt7697_cfg80211_info {
 	u8 probe_data[LEN32_ALIGNED(IEEE80211_MAX_DATA_LEN)];
 	
 	enum mt7697_port_type port_type;
-	enum mt7697_radio_state radio_state;
 	enum mt7697_wifi_phy_mode_t wireless_mode;
 	enum mt7697_wifi_phy_mode_t hw_wireless_mode;
 	struct mac_address mac_addr;

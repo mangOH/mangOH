@@ -70,11 +70,6 @@ enum mt7697_port_type {
 	MT7697_PORT_AP,
 };
 
-enum mt7697_radio_state {
-	MT7697_RADIO_STATE_OFF = 0,
-	MT7697_RADIO_STATE_ON,
-};
-
 enum mt7697_scan_mode {
 	MT7697_WIFI_SCAN_MODE_FULL = 0,
 	MT7697_WIFI_SCAN_MODE_PARTIAL,

@@ -268,41 +268,6 @@ cleanup:
 	return ret;
 }
 
-static int mt7697_proc_get_radio_state(const struct mt7697_rsp_hdr* rsp, 
-                                       struct mt7697_cfg80211_info *cfg)
-{
-	u32 state;
-	int ret;
-
-	dev_dbg(cfg->dev, "%s(): --> GET RADIO STATE RSP\n", __func__);
-	if (rsp->cmd.len - sizeof(struct mt7697_rsp_hdr) != sizeof(u32)) {
-		dev_err(cfg->dev, 
-			"%s(): invalid get radio state rsp len(%u != %u)\n", 
-			__func__, 
-			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
-			sizeof(u32));
-		ret = -EINVAL;
-       		goto cleanup;
-	}
-
-	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&state, 
-		LEN_TO_WORD(sizeof(u32)));
-	if (ret != LEN_TO_WORD(sizeof(u32))) {
-		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(sizeof(u32)));
-		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
-
-	cfg->radio_state = state;
-	dev_dbg(cfg->dev, "%s(): radio state(%u)\n", 
-		__func__, cfg->radio_state);
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
 static int mt7697_proc_get_listen_interval(const struct mt7697_rsp_hdr* rsp, 
                                            struct mt7697_cfg80211_info *cfg)
 {
@@ -623,13 +588,15 @@ static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp,
 		}
 
 		dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
-		ret = mt7697_cfg80211_connect_event(vif, bssid, channel);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_cfg80211_connect_event() failed(%d)\n", 
-				__func__, ret);
-       			goto cleanup;
-    		}
+                if (test_bit(CONNECT_PEND, &vif->flags)) {
+		        ret = mt7697_cfg80211_connect_event(vif, bssid, channel);
+		        if (ret < 0) {
+			        dev_err(cfg->dev, 
+				        "%s(): mt7697_cfg80211_connect_event() failed(%d)\n", 
+				        __func__, ret);
+       			        goto cleanup;
+    		        }
+                }
 	}
 	else {
 		struct station_info sinfo = {0};
@@ -669,7 +636,6 @@ cleanup:
 static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 {
 	u8 bssid[LEN32_ALIGNED(ETH_ALEN)];
-	u8 ssid[LEN32_ALIGNED(IEEE80211_MAX_SSID_LEN)] = {0};
 	struct mt7697_vif *vif;
 	u32 if_idx;
 	u16 proto_reason = 0;
@@ -714,15 +680,16 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 		}
 
 		dev_dbg(cfg->dev, "%s(): vif(%u)\n", __func__, vif->fw_vif_idx);
-		if (vif->sme_state == SME_CONNECTING) {
-			ret = mt7697_wr_disconnect_req(vif->cfg, vif->bssid);
-			if (ret < 0) {
-				dev_err(vif->cfg->dev, 
-					"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
-					__func__, ret);
-				goto cleanup;
-			}
 
+                ret = mt7697_wr_disconnect_req(vif->cfg, NULL);
+		if (ret < 0) {
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+				__func__, ret);
+			goto cleanup;
+		}
+
+		if (vif->sme_state == SME_CONNECTING) {
 			cfg80211_connect_result(vif->ndev, vif->bssid, 
 						NULL, 0,
 						NULL, 0,
@@ -730,22 +697,6 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 						GFP_KERNEL);
 		}
 		else if (vif->sme_state == SME_CONNECTED) {
-			ret = mt7697_wr_set_ssid_req(cfg, IEEE80211_MAX_SSID_LEN, ssid);
-			if (ret < 0) {
-				dev_err(cfg->dev, 
-					"%s(): mt7697_wr_set_ssid_req() failed(%d)\n", 
-					__func__, ret);
-				goto cleanup;
-			}
-
-			ret = mt7697_wr_reload_settings_req(cfg, vif->fw_vif_idx);
-			if (ret < 0) {
-				dev_err(cfg->dev, 
-					"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
-					__func__, ret);
-				goto cleanup;
-			}
-
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 			cfg80211_disconnected(vif->ndev, proto_reason,
 				      	      NULL, 0, vif->locally_generated, GFP_KERNEL);
@@ -881,16 +832,6 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
     		}
 		break;
 
-	case MT7697_CMD_GET_RADIO_STATE_RSP:
-		ret = mt7697_proc_get_radio_state(rsp, cfg);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"mt7697_proc_get_radio_state() failed(%d)\n", 
-				ret);
-			goto cleanup;
-    		}
-		break;
-
 	case MT7697_CMD_GET_LISTEN_INTERVAL_RSP:
 		ret = mt7697_proc_get_listen_interval(rsp, cfg);
 		if (ret < 0) {
@@ -989,10 +930,6 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 
 	case MT7697_CMD_SET_WIRELESS_MODE_RSP:
 		dev_dbg(cfg->dev, "%s(): --> SET WIRELESS MODE RSP\n", __func__);
-		break;
-
-	case MT7697_CMD_SET_RADIO_STATE_RSP:
-		dev_dbg(cfg->dev, "%s(): --> SET RADIO STATE\n", __func__);
 		break;
 
 	case MT7697_CMD_SET_SECURITY_MODE_RSP:
@@ -1299,60 +1236,6 @@ int mt7697_wr_cfg_req(const struct mt7697_cfg80211_info *cfg)
 	if (ret != LEN_TO_WORD(req.len)) {
 		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
 			__func__, ret, LEN_TO_WORD(req.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_get_radio_state_req(const struct mt7697_cfg80211_info* cfg)
-{
-	struct mt7697_get_radio_state_req req;
-	int ret;
-
-	req.len = sizeof(struct mt7697_get_radio_state_req);
-	req.grp = MT7697_CMD_GRP_80211;
-	req.type = MT7697_CMD_GET_RADIO_STATE_REQ;
-	
-	dev_dbg(cfg->dev, "%s(): <-- GET RADIO STATE len(%u)\n", 
-		__func__, req.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.len));
-	if (ret != LEN_TO_WORD(req.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.len));
-		ret = (ret < 0) ? ret:-EIO;
-		goto cleanup;
-	}
-
-	ret = 0;
-
-cleanup:
-	return ret;
-}
-
-int mt7697_wr_set_radio_state_req(const struct mt7697_cfg80211_info* cfg, 
-                                  u8 state)
-{
-	struct mt7697_set_radio_state_req req;
-	int ret;
-
-	req.cmd.len = sizeof(struct mt7697_set_radio_state_req);
-	req.cmd.grp = MT7697_CMD_GRP_80211;
-	req.cmd.type = MT7697_CMD_SET_RADIO_STATE_REQ;
-	req.state = state;
-
-	dev_dbg(cfg->dev, "%s(): <-- SET RADIO STATE(%u) len(%u)\n", 
-		__func__, state, req.cmd.len);
-	ret = cfg->hif_ops->write(cfg->txq_hdl, (const u32*)&req, 
-		LEN_TO_WORD(req.cmd.len));
-	if (ret != LEN_TO_WORD(req.cmd.len)) {
-		dev_err(cfg->dev, "%s(): write() failed(%d != %d)\n", 
-			__func__, ret, LEN_TO_WORD(req.cmd.len));
 		ret = (ret < 0) ? ret:-EIO;
 		goto cleanup;
 	}

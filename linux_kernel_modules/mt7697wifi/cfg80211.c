@@ -1014,29 +1014,26 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 
         mt7697_tx_stop(vif->cfg);
 
-	if ((vif->cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
-	    (vif->cfg->radio_state == MT7697_RADIO_STATE_ON)) {
-		ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);
+	if (vif->wdev.iftype == NL80211_IFTYPE_STATION) {
+                ret = mt7697_wr_disconnect_req(vif->cfg, NULL);
 		if (ret < 0) {
 			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
+				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
 
-		vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
-	}
-
-	if (vif->wdev.iftype == NL80211_IFTYPE_STATION) {
 		switch (vif->sme_state) {
 		case SME_DISCONNECTED:
 			break;
-		case SME_CONNECTING:
+
+		case SME_CONNECTING:               
 			cfg80211_connect_result(vif->ndev, vif->bssid, NULL, 0,
 						NULL, 0,
 						WLAN_STATUS_UNSPECIFIED_FAILURE,
 						GFP_KERNEL);
 			break;
+
 		case SME_CONNECTED:
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 			cfg80211_disconnected(vif->ndev, 0, NULL, 0, 
@@ -1087,50 +1084,8 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
     	}
 
 	memset(vif->ssid, 0, IEEE80211_MAX_SSID_LEN);
-	ret = mt7697_wr_set_ssid_req(vif->cfg, IEEE80211_MAX_SSID_LEN, vif->ssid);
-	if (ret < 0) {
-		dev_err(vif->cfg->dev, 
-			"%s(): mt7697_wr_set_ssid_req() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
-	}
-
 	memset(vif->req_bssid, 0, ETH_ALEN);
-	ret = mt7697_wr_set_bssid_req(vif->cfg, vif->req_bssid);
-	if (ret < 0) {
-		dev_err(vif->cfg->dev, 
-			"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
-	}
-
 	memset(vif->pmk, 0, MT7697_WIFI_LENGTH_PMK);
-	ret = mt7697_wr_set_pmk_req(vif->cfg, vif->pmk);
-	if (ret < 0) {
-		dev_err(vif->cfg->dev, "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
-	}
-
-	ret = mt7697_wr_reload_settings_req(vif->cfg, vif->fw_vif_idx);
-	if (ret < 0) {
-		dev_err(vif->cfg->dev, 
-			"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
-			__func__, ret);
-		goto cleanup;
-	}
-
-	if (vif->cfg->radio_state == MT7697_RADIO_STATE_ON) {
-		ret = mt7697_wr_set_radio_state_req(vif->cfg, MT7697_RADIO_STATE_OFF);
-		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_set_radio_state_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-
-		vif->cfg->radio_state = MT7697_RADIO_STATE_OFF;
-	}
 
 	/* Stop netdev queues, needed during recovery */
 	netif_stop_queue(vif->ndev);
@@ -1428,7 +1383,12 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 
 	set_bit(CONNECTED, &vif->flags);
 	clear_bit(CONNECT_PEND, &vif->flags);
+
 	dev_dbg(cfg->dev, "%s(): vif flags(0x%08lx)\n", __func__, vif->flags);
+        if (bssid) {
+                print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+			        DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
+        }
 
 	if ((channel > 0) && (channel <= MT7697_CH_MAX_2G_CHANNEL))
 		band = wiphy->bands[IEEE80211_BAND_2GHZ];
@@ -1515,14 +1475,6 @@ int mt7697_cfg80211_get_params(struct mt7697_cfg80211_info *cfg)
 	if (err < 0) {
 		dev_err(cfg->dev, 
 			"%s(): mt7697_wr_get_listen_interval_req() failed(%d)\n", 
-			__func__, err);
-		goto failed;
-	}
-
-	err = mt7697_wr_get_radio_state_req(cfg);
-	if (err < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_wr_get_radio_state_req() failed(%d)\n", 
 			__func__, err);
 		goto failed;
 	}

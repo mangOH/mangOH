@@ -341,54 +341,55 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 		goto cleanup;
 	}
 
-	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
-		ret = mt7697_wr_set_bssid_req(cfg, vif->req_bssid);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-	}
+	if (vif->ssid_len > 0) {
+                if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
+		        ret = mt7697_wr_set_bssid_req(cfg, vif->req_bssid);
+		        if (ret < 0) {
+			        dev_err(cfg->dev, 
+			        	"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
+			        	__func__, ret);
+			        goto cleanup;
+		        }
+	        }
 
-	if (vif->ch_hint > 0) {
-		ret = mt7697_wr_set_channel_req(cfg, vif->ch_hint);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-	}
+                if (vif->ch_hint > 0) {
+		        ret = mt7697_wr_set_channel_req(cfg, vif->ch_hint);
+		        if (ret < 0) {
+			        dev_err(cfg->dev, 
+			        	"%s(): mt7697_wr_set_channel_req() failed(%d)\n", 
+			        	__func__, ret);
+			        goto cleanup;
+		        }
+	        }
 
-	if (memcmp(pmk, vif->pmk, sizeof(pmk))) {
-		ret = mt7697_wr_set_pmk_req(cfg, vif->pmk);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-	}
-	else if (vif->ssid_len > 0) {
-		ret = mt7697_wr_set_security_mode_req(cfg, 
-                	MT7697_WIFI_AUTH_MODE_OPEN, 
-			MT7697_WIFI_ENCRYPT_TYPE_ENCRYPT_DISABLED);
-		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_set_security_mode_req() failed(%d)\n", 
-				__func__, ret);
-			goto cleanup;
-		}
-	}
+                if (memcmp(pmk, vif->pmk, sizeof(pmk))) {
+		        ret = mt7697_wr_set_pmk_req(cfg, vif->pmk);
+		        if (ret < 0) {
+			        dev_err(cfg->dev, 
+				        "%s(): mt7697_wr_set_pmk_req() failed(%d)\n", 
+				        __func__, ret);
+			        goto cleanup;
+		        }
+                }
+                else {
+                        ret = mt7697_wr_set_security_mode_req(cfg, 
+                	        MT7697_WIFI_AUTH_MODE_OPEN, 
+			        MT7697_WIFI_ENCRYPT_TYPE_ENCRYPT_DISABLED);
+		        if (ret < 0) {
+			        dev_err(cfg->dev, 
+			        	"%s(): mt7697_wr_set_security_mode_req() failed(%d)\n", 
+			        	__func__, ret);
+			        goto cleanup;
+		        }
+                }
 
-	if (len > 0) {
 		if (test_bit(CONNECTED, &vif->flags)) {
 			dev_dbg(cfg->dev, "%s(): already connected\n", 
 				__func__);
 			goto cleanup;
 		}
 
+                set_bit(CONNECT_PEND, &vif->flags);
 		vif->sme_state = SME_CONNECTING;
 
 		if (test_bit(DESTROY_IN_PROGRESS, &cfg->flag)) {
@@ -398,14 +399,24 @@ static int mt7697_wext_siwessid(struct net_device *ndev,
 			goto cleanup;
 		}
 
-		ret = mt7697_wr_reload_settings_req(cfg, vif->fw_vif_idx);
+                ret = mt7697_wr_reload_settings_req(cfg, vif->fw_vif_idx);
+	        if (ret < 0) {
+		        dev_err(cfg->dev, 
+		        	"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
+		        	__func__, ret);
+		        goto cleanup;
+	        }
+	}
+        else if ((cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) &&
+                 test_bit(CONNECTED, &vif->flags)) {
+                ret = mt7697_wr_disconnect_req(vif->cfg, NULL);
 		if (ret < 0) {
-			dev_err(cfg->dev, 
-				"%s(): mt7697_wr_reload_settings_req() failed(%d)\n", 
+			dev_err(vif->cfg->dev, 
+				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
 				__func__, ret);
 			goto cleanup;
 		}
-	}
+        }
 
 cleanup:
 	return ret;
@@ -541,7 +552,6 @@ static int mt7697_wext_siwencodeext(struct net_device *ndev,
 	if (ext->alg == IW_ENCODE_ALG_PMK) {
 		print_hex_dump(KERN_DEBUG, DRVNAME" PMK ", 
 			DUMP_PREFIX_OFFSET, 16, 1, ext->key, ext->key_len, 0);
-
 		memcpy(vif->pmk, ext->key, ext->key_len);
         }
 
