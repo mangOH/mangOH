@@ -41,6 +41,7 @@ struct mt7697_uart_info {
 	char*				dev_file;
 	struct file 			*fd_hndl;
 
+        struct mutex                    mutex;
 	struct work_struct              rx_work;
 	struct mt7697_rsp_hdr 		rsp;
 	rx_hndlr			rx_fcn;

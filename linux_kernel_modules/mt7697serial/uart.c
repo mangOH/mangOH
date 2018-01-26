@@ -202,7 +202,7 @@ void* mt7697_uart_open(rx_hndlr rx_fcn, void* rx_hndl)
 		goto cleanup;
 	}
 
-	WARN_ON(uart_info->fd_hndl);
+        WARN_ON(uart_info->fd_hndl);
 	dev_err(uart_info->dev, "%s(): open serial device '%s'\n", 
 		__func__, uart_info->dev_file);
 	uart_info->fd_hndl = filp_open((const char __user*)uart_info->dev_file, O_RDWR, 0600);
@@ -256,14 +256,19 @@ int mt7697_uart_close(void *arg)
 
 	wait_event_interruptible(uart_info->close_wq, !atomic_read(&uart_info->close));
 
+        mutex_lock(&uart_info->mutex);
+
 	ret = filp_close(uart_info->fd_hndl, 0);
 	if (ret < 0) {
 		dev_err(uart_info->dev, "%s(): filp_close() failed(%d)\n", 
 			__func__, ret);
-		goto cleanup;
+		goto unlock;
 	}
 
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
+
+unlock:
+        mutex_unlock(&uart_info->mutex);
 
 cleanup:
 	return ret;
@@ -280,7 +285,7 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 	unsigned long count = len * sizeof(u32);
 	int err;
 
-	oldfs = get_fs();
+        oldfs = get_fs();
 	set_fs(get_ds());
 
 	if (!uart_info->fd_hndl) {
@@ -313,7 +318,7 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 cleanup:
 	dev_dbg(uart_info->dev, "%s(): return(%u)\n", __func__, ret);
 	set_fs(oldfs);
-	return ret;
+        return ret;
 }
 
 EXPORT_SYMBOL(mt7697_uart_read);
@@ -327,6 +332,8 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 	size_t ret = 0;
 	struct mt7697_uart_info *uart_info = arg;
 	u8* ptr = (u8*)buf;
+
+        mutex_lock(&uart_info->mutex);
 
 	oldfs = get_fs();
 	set_fs(get_ds());
@@ -362,6 +369,7 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 cleanup:
 	dev_dbg(uart_info->dev, "%s(): return(%u)\n", __func__, ret);
 	set_fs(oldfs);
+        mutex_unlock(&uart_info->mutex);
 	return ret;
 }
 
@@ -387,6 +395,7 @@ static int mt7697_uart_probe(struct platform_device *pdev)
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 	uart_info->dev_file = MT7697_UART_DEVICE;
 
+        mutex_init(&uart_info->mutex);
 	init_waitqueue_head(&uart_info->close_wq);
 	INIT_WORK(&uart_info->rx_work, mt7697_uart_rx_work);
 
