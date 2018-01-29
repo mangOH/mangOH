@@ -100,30 +100,30 @@ struct ieee80211_channel mt7697_2ghz_channels[] = {
  * https://docs.labs.mediatek.com/resource/mt7687-mt7697/en/documentation
  */
 struct ieee80211_channel mt7697_5ghz_a_channels[] = {
-        CHAN5G(36, 5180, 0),
-        CHAN5G(40, 5200, 0),
-        CHAN5G(44, 5220, 0),
-        CHAN5G(48, 5240, 0),
-        CHAN5G(52, 5260, 0),
-        CHAN5G(56, 5280, 0),
-        CHAN5G(60, 5300, 0),
-        CHAN5G(64, 5320, 0),
-        CHAN5G(100, 5500, 0),
-        CHAN5G(104, 5520, 0),
-        CHAN5G(108, 5540, 0),
-        CHAN5G(112, 5560, 0),
-        CHAN5G(116, 5580, 0),
-        CHAN5G(120, 5600, 0),
-        CHAN5G(124, 5620, 0),
-        CHAN5G(128, 5640, 0),
-        CHAN5G(132, 5660, 0),
-        CHAN5G(136, 5680, 0),
-        CHAN5G(140, 5700, 0),
-        CHAN5G(149, 5745, 0),
-        CHAN5G(153, 5765, 0),
-        CHAN5G(157, 5785, 0),
-        CHAN5G(161, 5805, 0),
-        CHAN5G(165, 5825, 0),
+	CHAN5G(36, 5180, 0),
+	CHAN5G(40, 5200, 0),
+	CHAN5G(44, 5220, 0),
+	CHAN5G(48, 5240, 0),
+	CHAN5G(52, 5260, 0),
+	CHAN5G(56, 5280, 0),
+	CHAN5G(60, 5300, 0),
+	CHAN5G(64, 5320, 0),
+	CHAN5G(100, 5500, 0),
+	CHAN5G(104, 5520, 0),
+	CHAN5G(108, 5540, 0),
+	CHAN5G(112, 5560, 0),
+	CHAN5G(116, 5580, 0),
+	CHAN5G(120, 5600, 0),
+	CHAN5G(124, 5620, 0),
+	CHAN5G(128, 5640, 0),
+	CHAN5G(132, 5660, 0),
+	CHAN5G(136, 5680, 0),
+	CHAN5G(140, 5700, 0),
+	CHAN5G(149, 5745, 0),
+	CHAN5G(153, 5765, 0),
+	CHAN5G(157, 5785, 0),
+	CHAN5G(161, 5805, 0),
+	CHAN5G(165, 5825, 0),
 };
 
 static struct ieee80211_supported_band mt7697_band_2ghz = {
@@ -145,11 +145,11 @@ static struct ieee80211_supported_band mt7697_band_5ghz = {
 };
 
 static const u32 mt7697_cipher_suites[] = {
-        WLAN_CIPHER_SUITE_WEP40,
-        WLAN_CIPHER_SUITE_WEP104,
-        WLAN_CIPHER_SUITE_TKIP,
-        WLAN_CIPHER_SUITE_CCMP,
-        WLAN_CIPHER_SUITE_AES_CMAC,
+	WLAN_CIPHER_SUITE_WEP40,
+	WLAN_CIPHER_SUITE_WEP104,
+	WLAN_CIPHER_SUITE_TKIP,
+	WLAN_CIPHER_SUITE_CCMP,
+	WLAN_CIPHER_SUITE_AES_CMAC,
 };
 
 static int mt7697_set_key_mgmt(struct mt7697_vif *vif, u32 key_mgmt)
@@ -221,7 +221,7 @@ cleanup:
 }
 
 static int mt7697_set_wpa_version(struct mt7697_vif *vif,
-				  enum nl80211_wpa_versions wpa_version)
+                                  enum nl80211_wpa_versions wpa_version)
 {
 	int ret = 0;
 
@@ -247,8 +247,8 @@ cleanup:
 }
 
 static struct cfg80211_bss* mt7697_add_bss_if_needed(struct mt7697_vif *vif,
-						     const u8* bssid,
-						     u32 freq)
+                                                     const u8* bssid,
+                                                     u32 freq)
 {
 	struct ieee80211_channel *chan;
 	struct mt7697_cfg80211_info *cfg = vif->cfg;
@@ -334,10 +334,10 @@ cleanup:
 }
 
 static struct wireless_dev* mt7697_cfg80211_add_iface(struct wiphy *wiphy,
-						      const char *name,
-						      enum nl80211_iftype type,
-						      u32 *flags,
-						      struct vif_params *params)
+                                                      const char *name,
+                                                      enum nl80211_iftype type,
+                                                      u32 *flags,
+                                                      struct vif_params *params)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_priv(wiphy);
 	struct mt7697_vif *vif;
@@ -374,7 +374,7 @@ cleanup:
 }
 
 static int mt7697_cfg80211_del_iface(struct wiphy *wiphy,
-				     struct wireless_dev *wdev)
+                                     struct wireless_dev *wdev)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_priv(wiphy);
 	struct mt7697_vif *vif = netdev_priv(wdev->netdev);
@@ -391,7 +391,7 @@ static int mt7697_cfg80211_del_iface(struct wiphy *wiphy,
 		dev_err(cfg->dev,
 			"%s(): mt7697_cfg80211_stop() failed(%d)\n",
 			__func__, ret);
-                goto cleanup;
+		goto cleanup;
 	}
 
 	unregister_netdev(vif->ndev);
@@ -401,9 +401,9 @@ cleanup:
 }
 
 static int mt7697_cfg80211_change_iface(struct wiphy *wiphy,
-					struct net_device *ndev,
-					enum nl80211_iftype type, u32 *flags,
-					struct vif_params *params)
+                                        struct net_device *ndev,
+                                        enum nl80211_iftype type, u32 *flags,
+                                        struct vif_params *params)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_priv(wiphy);
 	struct mt7697_vif *vif = netdev_priv(ndev);
@@ -426,8 +426,8 @@ static int mt7697_cfg80211_change_iface(struct wiphy *wiphy,
 				dev_err(cfg->dev,
 					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n",
 					__func__, ret);
-       				goto cleanup;
-    			}
+				goto cleanup;
+			}
 		}
 
 		break;
@@ -443,8 +443,8 @@ static int mt7697_cfg80211_change_iface(struct wiphy *wiphy,
 				dev_err(cfg->dev,
 					"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n",
 					__func__, ret);
-       				goto cleanup;
-    			}
+				goto cleanup;
+			}
 		}
 
 		break;
@@ -465,8 +465,8 @@ cleanup:
 }
 
 static int mt7697_cfg80211_set_txq_params(struct wiphy *wiphy,
-					  struct net_device *ndev,
-					  struct ieee80211_txq_params *params)
+                                          struct net_device *ndev,
+                                          struct ieee80211_txq_params *params)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev,
@@ -477,7 +477,7 @@ static int mt7697_cfg80211_set_txq_params(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_scan(struct wiphy *wiphy,
-	                        struct cfg80211_scan_request *request)
+                                struct cfg80211_scan_request *request)
 {
 	struct mt7697_vif *vif = mt7697_vif_from_wdev(request->wdev);
 	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
@@ -504,12 +504,12 @@ static int mt7697_cfg80211_scan(struct wiphy *wiphy,
 					GFP_KERNEL);
 	}
 
-        vif->scan_req = request;
-        ret = mt7697_wr_scan_req(cfg, vif->fw_vif_idx, request);
+	vif->scan_req = request;
+	ret = mt7697_wr_scan_req(cfg, vif->fw_vif_idx, request);
 	if (ret < 0) {
 		dev_err(cfg->dev, "%s(): mt7697_wr_scan_req() failed(%d)\n",
 			__func__, ret);
-                goto out;
+		goto out;
 	}
 
 out:
@@ -527,7 +527,7 @@ static int mt7697_cfg80211_connect(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_disconnect(struct wiphy *wiphy,
-				      struct net_device *ndev, u16 reason_code)
+                                      struct net_device *ndev, u16 reason_code)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
@@ -568,10 +568,10 @@ cleanup:
 }
 
 static int mt7697_cfg80211_add_key(struct wiphy *wiphy,
-				   struct net_device *ndev,
-				   u8 key_index, bool pairwise,
-				   const u8 *mac_addr,
-				   struct key_params *params)
+                                   struct net_device *ndev,
+                                   u8 key_index, bool pairwise,
+                                   const u8 *mac_addr,
+                                   struct key_params *params)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev, "%s(): ADD KEY index(%u) cipher(0x%08x)\n",
@@ -594,7 +594,7 @@ static int mt7697_cfg80211_add_key(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_get_key(struct wiphy *wiphy,
-				   struct net_device *ndev,
+                                   struct net_device *ndev,
                                    u8 key_index, bool pairwise,
                                    const u8 *mac_addr, void *cookie,
                                    void (*callback) (void *cookie,
@@ -612,9 +612,9 @@ static int mt7697_cfg80211_get_key(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_del_key(struct wiphy *wiphy,
-				   struct net_device *ndev,
-				   u8 key_index, bool pairwise,
-				   const u8 *mac_addr)
+                                   struct net_device *ndev,
+                                   u8 key_index, bool pairwise,
+                                   const u8 *mac_addr)
 {
 	struct mt7697_vif *vif = netdev_priv(ndev);
 	dev_dbg(vif->cfg->dev, "%s(): DEL KEY(%u)\n", __func__, key_index);
@@ -622,9 +622,9 @@ static int mt7697_cfg80211_del_key(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_set_default_key(struct wiphy *wiphy,
-					   struct net_device *ndev,
-					   u8 key_index, bool unicast,
-					   bool multicast)
+                                           struct net_device *ndev,
+                                           u8 key_index, bool unicast,
+                                           bool multicast)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev,
@@ -634,8 +634,8 @@ static int mt7697_cfg80211_set_default_key(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_join_ibss(struct wiphy *wiphy,
-				     struct net_device *ndev,
-				     struct cfg80211_ibss_params *ibss_param)
+                                     struct net_device *ndev,
+                                     struct cfg80211_ibss_params *ibss_param)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
@@ -651,7 +651,7 @@ static int mt7697_cfg80211_join_ibss(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_leave_ibss(struct wiphy *wiphy,
-				      struct net_device *ndev)
+                                      struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	struct mt7697_vif *vif = netdev_priv(ndev);
@@ -676,8 +676,8 @@ static int mt7697_cfg80211_set_wiphy_params(struct wiphy *wiphy, u32 changed)
 }
 
 static int mt7697_cfg80211_start_ap(struct wiphy *wiphy,
- 				    struct net_device *ndev,
-				    struct cfg80211_ap_settings *settings)
+                                    struct net_device *ndev,
+                                    struct cfg80211_ap_settings *settings)
 {
 	struct mt7697_cfg80211_info *cfg =
 		(struct mt7697_cfg80211_info*)wiphy_priv(wiphy);
@@ -733,14 +733,14 @@ static int mt7697_cfg80211_start_ap(struct wiphy *wiphy,
 				true);
 	if (ret < 0) {
 		dev_err(cfg->dev, "mt7697_set_cipher() failed(%d)\n", ret);
-                goto cleanup;
+		goto cleanup;
 	}
 
 	ret = mt7697_set_cipher(vif, settings->crypto.cipher_group, false);
 	if (ret < 0) {
 		dev_err(cfg->dev, "%s: mt7697_set_cipher() failed(%d)\n",
 			__func__, ret);
-                goto cleanup;
+		goto cleanup;
 	}
 
 	if (settings->crypto.n_akm_suites) {
@@ -749,7 +749,7 @@ static int mt7697_cfg80211_start_ap(struct wiphy *wiphy,
 			dev_err(cfg->dev,
 				"%s: mt7697_set_key_mgmt() failed(%d)\n",
 				__func__, ret);
-                	goto cleanup;
+			goto cleanup;
 		}
 	}
 
@@ -759,7 +759,7 @@ static int mt7697_cfg80211_start_ap(struct wiphy *wiphy,
 		dev_err(cfg->dev,
 			"%s: mt7697_wr_set_security_mode_req() failed(%d)\n",
 			__func__, ret);
-                goto cleanup;
+		goto cleanup;
 	}
 
 	ret = mt7697_wr_reload_settings_req(cfg, vif->fw_vif_idx);
@@ -775,7 +775,7 @@ cleanup:
 }
 
 static int mt7697_cfg80211_stop_ap(struct wiphy *wiphy,
-				   struct net_device *ndev)
+                                   struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg =
 		(struct mt7697_cfg80211_info*)wiphy_priv(wiphy);
@@ -795,14 +795,14 @@ static int mt7697_cfg80211_change_beacon(struct wiphy *wiphy,
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 static int mt7697_cfg80211_add_station(struct wiphy *wiphy,
-				       struct net_device *ndev,
-				       const u8 *mac,
-				       struct station_parameters *params)
+                                       struct net_device *ndev,
+                                       const u8 *mac,
+                                       struct station_parameters *params)
 #else
 static int mt7697_cfg80211_add_station(struct wiphy *wiphy,
-				       struct net_device *ndev,
-				       u8 *mac,
-				       struct station_parameters *params)
+                                       struct net_device *ndev,
+                                       u8 *mac,
+                                       struct station_parameters *params)
 #endif
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -818,14 +818,14 @@ static int mt7697_cfg80211_add_station(struct wiphy *wiphy,
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 static int mt7697_cfg80211_get_station(struct wiphy *wiphy,
-				       struct net_device *ndev,
-			      	       const u8 *mac,
-				       struct station_info *sinfo)
+                                       struct net_device *ndev,
+                                       const u8 *mac,
+                                       struct station_info *sinfo)
 #else
 static int mt7697_cfg80211_get_station(struct wiphy *wiphy,
-				       struct net_device *ndev,
-			      	       u8 *mac,
-				       struct station_info *sinfo)
+                                       struct net_device *ndev,
+                                       u8 *mac,
+                                       struct station_info *sinfo)
 #endif
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -841,15 +841,15 @@ static int mt7697_cfg80211_get_station(struct wiphy *wiphy,
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 static int mt7697_cfg80211_del_station(struct wiphy *wiphy,
-				       struct net_device *ndev,
+                                       struct net_device *ndev,
                                        struct station_del_parameters *params)
 #else
 static int mt7697_cfg80211_del_station(struct wiphy *wiphy,
-				       struct net_device *ndev,
+                                       struct net_device *ndev,
                                        u8 *mac)
 #endif
 {
-        struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
+	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
 	dev_dbg(cfg->dev, "%s(): DEL STATION\n", __func__);
 
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3,18,44)
@@ -863,14 +863,14 @@ static int mt7697_cfg80211_del_station(struct wiphy *wiphy,
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
-					  struct net_device *ndev,
-				 	  const u8 *mac,
-					  struct station_parameters *params)
+                                          struct net_device *ndev,
+                                          const u8 *mac,
+                                          struct station_parameters *params)
 #else
 static int mt7697_cfg80211_change_station(struct wiphy *wiphy,
-					  struct net_device *ndev,
-				 	  u8 *mac,
-					  struct station_parameters *params)
+                                          struct net_device *ndev,
+                                          u8 *mac,
+                                          struct station_parameters *params)
 #endif
 {
 	struct mt7697_cfg80211_info *cfg = mt7697_priv(ndev);
@@ -907,8 +907,8 @@ cleanup:
 }
 
 static int mt7697_cfg80211_set_pmksa(struct wiphy *wiphy,
-				     struct net_device *ndev,
-				     struct cfg80211_pmksa *pmksa)
+                                     struct net_device *ndev,
+                                     struct cfg80211_pmksa *pmksa)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): SET PMKSA\n", __func__);
@@ -916,8 +916,8 @@ static int mt7697_cfg80211_set_pmksa(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_del_pmksa(struct wiphy *wiphy,
-				     struct net_device *ndev,
-				     struct cfg80211_pmksa *pmksa)
+                                     struct net_device *ndev,
+                                     struct cfg80211_pmksa *pmksa)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): DEL PMKSA\n", __func__);
@@ -925,7 +925,7 @@ static int mt7697_cfg80211_del_pmksa(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_flush_pmksa(struct wiphy *wiphy,
-				       struct net_device *ndev)
+                                       struct net_device *ndev)
 {
 	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): FLUSH PMKSA\n", __func__);
@@ -933,31 +933,31 @@ static int mt7697_cfg80211_flush_pmksa(struct wiphy *wiphy,
 }
 
 static int mt7697_cfg80211_remain_on_channel(struct wiphy *wiphy,
-                                    	     struct wireless_dev *wdev,
-                                    	     struct ieee80211_channel *chan,
-                                    	     unsigned int duration,
-                                    	     u64 *cookie)
+                                             struct wireless_dev *wdev,
+                                             struct ieee80211_channel *chan,
+                                             unsigned int duration,
+                                             u64 *cookie)
 {
-        struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
+	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): REMAIN ON CH\n", __func__);
 	return 0;
 }
 
 static int mt7697_cfg80211_cancel_remain_on_channel(struct wiphy *wiphy,
-                                           	    struct wireless_dev *wdev,
-                                           	    u64 cookie)
+                                                    struct wireless_dev *wdev,
+                                                    u64 cookie)
 {
-        struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
+	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): CANCEL REMAIN ON CH\n", __func__);
 	return 0;
 }
 
 static int mt7697_cfg80211_mgmt_tx(struct wiphy *wiphy,
-				   struct wireless_dev *wdev,
-                          	   struct cfg80211_mgmt_tx_params *params,
-				   u64 *cookie)
+                                   struct wireless_dev *wdev,
+                                   struct cfg80211_mgmt_tx_params *params,
+                                   u64 *cookie)
 {
-        struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
+	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): MGMT TX len(%u)\n", __func__, params->len);
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" MGMT Tx ", DUMP_PREFIX_OFFSET,
@@ -967,11 +967,11 @@ static int mt7697_cfg80211_mgmt_tx(struct wiphy *wiphy,
 }
 
 static void mt7697_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
-                                       		struct wireless_dev *wdev,
-                                       		u16 frame_type, bool reg)
+                                                struct wireless_dev *wdev,
+                                                u16 frame_type, bool reg)
 {
 	struct mt7697_vif *vif = mt7697_vif_from_wdev(wdev);
-        struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
+	struct mt7697_cfg80211_info *cfg = wiphy_to_cfg(wiphy);
 	dev_dbg(cfg->dev, "%s(): MGMT FRAME REG type(0x%04x) reg(%u)\n",
 		__func__, frame_type, reg);
 
@@ -987,34 +987,34 @@ static void mt7697_cfg80211_mgmt_frame_register(struct wiphy *wiphy,
 
 static const struct cfg80211_ops mt7697_cfg80211_ops =
 {
-	.add_virtual_intf 	  = mt7697_cfg80211_add_iface,
-	.del_virtual_intf 	  = mt7697_cfg80211_del_iface,
-	.change_virtual_intf 	  = mt7697_cfg80211_change_iface,
-	.set_txq_params		  = mt7697_cfg80211_set_txq_params,
-	.scan 			  = mt7697_cfg80211_scan,
-	.connect 		  = mt7697_cfg80211_connect,
-	.disconnect 		  = mt7697_cfg80211_disconnect,
-	.add_key 		  = mt7697_cfg80211_add_key,
-	.get_key 		  = mt7697_cfg80211_get_key,
-	.del_key 		  = mt7697_cfg80211_del_key,
-	.set_default_key 	  = mt7697_cfg80211_set_default_key,
-	.join_ibss 		  = mt7697_cfg80211_join_ibss,
-	.leave_ibss 		  = mt7697_cfg80211_leave_ibss,
-	.set_wiphy_params	  = mt7697_cfg80211_set_wiphy_params,
-	.start_ap		  = mt7697_cfg80211_start_ap,
-	.stop_ap		  = mt7697_cfg80211_stop_ap,
-	.change_beacon		  = mt7697_cfg80211_change_beacon,
-	.add_station 		  = mt7697_cfg80211_add_station,
-	.get_station 		  = mt7697_cfg80211_get_station,
-	.del_station 		  = mt7697_cfg80211_del_station,
-	.change_station 	  = mt7697_cfg80211_change_station,
-	.set_pmksa		  = mt7697_cfg80211_set_pmksa,
-  	.del_pmksa		  = mt7697_cfg80211_del_pmksa,
-  	.flush_pmksa		  = mt7697_cfg80211_flush_pmksa,
-	.remain_on_channel 	  = mt7697_cfg80211_remain_on_channel,
-        .cancel_remain_on_channel = mt7697_cfg80211_cancel_remain_on_channel,
-        .mgmt_tx 		  = mt7697_cfg80211_mgmt_tx,
-        .mgmt_frame_register 	  = mt7697_cfg80211_mgmt_frame_register,
+	.add_virtual_intf         = mt7697_cfg80211_add_iface,
+	.del_virtual_intf         = mt7697_cfg80211_del_iface,
+	.change_virtual_intf      = mt7697_cfg80211_change_iface,
+	.set_txq_params           = mt7697_cfg80211_set_txq_params,
+	.scan                     = mt7697_cfg80211_scan,
+	.connect                  = mt7697_cfg80211_connect,
+	.disconnect               = mt7697_cfg80211_disconnect,
+	.add_key                  = mt7697_cfg80211_add_key,
+	.get_key                  = mt7697_cfg80211_get_key,
+	.del_key                  = mt7697_cfg80211_del_key,
+	.set_default_key          = mt7697_cfg80211_set_default_key,
+	.join_ibss                = mt7697_cfg80211_join_ibss,
+	.leave_ibss               = mt7697_cfg80211_leave_ibss,
+	.set_wiphy_params         = mt7697_cfg80211_set_wiphy_params,
+	.start_ap                 = mt7697_cfg80211_start_ap,
+	.stop_ap                  = mt7697_cfg80211_stop_ap,
+	.change_beacon            = mt7697_cfg80211_change_beacon,
+	.add_station              = mt7697_cfg80211_add_station,
+	.get_station              = mt7697_cfg80211_get_station,
+	.del_station              = mt7697_cfg80211_del_station,
+	.change_station           = mt7697_cfg80211_change_station,
+	.set_pmksa                = mt7697_cfg80211_set_pmksa,
+	.del_pmksa                = mt7697_cfg80211_del_pmksa,
+	.flush_pmksa              = mt7697_cfg80211_flush_pmksa,
+	.remain_on_channel        = mt7697_cfg80211_remain_on_channel,
+	.cancel_remain_on_channel = mt7697_cfg80211_cancel_remain_on_channel,
+	.mgmt_tx                  = mt7697_cfg80211_mgmt_tx,
+	.mgmt_frame_register      = mt7697_cfg80211_mgmt_frame_register,
 };
 
 int mt7697_cfg80211_stop(struct mt7697_vif *vif)
@@ -1093,8 +1093,8 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 		dev_err(vif->cfg->dev,
 			"%s(): mt7697_wr_set_op_mode_req() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	memset(vif->ssid, 0, IEEE80211_MAX_SSID_LEN);
 	memset(vif->req_bssid, 0, ETH_ALEN);
@@ -1115,7 +1115,7 @@ int mt7697_cfg80211_stop(struct mt7697_vif *vif)
 			__func__, ret);
 	}
 
-        vif->cfg->txq_hdl = NULL;
+	vif->cfg->txq_hdl = NULL;
 	vif->cfg->rxq_hdl = NULL;
 
 cleanup:
@@ -1124,7 +1124,7 @@ cleanup:
 
 static const struct ieee80211_txrx_stypes
 mt7697_txrx_stypes[NUM_NL80211_IFTYPES] = {
-        [NL80211_IFTYPE_STATION] = {
+	[NL80211_IFTYPE_STATION] = {
 		.tx = BIT(IEEE80211_STYPE_ACTION >> 4) |
 		      BIT(IEEE80211_STYPE_PROBE_RESP >> 4),
 		.rx = BIT(IEEE80211_STYPE_ACTION >> 4) |
@@ -1151,8 +1151,8 @@ static int mt7697_cfg80211_vif_init(struct mt7697_vif *vif)
 
 static void mt7697_cfg80211_disconnect_work(struct work_struct *work)
 {
-        struct mt7697_vif *vif = container_of(work, struct mt7697_vif,
-                                              disconnect_work);
+	struct mt7697_vif *vif = container_of(work, struct mt7697_vif,
+	                                      disconnect_work);
 	struct mt7697_cfg80211_info *cfg = vif->cfg;
 	int ret;
 
@@ -1203,7 +1203,7 @@ static void mt7697_cleanup_vif(struct mt7697_cfg80211_info *cfg)
 }
 
 struct mt7697_vif* mt7697_get_vif_by_idx(struct mt7697_cfg80211_info *cfg,
-					 u32 if_idx)
+                                         u32 if_idx)
 {
 	struct mt7697_vif *vif, *found = NULL;
 
@@ -1227,7 +1227,7 @@ struct mt7697_vif* mt7697_get_vif_by_idx(struct mt7697_cfg80211_info *cfg,
 
 struct wireless_dev* mt7697_interface_add(struct mt7697_cfg80211_info *cfg,
                                           const char *name,
-	                                  enum nl80211_iftype type,
+                                          enum nl80211_iftype type,
                                           u8 fw_vif_idx)
 {
 	struct net_device *ndev;
@@ -1239,19 +1239,19 @@ struct wireless_dev* mt7697_interface_add(struct mt7697_cfg80211_info *cfg,
 
 	if (list_empty(&cfg->vif_list)) {
 		ndev = alloc_etherdev(sizeof(struct mt7697_vif));
-        	if (!ndev) {
-                	dev_err(cfg->dev, "%s(): alloc_etherdev() failed\n",
-				__func__);
+		if (!ndev) {
+			dev_err(cfg->dev, "%s(): alloc_etherdev() failed\n",
+			        __func__);
 			goto err;
- 		}
+		}
 
 		err = dev_alloc_name(ndev, name);
-        	if (err < 0) {
-                	dev_err(cfg->dev,
-				"%s(): dev_alloc_name() failed(%d)\n", __func__,
-				err);
+		if (err < 0) {
+			dev_err(cfg->dev,
+			        "%s(): dev_alloc_name() failed(%d)\n", __func__,
+			        err);
 			goto err;
- 		}
+		}
 
 		vif = netdev_priv(ndev);
 		ndev->ieee80211_ptr = &vif->wdev;
@@ -1388,7 +1388,7 @@ cleanup:
 }
 
 int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
-				  u32 channel)
+                                  u32 channel)
 {
 	struct mt7697_cfg80211_info *cfg = vif->cfg;
 	struct wiphy *wiphy = cfg_to_wiphy(cfg);
@@ -1403,10 +1403,10 @@ int mt7697_cfg80211_connect_event(struct mt7697_vif *vif, const u8* bssid,
 	clear_bit(CONNECT_PEND, &vif->flags);
 
 	dev_dbg(cfg->dev, "%s(): vif flags(0x%08lx)\n", __func__, vif->flags);
-        if (bssid) {
-                print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
-			        DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
-        }
+	if (bssid) {
+		print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ", 
+		               DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
+	}
 
 	if ((channel > 0) && (channel <= MT7697_CH_MAX_2G_CHANNEL)) {
 		band = wiphy->bands[IEEE80211_BAND_2GHZ];
@@ -1530,17 +1530,17 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 	cfg->wireless_mode = MT7697_WIFI_PHY_11ABGN_MIXED;
 
 	wiphy->mgmt_stypes = mt7697_txrx_stypes;
-        wiphy->max_remain_on_channel_duration = 5000;
+	wiphy->max_remain_on_channel_duration = 5000;
 	set_wiphy_dev(wiphy, cfg->dev);
 
-	wiphy->interface_modes = BIT(NL80211_IFTYPE_STATION) |
-				 BIT(NL80211_IFTYPE_ADHOC) |
-                                 BIT(NL80211_IFTYPE_AP);
+	wiphy->interface_modes = (BIT(NL80211_IFTYPE_STATION) |
+	                          BIT(NL80211_IFTYPE_ADHOC) |
+	                          BIT(NL80211_IFTYPE_AP));
 
-        wiphy->max_scan_ssids = MT7697_SCAN_MAX_ITEMS;
-        wiphy->max_scan_ie_len = IEEE80211_MAX_SSID_LEN;
+	wiphy->max_scan_ssids = MT7697_SCAN_MAX_ITEMS;
+	wiphy->max_scan_ie_len = IEEE80211_MAX_SSID_LEN;
 
-        wiphy->max_scan_ie_len = 1000; /* FIX: what is correct limit? */
+	wiphy->max_scan_ie_len = 1000; /* FIX: what is correct limit? */
 	switch (cfg->wireless_mode) {
 	case MT7697_WIFI_PHY_11AN_MIXED:
 	case MT7697_WIFI_PHY_11N_5G:
@@ -1589,8 +1589,8 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 	wiphy->bands[IEEE80211_BAND_5GHZ] = band_5gig ? &mt7697_band_5ghz : NULL;
 
 	wiphy->signal_type = CFG80211_SIGNAL_TYPE_MBM;
-        wiphy->cipher_suites = mt7697_cipher_suites;
-        wiphy->n_cipher_suites = ARRAY_SIZE(mt7697_cipher_suites);
+	wiphy->cipher_suites = mt7697_cipher_suites;
+	wiphy->n_cipher_suites = ARRAY_SIZE(mt7697_cipher_suites);
 
 #ifdef CONFIG_PM
 	wiphy->wowlan = &mt7697_wowlan_support;
@@ -1605,18 +1605,18 @@ int mt7697_cfg80211_init(struct mt7697_cfg80211_info *cfg)
 		NL80211_PROBE_RESP_OFFLOAD_SUPPORT_WPS2 |
 		NL80211_PROBE_RESP_OFFLOAD_SUPPORT_P2P;
 
-        err = wiphy_register(wiphy);
-        if (err < 0) {
-                dev_err(cfg->dev, "%s(): wiphy_register() failed(%d)\n",
-			__func__, err);
-                goto cleanup;
-        }
+	err = wiphy_register(wiphy);
+	if (err < 0) {
+		dev_err(cfg->dev, "%s(): wiphy_register() failed(%d)\n",
+		        __func__, err);
+		goto cleanup;
+	}
 
 	cfg->wiphy_registered = true;
 	dev_dbg(cfg->dev, "%s(): wiphy registered\n", __func__);
 
 cleanup:
-        return err;
+	return err;
 }
 
 void mt7697_cfg80211_cleanup(struct mt7697_cfg80211_info *cfg)

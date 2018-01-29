@@ -72,7 +72,7 @@ int mt7697_data_tx(struct sk_buff *skb, struct net_device *ndev)
 			__func__);
 		ret = NETDEV_TX_BUSY;
 		goto cleanup;
- 	}
+	}
 
 	tx_skb->skb = skb;
 	dev_dbg(cfg->dev, "%s(): tx pkt(%u/%p)\n",
@@ -106,7 +106,7 @@ cleanup:
 
 void mt7697_tx_work(struct work_struct *work)
 {
-        struct mt7697_cfg80211_info *cfg = container_of(work,
+	struct mt7697_cfg80211_info *cfg = container_of(work,
 		struct mt7697_cfg80211_info, tx_work);
 	struct mt7697_tx_pkt *tx_pkt, *tx_pkt_next = NULL;
 	struct ieee80211_hdr *hdr;
@@ -116,12 +116,12 @@ void mt7697_tx_work(struct work_struct *work)
 		struct mt7697_vif *vif = netdev_priv(tx_pkt->skb->dev);
 		WARN_ON(!vif);
 
-       		/* validate length for ether packet */
-        	if (tx_pkt->skb->len < sizeof(*hdr)) {
+		/* validate length for ether packet */
+		if (tx_pkt->skb->len < sizeof(*hdr)) {
 			dev_err(cfg->dev, "%s(): invalid skb len(%u < %u)\n",
 				__func__, tx_pkt->skb->len, sizeof(*hdr));
 			vif->net_stats.tx_errors++;
-        	}
+		}
 
 		ret = mt7697_wr_tx_raw_packet(cfg, tx_pkt->skb->data,
 			tx_pkt->skb->len);
@@ -150,7 +150,7 @@ void mt7697_tx_work(struct work_struct *work)
 
 void mt7697_tx_stop(struct mt7697_cfg80211_info *cfg)
 {
-        struct mt7697_tx_pkt *tx_pkt, *tx_pkt_next = NULL;
+	struct mt7697_tx_pkt *tx_pkt, *tx_pkt_next = NULL;
 
 	list_for_each_entry_safe(tx_pkt, tx_pkt_next, &cfg->tx_skb_list, next) {
 		struct mt7697_vif *vif = netdev_priv(tx_pkt->skb->dev);
@@ -204,7 +204,7 @@ int mt7697_rx_data(struct mt7697_cfg80211_info *cfg, u32 len, u32 if_idx)
 	}
 
 	skb_put(skb, len);
-        memcpy(skb->data, cfg->rx_data, len);
+	memcpy(skb->data, cfg->rx_data, len);
 	skb->dev = vif->ndev;
 
 	vif->net_stats.rx_packets++;
