@@ -38,41 +38,41 @@ static int mt7697io_write16(struct mt7697q_info *qinfo, u8 reg, u16 value)
 		value & 0xFF,
 	};
 
-    	WARN_ON(reg % sizeof(u16));
+	WARN_ON(reg % sizeof(u16));
 	ret = qinfo->hw_ops->write(qinfo->hw_priv, txBuffer, sizeof(txBuffer));
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): write() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 static int mt7697io_write32(struct mt7697q_info *qinfo, u8 reg, u32 value)
 {
 	int ret;
-    	WARN_ON(reg % sizeof(u32));
+	WARN_ON(reg % sizeof(u32));
 
 	ret = mt7697io_write16(qinfo, reg, BF_GET(value, 0, 16));
-    	if (ret < 0)
-       		goto fail;
-    	ret = mt7697io_write16(qinfo, reg + 2, BF_GET(value, 16, 16));
 	if (ret < 0)
-       		goto fail;
+		goto fail;
+	ret = mt7697io_write16(qinfo, reg + 2, BF_GET(value, 16, 16));
+	if (ret < 0)
+		goto fail;
 
 	return ret;
 
 fail:
 	dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n", __func__,
 		ret);
-    	return ret;
+	return ret;
 }
 
 static int mt7697io_read16(struct mt7697q_info *qinfo, u8 reg, u16 *value)
 {
-    	int ret;
+	int ret;
 	u8 spi_buffer[4] = {
 		MT7697_IO_CMD_READ,
 		reg,
@@ -84,13 +84,13 @@ static int mt7697io_read16(struct mt7697q_info *qinfo, u8 reg, u16 *value)
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): write_then_read() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	*value = ((spi_buffer[2] << 8) | spi_buffer[3]);
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 static int mt7697io_read32(struct mt7697q_info *qinfo, u8 reg, u32 *value)
@@ -100,13 +100,13 @@ static int mt7697io_read32(struct mt7697q_info *qinfo, u8 reg, u32 *value)
 	u16 high;
 	WARN_ON(reg % sizeof(u32));
 
-    	ret = mt7697io_read16(qinfo, reg, &low);
-    	if (ret < 0)
-       		goto fail;
-    	ret = mt7697io_read16(qinfo, reg + sizeof(u16), &high);
+	ret = mt7697io_read16(qinfo, reg, &low);
 	if (ret < 0)
-       		goto fail;
-    	*value = (low | (high << 16));
+		goto fail;
+	ret = mt7697io_read16(qinfo, reg + sizeof(u16), &high);
+	if (ret < 0)
+		goto fail;
+	*value = (low | (high << 16));
 
 	return ret;
 
@@ -119,19 +119,19 @@ fail:
 static int mt7697io_chk_slave_busy(struct mt7697q_info *qinfo, bool *slave_busy)
 {
 	int ret;
-    	u16 value;
+	u16 value;
 
 	ret = mt7697io_read16(qinfo, MT7697_IO_SLAVE_REG_STATUS, &value);
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_read16() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	*slave_busy = mt7697io_busy(value);
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 static int mt7697io_slave_wait(struct mt7697q_info *qinfo)
@@ -144,13 +144,13 @@ static int mt7697io_slave_wait(struct mt7697q_info *qinfo)
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_chk_slave_busy() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
+			goto cleanup;
+		}
 		udelay(1);
 	} while (slave_busy);
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 static u8 mt7697io_get_s2m_mbox(u16 value)
@@ -175,38 +175,38 @@ int mt7697io_wr_m2s_mbx(struct mt7697q_info *qinfo, u8 bits)
 		MT7697_IO_M2S_MAILBOX_REG_MAILBOX_WIDTH);
 
 	dev_dbg(qinfo->dev, "%s(): m2s mbx(0x%02x)\n", __func__, bits);
-    	WARN_ON((GENMASK(MT7697_IO_M2S_MAILBOX_REG_MAILBOX_WIDTH, 0) & bits) !=
+	WARN_ON((GENMASK(MT7697_IO_M2S_MAILBOX_REG_MAILBOX_WIDTH, 0) & bits) !=
 		bits);
 
-    	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_M2S, value);
+	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_M2S, value);
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 int mt7697io_rd_s2m_mbx(struct mt7697q_info *qinfo, u8 *s2m_mbx)
 {
 	int ret;
-    	u16 value;
+	u16 value;
 
-    	ret = mt7697io_read16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_S2M, &value);
-    	if (ret < 0) {
+	ret = mt7697io_read16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_S2M, &value);
+	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_read16() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	*s2m_mbx = mt7697io_get_s2m_mbox(value);
 	dev_dbg(qinfo->dev, "%s(): s2m mbx(0x%02x)\n",
 		__func__, *s2m_mbx);
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 int mt7697io_clr_s2m_mbx(struct mt7697q_info *qinfo, u8 s2m_mbx)
@@ -214,13 +214,13 @@ int mt7697io_clr_s2m_mbx(struct mt7697q_info *qinfo, u8 s2m_mbx)
 	const u16 value = mt7697io_set_s2m_mbox(s2m_mbx);
 	int ret;
 
-    	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_S2M, value);
+	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_MAILBOX_S2M, value);
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n",
 			__func__, ret);
-    	}
+	}
 
-    	return ret;
+	return ret;
 }
 
 int mt7697io_wr(struct mt7697q_info *qinfo, u32 addr, const u32 *data,
@@ -229,26 +229,26 @@ int mt7697io_wr(struct mt7697q_info *qinfo, u32 addr, const u32 *data,
 	size_t i;
 	int ret;
 
-    	WARN_ON(num == 0);
+	WARN_ON(num == 0);
 
-    	ret = mt7697io_write32(qinfo, MT7697_IO_SLAVE_REG_BUS_ADDR_LOW, addr);
-    	if (ret < 0) {
+	ret = mt7697io_write32(qinfo, MT7697_IO_SLAVE_REG_BUS_ADDR_LOW, addr);
+	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write32() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
-    	for (i = 0; i < num; i++) {
-        	ret = mt7697io_write32(
+	for (i = 0; i < num; i++) {
+		ret = mt7697io_write32(
 			qinfo, MT7697_IO_SLAVE_REG_WRITE_DATA_LOW, data[i]);
 		if (ret < 0) {
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_write32() failed(%d)\n",
 				__func__, ret);
-   	    		goto cleanup;
-   	 	}
+			goto cleanup;
+		}
 
-        	ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_COMMAND, (
+		ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_COMMAND, (
 	                BF_DEFINE(MT7697_IO_COMMAND_REG_BUS_SIZE_VAL_WORD,
 	                          MT7697_IO_COMMAND_REG_BUS_SIZE_OFFSET,
 	                          MT7697_IO_COMMAND_REG_BUS_SIZE_WIDTH) |
@@ -259,20 +259,20 @@ int mt7697io_wr(struct mt7697q_info *qinfo, u32 addr, const u32 *data,
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_write16() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
+			goto cleanup;
+		}
 
 		ret = mt7697io_slave_wait(qinfo);
 		if (ret < 0) {
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_slave_wait() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
-    	}
+			goto cleanup;
+		}
+	}
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 int mt7697io_rd(struct mt7697q_info *qinfo, u32 addr, u32 *data, size_t num)
@@ -280,65 +280,67 @@ int mt7697io_rd(struct mt7697q_info *qinfo, u32 addr, u32 *data, size_t num)
 	size_t i;
 	int ret;
 
-    	WARN_ON(num == 0);
+	WARN_ON(num == 0);
 
-    	ret = mt7697io_write32(qinfo, MT7697_IO_SLAVE_REG_BUS_ADDR_LOW, addr);
+	ret = mt7697io_write32(qinfo, MT7697_IO_SLAVE_REG_BUS_ADDR_LOW, addr);
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write32() failed(%d)\n",
 			__func__, ret);
-   	    	goto cleanup;
-   	}
+		goto cleanup;
+	}
 
-    	for (i = 0; i < num; i++) {
-		ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_COMMAND, (
-                	BF_DEFINE(MT7697_IO_COMMAND_REG_BUS_SIZE_VAL_WORD,
-                        	  MT7697_IO_COMMAND_REG_BUS_SIZE_OFFSET,
-                        	  MT7697_IO_COMMAND_REG_BUS_SIZE_WIDTH) |
-                    	BF_DEFINE(MT7697_IO_COMMAND_REG_RW_VAL_READ,
-				  MT7697_IO_COMMAND_REG_RW_OFFSET,
-				  MT7697_IO_COMMAND_REG_RW_WIDTH)));
+	for (i = 0; i < num; i++) {
+		ret = mt7697io_write16(
+			qinfo, MT7697_IO_SLAVE_REG_COMMAND, (
+				BF_DEFINE(MT7697_IO_COMMAND_REG_BUS_SIZE_VAL_WORD,
+				          MT7697_IO_COMMAND_REG_BUS_SIZE_OFFSET,
+				          MT7697_IO_COMMAND_REG_BUS_SIZE_WIDTH) |
+				BF_DEFINE(MT7697_IO_COMMAND_REG_RW_VAL_READ,
+				          MT7697_IO_COMMAND_REG_RW_OFFSET,
+				          MT7697_IO_COMMAND_REG_RW_WIDTH)));
 		if (ret < 0) {
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_write16() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
+			goto cleanup;
+		}
 
 
-        	ret = mt7697io_slave_wait(qinfo);
+		ret = mt7697io_slave_wait(qinfo);
 		if (ret < 0) {
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_slave_wait() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
+			goto cleanup;
+		}
 
-        	ret = mt7697io_read32(
+		ret = mt7697io_read32(
 			qinfo, MT7697_IO_SLAVE_REG_READ_DATA_LOW, &data[i]);
-        	if (ret < 0) {
+		if (ret < 0) {
 			dev_err(qinfo->dev,
 				"%s(): mt7697io_read32() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
-    	}
+			goto cleanup;
+		}
+	}
 
 cleanup:
-    	return ret;
+	return ret;
 }
 
 int mt7697io_trigger_intr(struct mt7697q_info *qinfo)
 {
-	int ret = mt7697io_write16(qinfo, MT7697_IO_SLAVE_REG_IRQ,
-        	BF_DEFINE(MT7697_IO_IRQ_REG_IRQ_STATUS_VAL_ACTIVE,
-            		  MT7697_IO_IRQ_REG_IRQ_STATUS_OFFSET,
-            		  MT7697_IO_IRQ_REG_IRQ_STATUS_WIDTH));
+	int ret = mt7697io_write16(
+		qinfo, MT7697_IO_SLAVE_REG_IRQ,
+		BF_DEFINE(MT7697_IO_IRQ_REG_IRQ_STATUS_VAL_ACTIVE,
+		          MT7697_IO_IRQ_REG_IRQ_STATUS_OFFSET,
+		          MT7697_IO_IRQ_REG_IRQ_STATUS_WIDTH));
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697io_write16() failed(%d)\n",
 			__func__, ret);
-   	    	goto cleanup;
-   	}
+		goto cleanup;
+	}
 
 cleanup:
-    	return ret;
+	return ret;
 }

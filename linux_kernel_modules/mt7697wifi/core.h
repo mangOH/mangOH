@@ -66,19 +66,19 @@ enum mt7697_sme_state {
 };
 
 enum mt7697_vif_state {
-        CONNECTED,
-        CONNECT_PEND,
-        WMM_ENABLED,
-        NETQ_STOPPED,
-        DTIM_EXPIRED,
-        CLEAR_BSSFILTER_ON_BEACON,
-        DTIM_PERIOD_AVAIL,
-        WLAN_ENABLED,
-        STATS_UPDATE_PEND,
-        HOST_SLEEP_MODE_CMD_PROCESSED,
-        NETDEV_MCAST_ALL_ON,
-        NETDEV_MCAST_ALL_OFF,
-        SCHED_SCANNING,
+	CONNECTED,
+	CONNECT_PEND,
+	WMM_ENABLED,
+	NETQ_STOPPED,
+	DTIM_EXPIRED,
+	CLEAR_BSSFILTER_ON_BEACON,
+	DTIM_PERIOD_AVAIL,
+	WLAN_ENABLED,
+	STATS_UPDATE_PEND,
+	HOST_SLEEP_MODE_CMD_PROCESSED,
+	NETDEV_MCAST_ALL_ON,
+	NETDEV_MCAST_ALL_OFF,
+	SCHED_SCANNING,
 };
 
 struct mt7697_tx_pkt {
@@ -88,7 +88,7 @@ struct mt7697_tx_pkt {
 
 struct mt7697_cfg80211_info {
 	struct device *dev;
-        struct wiphy *wiphy;
+	struct wiphy *wiphy;
 	struct semaphore sem;
 
 	struct platform_device *hif_priv;
@@ -196,12 +196,12 @@ struct mt7697_vif {
 
 static inline struct wiphy *cfg_to_wiphy(struct mt7697_cfg80211_info *cfg)
 {
-        return cfg->wiphy;
+	return cfg->wiphy;
 }
 
 static inline struct mt7697_cfg80211_info *wiphy_to_cfg(struct wiphy *w)
 {
-        return (struct mt7697_cfg80211_info *)(wiphy_priv(w));
+	return (struct mt7697_cfg80211_info *)(wiphy_priv(w));
 }
 
 static inline struct mt7697_cfg80211_info *mt7697_priv(struct net_device *ndev)
@@ -211,7 +211,7 @@ static inline struct mt7697_cfg80211_info *mt7697_priv(struct net_device *ndev)
 
 static inline struct mt7697_vif *mt7697_vif_from_wdev(struct wireless_dev *wdev)
 {
-        return container_of(wdev, struct mt7697_vif, wdev);
+	return container_of(wdev, struct mt7697_vif, wdev);
 }
 
 void mt7697_init_netdev(struct net_device*);

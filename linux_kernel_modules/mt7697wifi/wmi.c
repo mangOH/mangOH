@@ -38,7 +38,7 @@ static int mt7697_proc_mac_addr(const struct mt7697_rsp_hdr* rsp,
 			__func__, rsp->cmd.len,
 			sizeof(struct mt7697_mac_addr_rsp));
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&addr,
@@ -47,8 +47,8 @@ static int mt7697_proc_mac_addr(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(addr)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" MAC address ",
 		DUMP_PREFIX_OFFSET, 16, 1, addr, ETH_ALEN, 0);
@@ -92,7 +92,7 @@ static int mt7697_proc_get_wireless_mode(const struct mt7697_rsp_hdr* rsp,
 			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			sizeof(u32));
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&wireless_mode,
@@ -102,8 +102,8 @@ static int mt7697_proc_get_wireless_mode(const struct mt7697_rsp_hdr* rsp,
 			__func__, ret,
 			LEN_TO_WORD(sizeof(wireless_mode)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	dev_dbg(cfg->dev, "%s(): wireless mode(%u)\n",
 		__func__, wireless_mode);
@@ -129,7 +129,7 @@ static int mt7697_proc_get_cfg(const struct mt7697_rsp_hdr* rsp,
 			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			LEN32_ALIGNED(sizeof(struct mt7697_wifi_config_t)));
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	rd_buf = kzalloc(LEN32_ALIGNED(sizeof(struct mt7697_wifi_config_t)),
@@ -137,7 +137,7 @@ static int mt7697_proc_get_cfg(const struct mt7697_rsp_hdr* rsp,
 	if (!rd_buf) {
 		dev_err(cfg->dev, "%s(): kzalloc() failed\n", __func__);
 		ret = -ENOMEM;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)rd_buf,
@@ -147,8 +147,8 @@ static int mt7697_proc_get_cfg(const struct mt7697_rsp_hdr* rsp,
 			__func__, ret,
 			LEN_TO_WORD(sizeof(struct mt7697_wifi_config_t)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	wifi_cfg = (struct mt7697_wifi_config_t*)rd_buf;
 	dev_dbg(cfg->dev, "%s(): operation mode(%u)\n",
@@ -284,7 +284,7 @@ static int mt7697_proc_get_listen_interval(const struct mt7697_rsp_hdr* rsp,
 			rsp->cmd.len - sizeof(struct mt7697_rsp_hdr),
 			sizeof(u32));
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&interval,
@@ -293,8 +293,8 @@ static int mt7697_proc_get_listen_interval(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	cfg->listen_interval = interval;
 	dev_dbg(cfg->dev, "%s(): listen interval(%u)\n",
@@ -311,7 +311,7 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 	struct ieee80211_mgmt *rx_mgmt_frame;
 	s32 rssi;
 	u32 ch;
-        u32 probe_rsp_len;
+	u32 probe_rsp_len;
 	int ret;
 	__le16 fc;
 
@@ -322,7 +322,7 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 			__func__, rsp->cmd.len,
 			sizeof(struct mt7697_scan_ind));
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (s32*)&rssi,
@@ -331,8 +331,8 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(s32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): rssi(%d)\n", __func__, rssi);
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&ch,
@@ -341,8 +341,8 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): channel(%u)\n", __func__, ch);
 
 	probe_rsp_len = rsp->result;
@@ -350,12 +350,12 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): invalid probe rsp len(%d > %d)\n",
 			__func__, probe_rsp_len, IEEE80211_MAX_DATA_LEN);
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	} else if (!probe_rsp_len) {
 		dev_err(cfg->dev, "%s(): invalid probe rsp len(%d)\n",
 			__func__, probe_rsp_len);
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 	dev_dbg(cfg->dev, "%s(): probe rsp len(%u)\n",
 		__func__, probe_rsp_len);
@@ -367,8 +367,8 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 			__func__, ret,
 			LEN_TO_WORD(LEN32_ALIGNED(probe_rsp_len)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	rx_mgmt_frame = (struct ieee80211_mgmt*)cfg->probe_data;
 	fc = rx_mgmt_frame->frame_control;
@@ -459,8 +459,8 @@ static int mt7697_proc_scan_rsp(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): if idx(%d)\n", __func__, if_idx);
 
 	if ((rsp->result < 0) && (vif->scan_req != NULL)) {
@@ -499,8 +499,8 @@ static int mt7697_proc_scan_complete_ind(struct mt7697_cfg80211_info *cfg)
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): if idx(%u)\n", __func__, if_idx);
 
 	vif = mt7697_get_vif_by_idx(cfg, if_idx);
@@ -547,8 +547,8 @@ static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): if idx(%d)\n", __func__, if_idx);
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)&channel,
@@ -557,8 +557,8 @@ static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): channel(%d)\n", __func__, channel);
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)bssid,
@@ -567,15 +567,15 @@ static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(bssid)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ",
 		DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
 
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
@@ -615,8 +615,8 @@ static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp,
 			dev_err(cfg->dev,
 				"%s(): mt7697_cfg80211_new_sta() failed(%d)\n",
 				__func__, ret);
-       			goto cleanup;
-    		}
+			goto cleanup;
+		}
 
 		cfg80211_new_sta(vif->ndev, bssid, &sinfo, GFP_KERNEL);
 
@@ -650,8 +650,8 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(u32)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 	dev_dbg(cfg->dev, "%s(): if idx(%d)\n", __func__, if_idx);
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)bssid,
@@ -660,15 +660,15 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 		dev_err(cfg->dev, "%s(): read() failed(%d != %d)\n",
 			__func__, ret, LEN_TO_WORD(sizeof(bssid)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ",
 		DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
 
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	if (cfg->wifi_cfg.opmode == MT7697_WIFI_MODE_STA_ONLY) {
@@ -754,7 +754,7 @@ static int mt7697_rx_raw(const struct mt7697_rsp_hdr* rsp,
 			__func__, rsp->cmd.len,
 			sizeof(struct mt7697_rsp_hdr));
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	dev_dbg(cfg->dev, "%s(): len(%d)\n", __func__, rsp->result);
@@ -762,7 +762,7 @@ static int mt7697_rx_raw(const struct mt7697_rsp_hdr* rsp,
 		dev_err(cfg->dev, "%s(): invalid rx data len(%u > %u)\n",
 			__func__, rsp->result, IEEE80211_MAX_FRAME_LEN);
 		ret = -EINVAL;
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	ret = cfg->hif_ops->read(cfg->rxq_hdl, (u32*)cfg->rx_data,
@@ -772,15 +772,15 @@ static int mt7697_rx_raw(const struct mt7697_rsp_hdr* rsp,
 			__func__, ret,
 			LEN_TO_WORD(LEN32_ALIGNED(rsp->result)));
 		ret = (ret < 0) ? ret:-EIO;
-       		goto cleanup;
-    	}
+		goto cleanup;
+	}
 
 //	print_hex_dump(KERN_DEBUG, DRVNAME" RX ", DUMP_PREFIX_OFFSET,
 //		16, 1, cfg->rx_data, rsp->result, 0);
 
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	/* TODO: interface index come from MT7697 */
@@ -810,7 +810,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_mac_addr() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_GET_WIRELESS_MODE_RSP:
@@ -820,7 +820,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_get_wireless_mode() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_GET_CFG_RSP:
@@ -830,7 +830,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_get_cfg() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_GET_LISTEN_INTERVAL_RSP:
@@ -840,7 +840,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_get_listen_interval() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_SCAN_RSP:
@@ -850,7 +850,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_scan_rsp() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_SCAN_IND:
@@ -860,7 +860,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_scan_ind() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_SCAN_COMPLETE_IND:
@@ -870,7 +870,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_scan_complete_ind() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_CONNECT_IND:
@@ -880,7 +880,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_connect_ind() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_DISCONNECT_IND:
@@ -890,7 +890,7 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 				"%s(): mt7697_proc_disconnect_ind() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
-    		}
+		}
 		break;
 
 	case MT7697_CMD_RX_RAW:
@@ -898,10 +898,10 @@ int mt7697_proc_80211cmd(const struct mt7697_rsp_hdr* rsp, void* priv)
 		if (ret < 0) {
 			dev_err(cfg->dev, "%s(): mt7697_rx_raw() failed(%d)\n",
 				__func__, ret);
-    		}
+		}
 		break;
 
-        case MT7697_CMD_SET_OP_MODE_RSP:
+	case MT7697_CMD_SET_OP_MODE_RSP:
 		dev_dbg(cfg->dev, "%s(): --> SET OP MODE RSP\n", __func__);
 		break;
 
@@ -1032,7 +1032,7 @@ int mt7697_wr_set_pmk_req(const struct mt7697_cfg80211_info *cfg, const u8 *pmk)
 	req.port = cfg->port_type;
 
 	for (i = 0; i < MT7697_WIFI_LENGTH_PMK; i++) {
-  		snprintf(tmp, sizeof(tmp), "%02x", pmk[i]);
+		snprintf(tmp, sizeof(tmp), "%02x", pmk[i]);
 		memcpy(&req.pmk[i*2], tmp, 2*sizeof(u8));
 	}
 
@@ -1477,7 +1477,7 @@ int mt7697_wr_tx_raw_packet(struct mt7697_cfg80211_info* cfg,
 	cfg->tx_req.cmd.len = sizeof(struct mt7697_cmd_hdr) + sizeof(len) + len;
 	cfg->tx_req.len = len;
 	WARN_ON(len > sizeof(cfg->tx_req.data));
-        memcpy(cfg->tx_req.data, data, len);
+	memcpy(cfg->tx_req.data, data, len);
 
 	dev_dbg(cfg->dev, "%s(): <-- TX RAW PKT len(%u)\n",
 		__func__, cfg->tx_req.len);

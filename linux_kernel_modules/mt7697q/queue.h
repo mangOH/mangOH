@@ -35,39 +35,39 @@
 #define MT7697_QUEUE_DEBUG_DUMP_LIMIT 		1024
 
 struct mt7697q_data {
-	u32 				flags;
-    	u32 				base_addr;
-	u16 				rd_offset;
-	u16				reserved1;
-	u16 				wr_offset;
-	u16 				reserved2;
+	u32 flags;
+	u32 base_addr;
+	u16 rd_offset;
+	u16 reserved1;
+	u16 wr_offset;
+	u16 reserved2;
 };
 
 struct mt7697q_spec {
-	struct mt7697q_data		data;
+	struct mt7697q_data             data;
 	struct mt7697q_info             *qinfo;
-	void				*priv;
-	notify_tx_hndlr			notify_tx_fcn;
-	rx_hndlr			rx_fcn;
-	u8				ch;
+	void                            *priv;
+	notify_tx_hndlr                 notify_tx_fcn;
+	rx_hndlr                        rx_fcn;
+	u8                              ch;
 };
 
 struct mt7697q_info {
-	struct mt7697q_spec 		queues[MT7697_NUM_QUEUES];
-	struct mt7697_rsp_hdr 		rsp;
+	struct mt7697q_spec             queues[MT7697_NUM_QUEUES];
+	struct mt7697_rsp_hdr           rsp;
 
-	struct device			*dev;
-	void 				*hw_priv;
-        const struct mt7697spi_hw_ops   *hw_ops;
+	struct device                   *dev;
+	void                            *hw_priv;
+	const struct mt7697spi_hw_ops   *hw_ops;
 
 	struct mutex                    mutex;
-	struct workqueue_struct 	*irq_workq;
+	struct workqueue_struct         *irq_workq;
 
 	struct work_struct              irq_work;
-	struct delayed_work		irq_delayed_work;
-	atomic_t			blocked_writer;
-	int 				gpio_pin;
-	int 				irq;
+	struct delayed_work             irq_delayed_work;
+	atomic_t                        blocked_writer;
+	int                             gpio_pin;
+	int                             irq;
 };
 
 void mt7697q_irq_delayed_work(struct work_struct*);

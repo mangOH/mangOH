@@ -29,11 +29,11 @@ static int mt7697q_irq_run(struct mt7697q_info *qinfo)
 	u8 s2m_mbox;
 
 	ret = mt7697q_get_s2m_mbx(qinfo, &s2m_mbox);
-        if (ret < 0) {
+	if (ret < 0) {
 		dev_err(qinfo->dev,
 			"%s(): mt7697q_get_s2m_mbx() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
+		goto cleanup;
 	}
 
 	if (s2m_mbox) {
@@ -43,7 +43,7 @@ static int mt7697q_irq_run(struct mt7697q_info *qinfo)
 				"%s(): queue_delayed_work() failed\n",
 				__func__);
 			ret = -EINVAL;
-    		}
+		}
 	} else {
 		enable_irq(qinfo->irq);
 	}
@@ -61,8 +61,8 @@ static int mt7697q_irq_run(struct mt7697q_info *qinfo)
 					dev_err(qinfo->dev,
 						"%s(): mt7697q_proc_data() failed(%d)\n",
 						__func__, ret);
-       					goto cleanup;
-    				}
+					goto cleanup;
+				}
 			} else if (mt7697q_blocked_writer(qs)) {
 				WARN_ON(!qs->notify_tx_fcn);
 				ret = qs->notify_tx_fcn(qs->priv,
@@ -71,7 +71,7 @@ static int mt7697q_irq_run(struct mt7697q_info *qinfo)
 					dev_err(qs->qinfo->dev,
 						"%s(): notify_tx_fcn() failed(%d)\n",
 						__func__, ret);
-    				}
+				}
 			}
 		}
 	}
@@ -91,7 +91,7 @@ void mt7697q_irq_delayed_work(struct work_struct *irq_delayed_work)
 	if (ret < 0) {
 		dev_err(qinfo->dev, "%s(): mt7697q_irq_run() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
+		goto cleanup;
 	}
 
 cleanup:
@@ -110,7 +110,7 @@ void mt7697q_irq_work(struct work_struct *irq_work)
 		dev_err(qinfo->dev,
 			"%s(): mt7697q_irq_run() failed(%d)\n",
 			__func__, ret);
-       		goto cleanup;
+		goto cleanup;
 	}
 
 cleanup:
@@ -124,7 +124,7 @@ irqreturn_t mt7697q_isr(int irq, void *arg)
 	disable_irq_nosync(qinfo->irq);
 	if (!queue_work(qinfo->irq_workq, &qinfo->irq_work)) {
 		dev_err(qinfo->dev, "%s(): queue_work() failed\n", __func__);
-    	}
+	}
 
 	return IRQ_HANDLED;
 }
