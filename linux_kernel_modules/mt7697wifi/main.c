@@ -36,15 +36,15 @@ MODULE_PARM_DESC(itf_idx_start, "MT7697 WiFi interface start index");
 
 static void mt7697_to_lower(char** in)
 {
-  	char* ptr = (char*)*in;
-  	while (*ptr != '\0') {
-    		if (((*ptr <= 'Z') && (*ptr >= 'A')) ||
-            	    ((*ptr <= 'z') && (*ptr >= 'a')))
-      			*ptr = ((*ptr <= 'Z') && (*ptr >= 'A')) ? 
+	char* ptr = (char*)*in;
+	while (*ptr != '\0') {
+		if (((*ptr <= 'Z') && (*ptr >= 'A')) ||
+		    ((*ptr <= 'z') && (*ptr >= 'a')))
+			*ptr = ((*ptr <= 'Z') && (*ptr >= 'A')) ?
 				*ptr + 'a' - 'A':*ptr;
 
-    		ptr++;    
-  	}
+		ptr++;
+	}
 }
 
 static int mt7697_open(struct net_device *ndev)
@@ -55,8 +55,8 @@ static int mt7697_open(struct net_device *ndev)
 
 	dev_dbg(cfg->dev, "%s(): open net device\n", __func__);
 
-        if (!cfg->rxq_hdl && !cfg->txq_hdl) {
-                dev_dbg(cfg->dev, "%s(): open mt7697 uart\n", __func__);
+	if (!cfg->rxq_hdl && !cfg->txq_hdl) {
+		dev_dbg(cfg->dev, "%s(): open mt7697 uart\n", __func__);
 		cfg->txq_hdl = cfg->hif_ops->open(mt7697_proc_80211cmd, cfg);
 		if (!cfg->txq_hdl) {
 			dev_err(cfg->dev, "%s(): open() failed\n", __func__);
@@ -64,15 +64,16 @@ static int mt7697_open(struct net_device *ndev)
 		}
 
 		cfg->rxq_hdl = cfg->txq_hdl;
-        }
+	}
 
 	set_bit(WLAN_ENABLED, &vif->flags);
 
 	if (test_bit(CONNECTED, &vif->flags)) {
 		netif_carrier_on(ndev);
 		netif_wake_queue(ndev);
-	} else
+	} else {
 		netif_carrier_on(ndev);
+	}
 
 cleanup:
 	return ret;
@@ -89,13 +90,13 @@ static int mt7697_stop(struct net_device *ndev)
 
 	ret = mt7697_cfg80211_stop(vif);
 	if (ret < 0) {
-		dev_err(cfg->dev, 
-			"%s(): mt7697_cfg80211_stop() failed(%d)\n", 
+		dev_err(cfg->dev,
+			"%s(): mt7697_cfg80211_stop() failed(%d)\n",
 			__func__, ret);
 		goto cleanup;
 	}
 
-cleanup:	
+cleanup:
 	return ret;
 }
 
@@ -112,7 +113,7 @@ static void mt7697_set_multicast_list(struct net_device *ndev)
 	bool mc_all_on = false;
 	int mc_count = netdev_mc_count(ndev);
 
-	dev_dbg(cfg->dev, "%s(): net device set multicast flags(0x%08x)\n", 
+	dev_dbg(cfg->dev, "%s(): net device set multicast flags(0x%08x)\n",
 		__func__, ndev->flags);
 
 	/* Enable multicast-all filter. */
@@ -139,25 +140,25 @@ static void mt7697_set_multicast_list(struct net_device *ndev)
 
 static void mt7697_init_hw_start(struct work_struct *work)
 {
-        struct mt7697_cfg80211_info *cfg = container_of(work, 
+	struct mt7697_cfg80211_info *cfg = container_of(work,
 		struct mt7697_cfg80211_info, init_work);
 	int err;
-        
+
 	if (!strcmp(hw_itf, "spi")) {
-		dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n", 
-			__func__, MT7697_MAC80211_QUEUE_TX, MT7697_MAC80211_QUEUE_RX);
-		err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX, 
+		dev_dbg(cfg->dev, "%s(): init mt7697 queue(%u/%u)\n",
+			__func__, MT7697_MAC80211_QUEUE_TX,
+			MT7697_MAC80211_QUEUE_RX);
+		err = cfg->hif_ops->init(MT7697_MAC80211_QUEUE_TX,
 		                 	 MT7697_MAC80211_QUEUE_RX, cfg,
-				 	 mt7697_notify_tx, 
-                                 	 mt7697_proc_80211cmd, 
+				 	 mt7697_notify_tx,
+		                         mt7697_proc_80211cmd,
 		                 	 &cfg->txq_hdl, &cfg->rxq_hdl);
 		if (err < 0) {
 			dev_err(cfg->dev, "%s(): queue(%u) init() failed(%d)\n",
 				__func__, MT7697_MAC80211_QUEUE_TX, err);
 			goto failed;
 		}
-	}
-	else {
+	} else {
 		dev_dbg(cfg->dev, "%s(): open mt7697 uart\n", __func__);
 		cfg->txq_hdl = cfg->hif_ops->open(mt7697_proc_80211cmd, cfg);
 		if (!cfg->txq_hdl) {
@@ -170,7 +171,7 @@ static void mt7697_init_hw_start(struct work_struct *work)
 
 	err = mt7697_wr_cfg_req(cfg);
 	if (err < 0) {
-		dev_err(cfg->dev, "%s(): mt7697_wr_cfg_req() failed(%d)\n", 
+		dev_err(cfg->dev, "%s(): mt7697_wr_cfg_req() failed(%d)\n",
 			__func__, err);
 		goto failed;
 	}
@@ -180,28 +181,28 @@ failed:
 }
 
 static const struct net_device_ops mt7697_netdev_ops = {
-        .ndo_open               = mt7697_open,
-        .ndo_stop               = mt7697_stop,
-        .ndo_start_xmit         = mt7697_data_tx,
+	.ndo_open               = mt7697_open,
+	.ndo_stop               = mt7697_stop,
+	.ndo_start_xmit         = mt7697_data_tx,
 	.ndo_get_stats          = mt7697_get_stats,
-        .ndo_set_rx_mode        = mt7697_set_multicast_list,
+	.ndo_set_rx_mode        = mt7697_set_multicast_list,
 };
 
 void mt7697_init_netdev(struct net_device *ndev)
 {
-        ndev->netdev_ops = &mt7697_netdev_ops;
+	ndev->netdev_ops = &mt7697_netdev_ops;
 	ndev->wireless_handlers = &mt7697_wireless_hndlrs;
-        ndev->destructor = free_netdev;
-        ndev->watchdog_timeo = MT7697_TX_TIMEOUT;
-        ndev->needed_headroom = sizeof(struct ieee80211_hdr) + 
-			        sizeof(struct mt7697_llc_snap_hdr);
-        ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
+	ndev->destructor = free_netdev;
+	ndev->watchdog_timeo = MT7697_TX_TIMEOUT;
+	ndev->needed_headroom = sizeof(struct ieee80211_hdr) +
+	                        sizeof(struct mt7697_llc_snap_hdr);
+	ndev->hw_features |= NETIF_F_IP_CSUM | NETIF_F_RXCSUM;
 }
 
 static struct mt7697_if_ops if_ops;
 
 static int mt7697_probe(struct platform_device *pdev)
-{	
+{
 	struct wiphy *wiphy;
 	struct mt7697_cfg80211_info *cfg;
 	int err = 0;
@@ -209,22 +210,22 @@ static int mt7697_probe(struct platform_device *pdev)
 	dev_dbg(&pdev->dev, "%s(): probe\n", __func__);
 	cfg = mt7697_cfg80211_create();
 	if (!cfg) {
-                dev_err(&pdev->dev, 
+		dev_err(&pdev->dev,
 			"%s(): mt7697_cfg80211_create() failed()\n",
 			__func__);
 		err = -ENOMEM;
 		goto failed;
-        }
+	}
 
 	sema_init(&cfg->sem, 1);
 	cfg->tx_workq = create_workqueue(DRVNAME);
 	if (!cfg->tx_workq) {
-                dev_err(&pdev->dev, 
+		dev_err(&pdev->dev,
 			"%s(): create_workqueue() failed()\n",
 			__func__);
 		err = -ENOMEM;
 		goto failed;
-        }
+	}
 
 	INIT_WORK(&cfg->init_work, mt7697_init_hw_start);
 	INIT_WORK(&cfg->tx_work, mt7697_tx_work);
@@ -245,16 +246,14 @@ static int mt7697_probe(struct platform_device *pdev)
 		if_ops.read		= mt7697q_read;
 		if_ops.write		= mt7697q_write;
 		if_ops.unblock_writer	= mt7697q_unblock_writer;
-	}
-	else if (!strcmp(hw_itf, "uart")) {
+	} else if (!strcmp(hw_itf, "uart")) {
 		if_ops.open		= mt7697_uart_open;
 		if_ops.close		= mt7697_uart_close;
 		if_ops.read		= mt7697_uart_read;
 		if_ops.write		= mt7697_uart_write;
-	}
-	else {
-		dev_err(&pdev->dev, 
-			"%s(): invalid hw itf(spi/uart) module paramter('%s')\n", 
+	} else {
+		dev_err(&pdev->dev,
+			"%s(): invalid hw itf(spi/uart) module paramter('%s')\n",
 			__func__, hw_itf);
 		err = -EINVAL;
 		goto failed;
@@ -269,15 +268,15 @@ static int mt7697_probe(struct platform_device *pdev)
 
 	err = mt7697_cfg80211_init(cfg);
 	if (err < 0) {
-                dev_err(&pdev->dev, 
-			"%s(): mt7697_cfg80211_init() failed(%d)\n", 
+		dev_err(&pdev->dev,
+			"%s(): mt7697_cfg80211_init() failed(%d)\n",
 			__func__, err);
 		goto failed;
-        }
+	}
 
 	platform_set_drvdata(pdev, cfg);
 	schedule_work(&cfg->init_work);
-		
+
 failed:
 	if (err < 0) {
 		if (wiphy) wiphy_free(wiphy);
@@ -303,20 +302,20 @@ static void mt7697_release(struct device *dev)
 }
 
 static struct platform_device mt7697_platform_device = {
-    	.name		= DRVNAME,
-    	.id		= PLATFORM_DEVID_NONE,
-    	.dev 		= {
-		.release	= mt7697_release,
+	.name = DRVNAME,
+	.id   = PLATFORM_DEVID_NONE,
+	.dev  = {
+		.release = mt7697_release,
 	},
 };
 
 static struct platform_driver mt7697_platform_driver = {
 	.driver = {
-		.name = DRVNAME,
+		.name  = DRVNAME,
 		.owner = THIS_MODULE,
 	},
 
-	.probe = mt7697_probe,
+	.probe  = mt7697_probe,
 	.remove	= mt7697_remove,
 };
 
@@ -327,14 +326,14 @@ static int __init mt7697_init(void)
 	pr_info(DRVNAME" init\n");
 	ret = platform_device_register(&mt7697_platform_device);
 	if (ret) {
-		pr_err(DRVNAME" %s(): platform_device_register() failed(%d)\n", 
+		pr_err(DRVNAME" %s(): platform_device_register() failed(%d)\n",
 			__func__, ret);
 		goto cleanup;
 	}
 
 	ret = platform_driver_register(&mt7697_platform_driver);
 	if (ret) {
-		pr_err(DRVNAME" %s(): platform_driver_register() failed(%d)\n", 
+		pr_err(DRVNAME" %s(): platform_driver_register() failed(%d)\n",
 			__func__, ret);
 		platform_device_del(&mt7697_platform_device);
 		goto cleanup;
@@ -374,16 +373,16 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 
 	if (test_bit(CONNECTED, &vif->flags) ||
 	    test_bit(CONNECT_PEND, &vif->flags)) {
-		if (vif->sme_state == SME_CONNECTING)
-			cfg80211_connect_result(vif->ndev, vif->bssid, 
+		if (vif->sme_state == SME_CONNECTING) {
+			cfg80211_connect_result(vif->ndev, vif->bssid,
 						NULL, 0,
 						NULL, 0,
 						WLAN_STATUS_UNSPECIFIED_FAILURE,
 						GFP_KERNEL);
-		else if (vif->sme_state == SME_CONNECTED) {
+		} else if (vif->sme_state == SME_CONNECTED) {
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(3,18,44)
 			cfg80211_disconnected(vif->ndev, 0,
-				      	      NULL, 0, vif->locally_generated, 
+				      	      NULL, 0, vif->locally_generated,
 					      GFP_KERNEL);
 #else
 			cfg80211_disconnected(vif->ndev, 0,
@@ -393,8 +392,8 @@ int mt7697_disconnect(struct mt7697_vif *vif)
 
 		ret = mt7697_wr_disconnect_req(vif->cfg, NULL);
 		if (ret < 0) {
-			dev_err(vif->cfg->dev, 
-				"%s(): mt7697_wr_disconnect_req() failed(%d)\n", 
+			dev_err(vif->cfg->dev,
+				"%s(): mt7697_wr_disconnect_req() failed(%d)\n",
 				__func__, ret);
 			goto cleanup;
 		}
@@ -414,4 +413,3 @@ cleanup:
 MODULE_AUTHOR("Sierra Wireless Corporation");
 MODULE_LICENSE("GPL");
 MODULE_DESCRIPTION("MediaTek7697 WiFi 80211");
-

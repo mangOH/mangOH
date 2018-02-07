@@ -31,7 +31,7 @@
 #include "spi.h"
 
 static int mt7697spi_write_then_read(struct spi_device *spi, const void *txbuf,
-				     void *rxbuf, unsigned len)
+                                     void *rxbuf, unsigned len)
 {
 	struct spi_transfer transfer = {
 		.tx_buf	= txbuf,
@@ -85,7 +85,7 @@ static int __init mt7697spi_init(void)
 
 	while (!master && (bus_num >= 0)) {
 		master = spi_busnum_to_master(bus_num);
-		if (!master) 
+		if (!master)
 			bus_num--;
 	}
 
@@ -97,88 +97,87 @@ static int __init mt7697spi_init(void)
 
 	ret = cp2130_update_ch_config(master, MT7697_SPI_CONFIG);
 	if (ret < 0) {
-		dev_err(&master->dev, 
-			"%s(): cp2130_update_ch_config() failed(%d)\n", 
-			__func__, ret);
+		dev_err(&master->dev,
+		        "%s(): cp2130_update_ch_config() failed(%d)\n",
+		        __func__, ret);
 		goto cleanup;
 	}
 
-	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev), MT7697_SPI_CS);
+	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev),
+	         MT7697_SPI_CS);
 	dev_info(&master->dev, "%s(): find SPI device('%s')\n", __func__, str);
 	dev = bus_find_device_by_name(&spi_bus_type, NULL, str);
 	if (!dev) {
-		dev_err(&master->dev, 
-			"%s(): bus_find_device_by_name('%s') failed\n", 
-			__func__, str);
+		dev_err(&master->dev,
+		        "%s(): bus_find_device_by_name('%s') failed\n",
+		        __func__, str);
 
 		ret = -EINVAL;
 		goto cleanup;
 	}
 
-	spi = container_of(dev, struct spi_device, dev);
+	spi = to_spi_device(dev);
 	if (!spi) {
-		dev_err(&master->dev, "%s(): get SPI device failed\n", 
-			__func__);
+		dev_err(&master->dev, "%s(): get SPI device failed\n",
+		        __func__);
 		ret = -EINVAL;
 		goto cleanup;
 	}
 
 	dev_info(&master->dev, "%s(): dev('%s') mode(%d) max speed(%d) "
-		"CS(%d) bits/word(%d)\n", 
-		__func__, spi->modalias, spi->mode, spi->max_speed_hz, 
-		spi->chip_select, spi->bits_per_word);
+	         "CS(%d) bits/word(%d)\n",
+	         __func__, spi->modalias, spi->mode, spi->max_speed_hz,
+	         spi->chip_select, spi->bits_per_word);
 
 	qinfo = kzalloc(sizeof(struct mt7697q_info), GFP_KERNEL);
 	if (!qinfo) {
-		dev_err(&master->dev, "%s(): create queue info failed\n", 
-			__func__);
+		dev_err(&master->dev, "%s(): create queue info failed\n",
+		        __func__);
 		ret = -ENOMEM;
 		goto cleanup;
 	}
 
-	memset(qinfo, 0, sizeof(struct mt7697q_info));
 	qinfo->dev = &spi->dev;
 
-        qinfo->hw_priv = spi;
-        qinfo->hw_ops = &hw_ops;
+	qinfo->hw_priv = spi;
+	qinfo->hw_ops = &hw_ops;
 
 	mutex_init(&qinfo->mutex);
 	INIT_DELAYED_WORK(&qinfo->irq_delayed_work, mt7697q_irq_delayed_work);
 	INIT_WORK(&qinfo->irq_work, mt7697q_irq_work);
 
-	qinfo->irq_workq = alloc_workqueue(DRVNAME"wq", 
-		WQ_HIGHPRI | WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
+	qinfo->irq_workq = alloc_workqueue(DRVNAME"wq",
+	                                   WQ_HIGHPRI | WQ_MEM_RECLAIM | WQ_UNBOUND, 1);
 	if (!qinfo->irq_workq) {
-		dev_err(qinfo->dev, "%s(): alloc_workqueue() failed\n", 
-			__func__);
+		dev_err(qinfo->dev, "%s(): alloc_workqueue() failed\n",
+		        __func__);
 		ret = -ENOMEM;
 		goto cleanup;
 	}
 
 	qinfo->gpio_pin = MT7697_SPI_INTR_GPIO_PIN;
 	ret = gpio_request(qinfo->gpio_pin, MT7697_SPI_GPIO_IRQ_NAME);
-        if (ret < 0) {
+	if (ret < 0) {
 		if (ret != -EBUSY) {
-                	dev_err(qinfo->dev, "%s(): gpio_request() failed(%d)", 
-				__func__, ret);
+			dev_err(qinfo->dev, "%s(): gpio_request() failed(%d)",
+			        __func__, ret);
 			goto failed_workqueue;
 		}
 
 		qinfo->irq = gpio_to_irq(qinfo->gpio_pin);
 		qinfo->gpio_pin = MT7697_SPI_INTR_GPIO_PIN_INVALID;
-        }
-	else {
+	} else {
 		gpio_direction_input(qinfo->gpio_pin);
 		qinfo->irq = gpio_to_irq(qinfo->gpio_pin);
 	}
 
 	dev_info(qinfo->dev, "%s(): request irq(%d)\n", __func__, qinfo->irq);
 	ret = request_irq(qinfo->irq, mt7697q_isr, 0, DRVNAME, qinfo);
-        if (ret < 0) {
-                dev_err(qinfo->dev, "%s(): request_irq() failed(%d)", 
-			__func__, ret);
-                goto failed_gpio_req;
-        }
+	if (ret < 0) {
+		dev_err(qinfo->dev, "%s(): request_irq() failed(%d)",
+		        __func__, ret);
+		goto failed_gpio_req;
+	}
 
 	irq_set_irq_type(qinfo->irq, IRQ_TYPE_EDGE_BOTH);
 
@@ -187,11 +186,11 @@ static int __init mt7697spi_init(void)
 	dev_info(qinfo->dev, "%s(): '%s' initialized\n", __func__, DRVNAME);
 	return 0;
 
-failed_workqueue:
-	destroy_workqueue(qinfo->irq_workq);
-
 failed_gpio_req:
 	if (qinfo->gpio_pin > 0) gpio_free(qinfo->gpio_pin);
+
+failed_workqueue:
+	destroy_workqueue(qinfo->irq_workq);
 
 cleanup:
 	if (qinfo) kfree(qinfo);
@@ -218,27 +217,28 @@ static void __exit mt7697spi_exit(void)
 		goto cleanup;
 	}
 
-	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev), MT7697_SPI_CS);
+	snprintf(str, sizeof(str), "%s.%u", dev_name(&master->dev),
+	         MT7697_SPI_CS);
 	dev_info(&master->dev, "%s(): find SPI device('%s')\n", __func__, str);
 	dev = bus_find_device_by_name(&spi_bus_type, NULL, str);
 	if (!dev) {
-		dev_err(&master->dev, 
-			"%s(): '%s' bus_find_device_by_name() failed\n", 
-			__func__, str);
+		dev_err(&master->dev,
+		        "%s(): '%s' bus_find_device_by_name() failed\n",
+		        __func__, str);
 		goto cleanup;
 	}
 
-	spi = container_of(dev, struct spi_device, dev);
+	spi = to_spi_device(dev);
 	if (!spi) {
-		dev_err(dev, "%s():  get SPI device failed\n", 
-			__func__);
+		dev_err(dev, "%s():  get SPI device failed\n",
+		        __func__);
 		goto cleanup;
 	}
 
 	qinfo = spi_get_drvdata(spi);
 	if (!qinfo) {
-		dev_err(dev, "%s():  SPI device no queue info\n", 
-			__func__);
+		dev_err(dev, "%s():  SPI device no queue info\n",
+		        __func__);
 		goto cleanup;
 	}
 
@@ -259,6 +259,6 @@ cleanup:
 module_init(mt7697spi_init);
 module_exit(mt7697spi_exit);
 
-MODULE_AUTHOR( "Sierra Wireless Corporation" );
-MODULE_LICENSE( "GPL" );
-MODULE_DESCRIPTION( "MediaTek7697 SPI master" );
+MODULE_AUTHOR("Sierra Wireless Corporation");
+MODULE_LICENSE("GPL");
+MODULE_DESCRIPTION("MediaTek7697 SPI master");

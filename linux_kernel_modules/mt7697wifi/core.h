@@ -66,19 +66,19 @@ enum mt7697_sme_state {
 };
 
 enum mt7697_vif_state {
-        CONNECTED,
-        CONNECT_PEND,
-        WMM_ENABLED,
-        NETQ_STOPPED,
-        DTIM_EXPIRED,
-        CLEAR_BSSFILTER_ON_BEACON,
-        DTIM_PERIOD_AVAIL,
-        WLAN_ENABLED,
-        STATS_UPDATE_PEND,
-        HOST_SLEEP_MODE_CMD_PROCESSED,
-        NETDEV_MCAST_ALL_ON,
-        NETDEV_MCAST_ALL_OFF,
-        SCHED_SCANNING,
+	CONNECTED,
+	CONNECT_PEND,
+	WMM_ENABLED,
+	NETQ_STOPPED,
+	DTIM_EXPIRED,
+	CLEAR_BSSFILTER_ON_BEACON,
+	DTIM_PERIOD_AVAIL,
+	WLAN_ENABLED,
+	STATS_UPDATE_PEND,
+	HOST_SLEEP_MODE_CMD_PROCESSED,
+	NETDEV_MCAST_ALL_ON,
+	NETDEV_MCAST_ALL_OFF,
+	SCHED_SCANNING,
 };
 
 struct mt7697_tx_pkt {
@@ -88,9 +88,9 @@ struct mt7697_tx_pkt {
 
 struct mt7697_cfg80211_info {
 	struct device *dev;
-        struct wiphy *wiphy;
+	struct wiphy *wiphy;
 	struct semaphore sem;
-        
+
 	struct platform_device *hif_priv;
 	const struct mt7697_if_ops *hif_ops;
 
@@ -110,7 +110,7 @@ struct mt7697_cfg80211_info {
 
 	u8 rx_data[LEN32_ALIGNED(IEEE80211_MAX_FRAME_LEN)];
 	u8 probe_data[LEN32_ALIGNED(IEEE80211_MAX_DATA_LEN)];
-	
+
 	enum mt7697_port_type port_type;
 	enum mt7697_wifi_phy_mode_t wireless_mode;
 	enum mt7697_wifi_phy_mode_t hw_wireless_mode;
@@ -163,7 +163,7 @@ struct mt7697_vif {
 	u8 req_bssid[ETH_ALEN];
 	u8 pmk[MT7697_WIFI_LENGTH_PMK];
 	u16 ch_hint;
- 
+
 	struct work_struct disconnect_work;
 	struct timer_list disconnect_timer;
 
@@ -196,12 +196,12 @@ struct mt7697_vif {
 
 static inline struct wiphy *cfg_to_wiphy(struct mt7697_cfg80211_info *cfg)
 {
-        return cfg->wiphy;
+	return cfg->wiphy;
 }
 
 static inline struct mt7697_cfg80211_info *wiphy_to_cfg(struct wiphy *w)
 {
-        return (struct mt7697_cfg80211_info *)(wiphy_priv(w));
+	return (struct mt7697_cfg80211_info *)(wiphy_priv(w));
 }
 
 static inline struct mt7697_cfg80211_info *mt7697_priv(struct net_device *ndev)
@@ -211,13 +211,13 @@ static inline struct mt7697_cfg80211_info *mt7697_priv(struct net_device *ndev)
 
 static inline struct mt7697_vif *mt7697_vif_from_wdev(struct wireless_dev *wdev)
 {
-        return container_of(wdev, struct mt7697_vif, wdev);
+	return container_of(wdev, struct mt7697_vif, wdev);
 }
 
 void mt7697_init_netdev(struct net_device*);
 
 struct mt7697_vif *mt7697_get_vif_by_idx(struct mt7697_cfg80211_info*, u32);
-struct wireless_dev *mt7697_interface_add(struct mt7697_cfg80211_info*, 
+struct wireless_dev *mt7697_interface_add(struct mt7697_cfg80211_info*,
 	const char*, enum nl80211_iftype, u8);
 int mt7697_notify_tx(void*, u32);
 void mt7697_tx_stop(struct mt7697_cfg80211_info*);

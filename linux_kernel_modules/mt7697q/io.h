@@ -84,8 +84,8 @@
 struct mt7697q_info;
 
 int mt7697io_wr_m2s_mbx(struct mt7697q_info*, u8);
-int mt7697io_rd_s2m_mbx(struct mt7697q_info*);
-int mt7697io_clr_s2m_mbx(struct mt7697q_info*);
+int mt7697io_rd_s2m_mbx(struct mt7697q_info*, u8*);
+int mt7697io_clr_s2m_mbx(struct mt7697q_info*, u8);
 
 int mt7697io_wr(struct mt7697q_info*, u32, const u32*, size_t);
 int mt7697io_rd(struct mt7697q_info*, u32, u32*, size_t);

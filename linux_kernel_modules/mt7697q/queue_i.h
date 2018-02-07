@@ -19,13 +19,13 @@
 
 #include "mt7697_i.h"
 
-#define mt7697_queue_init_rsp		mt7697_rsp_hdr
-#define mt7697_queue_reset_rsp		mt7697_rsp_hdr
+#define mt7697_queue_init_rsp  mt7697_rsp_hdr
+#define mt7697_queue_reset_rsp mt7697_rsp_hdr
 
 enum mt7697q_dir
 {
-    	MT7697_QUEUE_DIR_M2S = 0,
-    	MT7697_QUEUE_DIR_S2M,
+	MT7697_QUEUE_DIR_M2S = 0,
+	MT7697_QUEUE_DIR_S2M,
 };
 
 enum mt7697q_cmd_types {
@@ -37,21 +37,21 @@ enum mt7697q_cmd_types {
 };
 
 struct mt7697_queue_init_req {
-	struct mt7697_cmd_hdr		cmd;
-    	__be32				m2s_ch;
-    	__be32				s2m_ch;
+	struct mt7697_cmd_hdr cmd;
+	__be32		      m2s_ch;
+	__be32		      s2m_ch;
 } __attribute__((packed, aligned(4)));
 
 struct mt7697_queue_unused_req {
-	struct mt7697_cmd_hdr		cmd;
-    	__be32				m2s_ch;
-    	__be32				s2m_ch;
+	struct mt7697_cmd_hdr cmd;
+	__be32		      m2s_ch;
+	__be32		      s2m_ch;
 } __attribute__((packed, aligned(4)));
 
 struct mt7697_queue_reset_req {
-	struct mt7697_cmd_hdr		cmd;
-    	__be32				m2s_ch;
-    	__be32				s2m_ch;
+	struct mt7697_cmd_hdr cmd;
+	__be32		      m2s_ch;
+	__be32		      s2m_ch;
 } __attribute__((packed, aligned(4)));
 
 u32 mt7697q_flags_get_in_use(u32);

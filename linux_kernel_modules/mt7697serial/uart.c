@@ -29,15 +29,15 @@ static int mt7697_uart_snd_shutdown_req(struct mt7697_uart_info* uart_info)
 	req.grp = MT7697_CMD_GRP_UART;
 	req.type = MT7697_CMD_UART_SHUTDOWN_REQ;
 
-	dev_dbg(uart_info->dev, "%s(): <-- UART SHUTDOWN len(%u)\n", 
-		__func__, req.len);
-	ret = mt7697_uart_write(uart_info, (const u32*)&req, 
-		LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req)));
+	dev_dbg(uart_info->dev, "%s(): <-- UART SHUTDOWN len(%u)\n",
+	        __func__, req.len);
+	ret = mt7697_uart_write(uart_info, (const u32*)&req,
+	                        LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req)));
 	if (ret != LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req))) {
-		dev_err(uart_info->dev, 
-			"%s(): mt7697_uart_write() failed(%d != %d)\n", 
-			__func__, ret, 
-			LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req)));
+		dev_err(uart_info->dev,
+		        "%s(): mt7697_uart_write() failed(%d != %d)\n",
+		        __func__, ret,
+		        LEN_TO_WORD(sizeof(struct mt7697_uart_shutdown_req)));
 		ret = (ret < 0) ? ret:-EIO;
 		goto cleanup;
 	}
@@ -55,39 +55,38 @@ static int mt7697_uart_rx_poll(struct mt7697_uart_info* uart_info)
 	int ret = 0;
 
 	WARN_ON(!uart_info->fd_hndl->f_op->poll);
-        poll_initwait(&table);
+	poll_initwait(&table);
 
 	while (1) {
-        	mask = uart_info->fd_hndl->f_op->poll(uart_info->fd_hndl, &table.pt);
+		mask = uart_info->fd_hndl->f_op->poll(
+			uart_info->fd_hndl, &table.pt);
 		if (mask & POLLERR) {
-			dev_warn(uart_info->dev, 
-				"%s(): poll error\n", __func__);
+			dev_warn(uart_info->dev,
+			         "%s(): poll error\n", __func__);
 			ret = -EIO;
 			goto cleanup;
-		}
-		else if (mask & POLLHUP) {
-			dev_warn(uart_info->dev, 
-				"%s(): poll hangup\n", __func__);
+		} else if (mask & POLLHUP) {
+			dev_warn(uart_info->dev,
+			         "%s(): poll hangup\n", __func__);
 			ret = -EPIPE;
 			goto cleanup;
+		} else if (mask & (POLLRDNORM | POLLRDBAND | POLLIN)) {
+			dev_dbg(uart_info->dev, "%s(): Rx data mask(0x%08x)\n",
+			        __func__, mask);
+			break;
 		}
-		else if (mask & (POLLRDNORM | POLLRDBAND | POLLIN)) {
-			dev_dbg(uart_info->dev, "%s(): Rx data mask(0x%08x)\n", 
-				__func__, mask);
-                	break;
-        	}
 
 		if (signal_pending(current)) {
-			dev_warn(uart_info->dev, 
-				"%s(): signal_pending()\n", __func__);
+			dev_warn(uart_info->dev,
+			         "%s(): signal_pending()\n", __func__);
 			ret = -EINTR;
 			goto cleanup;
 		}
 
 		if (!schedule_timeout_interruptible(MAX_SCHEDULE_TIMEOUT)) {
-			dev_err(uart_info->dev, 
-				"%s(): schedule_timeout_interruptible() failed\n", 
-				__func__);
+			dev_err(uart_info->dev,
+			        "%s(): schedule_timeout_interruptible() failed\n",
+			        __func__);
 			ret = -ETIMEDOUT;
 			goto cleanup;
 		}
@@ -100,70 +99,72 @@ cleanup:
 
 static void mt7697_uart_rx_work(struct work_struct *rx_work)
 {
-	struct mt7697_uart_info* uart_info = container_of(rx_work, 
-		struct mt7697_uart_info, rx_work);
+	struct mt7697_uart_info* uart_info = container_of(rx_work,
+	                                                  struct mt7697_uart_info, rx_work);
 	size_t ret;
 	int err;
-	
+
 	while (1) {
 		ret = mt7697_uart_rx_poll(uart_info);
 		if (ret) {
-			dev_err(uart_info->dev, 
-				"%s(): mt7697_uart_rx_poll() failed(%d)\n", 
-				__func__, ret);
+			dev_err(uart_info->dev,
+			        "%s(): mt7697_uart_rx_poll() failed(%d)\n",
+			        __func__, ret);
 			goto cleanup;
 		}
 
-		ret = mt7697_uart_read(uart_info, (u32*)&uart_info->rsp, 
-			LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr)));
+		ret = mt7697_uart_read(uart_info, (u32*)&uart_info->rsp,
+		                       LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr)));
 		if (ret != LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr))) {
 			if (ret) {
-				dev_err(uart_info->dev, 
-					"%s(): mt7697_uart_read() failed(%d != %d)\n", 
-					__func__, ret, 
-					LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr)));
-			}
-			else {
-				dev_warn(uart_info->dev, "%s(): closed\n", __func__);
+				dev_err(uart_info->dev,
+				        "%s(): mt7697_uart_read() failed(%d != %d)\n",
+				        __func__, ret,
+				        LEN_TO_WORD(sizeof(struct mt7697_rsp_hdr)));
+			} else {
+				dev_warn(uart_info->dev, "%s(): closed\n",
+				         __func__);
 			}
 
-       			goto cleanup;
-    		}
+			goto cleanup;
+		}
 
 		if (uart_info->rsp.result < 0) {
-			dev_warn(uart_info->dev, 
-				"%s(): cmd(%u) result(%d)\n", 
-				__func__, uart_info->rsp.cmd.type, 
-				uart_info->rsp.result);
+			dev_warn(uart_info->dev,
+			         "%s(): cmd(%u) result(%d)\n",
+			         __func__, uart_info->rsp.cmd.type,
+			         uart_info->rsp.result);
 		}
 
 		if (uart_info->rsp.cmd.grp == MT7697_CMD_GRP_UART) {
-			if (uart_info->rsp.cmd.type == MT7697_CMD_UART_SHUTDOWN_RSP) {
-				dev_dbg(uart_info->dev, 
-					"%s(): --> UART SHUTDOWN RSP\n", 
-					__func__);
-			}
-			else {
-				dev_err(uart_info->dev, 
-					"%s(): Rx invalid message type(%d)\n", 
-					__func__, uart_info->rsp.cmd.type);
+			if (uart_info->rsp.cmd.type ==
+			    MT7697_CMD_UART_SHUTDOWN_RSP) {
+				dev_dbg(uart_info->dev,
+				        "%s(): --> UART SHUTDOWN RSP\n",
+				        __func__);
+			} else {
+				dev_err(uart_info->dev,
+				        "%s(): Rx invalid message type(%d)\n",
+				        __func__, uart_info->rsp.cmd.type);
 			}
 
 			if (atomic_read(&uart_info->close)) {
-				dev_warn(uart_info->dev, "%s(): closed\n", __func__);
+				dev_warn(uart_info->dev, "%s(): closed\n",
+				         __func__);
 				goto cleanup;
 			}
-		}
-		else {
-			WARN_ON(!uart_info->rx_fcn);			
-			err = uart_info->rx_fcn((const struct mt7697_rsp_hdr*)&uart_info->rsp, 
-			                	uart_info->rx_hndl);
-			dev_dbg(uart_info->dev, "%s(): rx_fcn ret(%d)\n", __func__, err);
+		} else {
+			WARN_ON(!uart_info->rx_fcn);
+			err = uart_info->rx_fcn(
+				(const struct mt7697_rsp_hdr*)&uart_info->rsp,
+				uart_info->rx_hndl);
+			dev_dbg(uart_info->dev, "%s(): rx_fcn ret(%d)\n",
+			        __func__, err);
 			if (err < 0) {
-				dev_err(uart_info->dev, 
-					"%s(): rx_fcn() failed(%d)\n", 
-					__func__, err);
-    			}
+				dev_err(uart_info->dev,
+				        "%s(): rx_fcn() failed(%d)\n",
+				        __func__, err);
+			}
 		}
 	}
 
@@ -181,11 +182,13 @@ void* mt7697_uart_open(rx_hndlr rx_fcn, void* rx_hndl)
 	struct mt7697_uart_info *uart_info;
 	void *ret = NULL;
 
-	pr_info("%s(): find UART device('%s')\n", __func__, MT7697_UART_DRVNAME);
-	dev = bus_find_device_by_name(&platform_bus_type, NULL, MT7697_UART_DRVNAME);
+	pr_info("%s(): find UART device('%s')\n", __func__,
+	        MT7697_UART_DRVNAME);
+	dev = bus_find_device_by_name(&platform_bus_type, NULL,
+	                              MT7697_UART_DRVNAME);
 	if (!dev) {
-		pr_err("%s(): '%s' bus_find_device_by_name() failed\n", 
-			__func__, MT7697_UART_DRVNAME);
+		pr_err("%s(): '%s' bus_find_device_by_name() failed\n",
+		       __func__, MT7697_UART_DRVNAME);
 		goto cleanup;
 	}
 
@@ -197,24 +200,25 @@ void* mt7697_uart_open(rx_hndlr rx_fcn, void* rx_hndl)
 
 	uart_info = platform_get_drvdata(uart);
 	if (!uart_info) {
-		dev_err(&uart->dev, "%s(): platform_get_drvdata() failed\n", 
-			__func__);
+		dev_err(&uart->dev, "%s(): platform_get_drvdata() failed\n",
+		        __func__);
 		goto cleanup;
 	}
 
-        WARN_ON(uart_info->fd_hndl);
-	dev_err(uart_info->dev, "%s(): open serial device '%s'\n", 
-		__func__, uart_info->dev_file);
-	uart_info->fd_hndl = filp_open((const char __user*)uart_info->dev_file, O_RDWR, 0600);
+	WARN_ON(uart_info->fd_hndl);
+	dev_err(uart_info->dev, "%s(): open serial device '%s'\n",
+	        __func__, uart_info->dev_file);
+	uart_info->fd_hndl = filp_open((const char __user*)uart_info->dev_file,
+	                               O_RDWR, 0600);
 	if (IS_ERR(uart_info->fd_hndl)) {
-		dev_err(uart_info->dev, "%s(): filp_open() '%s' failed\n", 
-			__func__, MT7697_UART_DEVICE);
+		dev_err(uart_info->dev, "%s(): filp_open() '%s' failed\n",
+		        __func__, MT7697_UART_DEVICE);
 		uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 		goto cleanup;
 	}
 
-	dev_dbg(uart_info->dev, "%s(): fd_hndl(0x%p)\n", 
-		__func__, uart_info->fd_hndl);
+	dev_dbg(uart_info->dev, "%s(): fd_hndl(0x%p)\n",
+	        __func__, uart_info->fd_hndl);
 
 	uart_info->rx_fcn = rx_fcn;
 	uart_info->rx_hndl = rx_hndl;
@@ -223,7 +227,7 @@ void* mt7697_uart_open(rx_hndlr rx_fcn, void* rx_hndl)
 	ret = uart_info;
 
 cleanup:
-	if (!ret && uart_info->fd_hndl) 
+	if (!ret && uart_info->fd_hndl)
 		fput(uart_info->fd_hndl);
 
 	return ret;
@@ -236,10 +240,10 @@ int mt7697_uart_close(void *arg)
 	struct mt7697_uart_info *uart_info = arg;
 	int ret = 0;
 
-	dev_dbg(uart_info->dev, "%s(): fd_hndl(0x%p)\n", 
-		__func__, uart_info->fd_hndl);
+	dev_dbg(uart_info->dev, "%s(): fd_hndl(0x%p)\n",
+	        __func__, uart_info->fd_hndl);
 
-	if (uart_info->fd_hndl == MT7697_UART_INVALID_FD || 
+	if (uart_info->fd_hndl == MT7697_UART_INVALID_FD ||
 	    IS_ERR(uart_info->fd_hndl)) {
 		dev_warn(uart_info->dev, "%s(): device closed\n", __func__);
 		goto cleanup;
@@ -248,27 +252,28 @@ int mt7697_uart_close(void *arg)
 	atomic_set(&uart_info->close, 1);
 	ret = mt7697_uart_snd_shutdown_req(uart_info);
 	if (ret < 0) {
-		dev_err(uart_info->dev, 
-			"%s(): mt7697_uart_snd_shutdown_req() failed(%d)\n", 
-			__func__, ret);
+		dev_err(uart_info->dev,
+		        "%s(): mt7697_uart_snd_shutdown_req() failed(%d)\n",
+		        __func__, ret);
 		goto cleanup;
 	}
 
-	wait_event_interruptible(uart_info->close_wq, !atomic_read(&uart_info->close));
+	wait_event_interruptible(uart_info->close_wq,
+	                         !atomic_read(&uart_info->close));
 
-        mutex_lock(&uart_info->mutex);
+	mutex_lock(&uart_info->mutex);
 
 	ret = filp_close(uart_info->fd_hndl, 0);
 	if (ret < 0) {
-		dev_err(uart_info->dev, "%s(): filp_close() failed(%d)\n", 
-			__func__, ret);
+		dev_err(uart_info->dev, "%s(): filp_close() failed(%d)\n",
+		        __func__, ret);
 		goto unlock;
 	}
 
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 
 unlock:
-        mutex_unlock(&uart_info->mutex);
+	mutex_unlock(&uart_info->mutex);
 
 cleanup:
 	return ret;
@@ -285,7 +290,7 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 	unsigned long count = len * sizeof(u32);
 	int err;
 
-        oldfs = get_fs();
+	oldfs = get_fs();
 	set_fs(get_ds());
 
 	if (!uart_info->fd_hndl) {
@@ -298,11 +303,11 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 		err = kernel_read(uart_info->fd_hndl, 0, ptr, count);
 		dev_dbg(uart_info->dev, "%s(): read(%d)\n", __func__, err);
 		if (err < 0) {
-			dev_err(uart_info->dev, "%s(): kernel_read() failed(%d)\n", 
-				__func__, err);
+			dev_err(uart_info->dev,
+			        "%s(): kernel_read() failed(%d)\n", __func__,
+			        err);
 			goto cleanup;
-		}
-		else if (!err) {
+		} else if (!err) {
 			dev_warn(uart_info->dev, "%s(): CLOSED\n", __func__);
 			goto cleanup;
 		}
@@ -318,7 +323,7 @@ size_t mt7697_uart_read(void *arg, u32 *buf, size_t len)
 cleanup:
 	dev_dbg(uart_info->dev, "%s(): return(%u)\n", __func__, ret);
 	set_fs(oldfs);
-        return ret;
+	return ret;
 }
 
 EXPORT_SYMBOL(mt7697_uart_read);
@@ -333,12 +338,12 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 	struct mt7697_uart_info *uart_info = arg;
 	u8* ptr = (u8*)buf;
 
-        mutex_lock(&uart_info->mutex);
+	mutex_lock(&uart_info->mutex);
 
 	oldfs = get_fs();
 	set_fs(get_ds());
 
-        if (uart_info->fd_hndl == MT7697_UART_INVALID_FD || 
+	if (uart_info->fd_hndl == MT7697_UART_INVALID_FD ||
 	    IS_ERR(uart_info->fd_hndl)) {
 		dev_warn(uart_info->dev, "%s(): device closed\n", __func__);
 		goto cleanup;
@@ -347,13 +352,14 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 	dev_dbg(uart_info->dev, "%s(): len(%u)\n", __func__, len);
 	while (1) {
 		num_write = kernel_write(uart_info->fd_hndl, ptr, left, 0);
-		dev_dbg(uart_info->dev, "%s(): written(%u)\n", __func__, num_write);
+		dev_dbg(uart_info->dev, "%s(): written(%u)\n", __func__,
+		        num_write);
 		if (num_write < 0) {
-			dev_err(uart_info->dev, "%s(): kernel_write() failed(%d)\n", 
-				__func__, num_write);
+			dev_err(uart_info->dev,
+			        "%s(): kernel_write() failed(%d)\n", __func__,
+			        num_write);
 			goto cleanup;
-		}
-		else if (!num_write) {
+		} else if (!num_write) {
 			dev_warn(uart_info->dev, "%s(): CLOSED\n", __func__);
 			goto cleanup;
 		}
@@ -369,7 +375,7 @@ size_t mt7697_uart_write(void *arg, const u32 *buf, size_t len)
 cleanup:
 	dev_dbg(uart_info->dev, "%s(): return(%u)\n", __func__, ret);
 	set_fs(oldfs);
-        mutex_unlock(&uart_info->mutex);
+	mutex_unlock(&uart_info->mutex);
 	return ret;
 }
 
@@ -378,9 +384,9 @@ EXPORT_SYMBOL(mt7697_uart_write);
 static int mt7697_uart_probe(struct platform_device *pdev)
 {
 	struct mt7697_uart_info* uart_info;
-        int ret;
+	int ret;
 
-        dev_info(&pdev->dev, "%s(): init\n", __func__);
+	dev_info(&pdev->dev, "%s(): init\n", __func__);
 
 	uart_info = kzalloc(sizeof(struct mt7697_uart_info), GFP_KERNEL);
 	if (!uart_info) {
@@ -395,13 +401,14 @@ static int mt7697_uart_probe(struct platform_device *pdev)
 	uart_info->fd_hndl = MT7697_UART_INVALID_FD;
 	uart_info->dev_file = MT7697_UART_DEVICE;
 
-        mutex_init(&uart_info->mutex);
+	mutex_init(&uart_info->mutex);
 	init_waitqueue_head(&uart_info->close_wq);
 	INIT_WORK(&uart_info->rx_work, mt7697_uart_rx_work);
 
 	platform_set_drvdata(pdev, uart_info);
 
-	dev_info(&pdev->dev, "%s(): '%s' initialized\n", __func__, MT7697_UART_DRVNAME);
+	dev_info(&pdev->dev, "%s(): '%s' initialized\n", __func__,
+	         MT7697_UART_DRVNAME);
 	return 0;
 
 cleanup:
@@ -422,8 +429,8 @@ static int mt7697_uart_remove(struct platform_device *pdev)
 
 	ret = mt7697_uart_close(uart_info);
 	if (ret < 0) {
-		dev_err(&pdev->dev, "%s(): mt7697_uart_close() failed(%ld)\n", 
-			__func__, ret);
+		dev_err(&pdev->dev, "%s(): mt7697_uart_close() failed(%ld)\n",
+		        __func__, ret);
 	}
 
 	kfree(uart_info);
@@ -436,9 +443,9 @@ static void mt7697_uart_release(struct device *dev)
 }
 
 static struct platform_device mt7697_uart_platform_device = {
-    	.name		= MT7697_UART_DRVNAME,
-    	.id		= PLATFORM_DEVID_NONE,
-    	.dev 		= {
+	.name		= MT7697_UART_DRVNAME,
+	.id		= PLATFORM_DEVID_NONE,
+	.dev 		= {
 		.release	= mt7697_uart_release,
 	},
 };
@@ -460,15 +467,17 @@ static int __init mt7697_uart_init(void)
 	pr_info(MT7697_UART_DRVNAME" init\n");
 	ret = platform_device_register(&mt7697_uart_platform_device);
 	if (ret) {
-		pr_err(MT7697_UART_DRVNAME" %s(): platform_device_register() failed(%d)\n", 
-			__func__, ret);
+		pr_err(MT7697_UART_DRVNAME
+		       " %s(): platform_device_register() failed(%d)\n",
+		       __func__, ret);
 		goto cleanup;
 	}
 
 	ret = platform_driver_register(&mt7697_uart_platform_driver);
 	if (ret) {
-		pr_err(MT7697_UART_DRVNAME" %s(): platform_driver_register() failed(%d)\n", 
-			__func__, ret);
+		pr_err(MT7697_UART_DRVNAME
+		       " %s(): platform_driver_register() failed(%d)\n",
+		       __func__, ret);
 		platform_device_del(&mt7697_uart_platform_device);
 		goto cleanup;
 	}
@@ -490,5 +499,3 @@ module_exit(mt7697_uart_exit);
 MODULE_DESCRIPTION("MT7697 uart interface");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Sierra Wireless");
-
-
