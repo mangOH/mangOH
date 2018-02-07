@@ -664,7 +664,6 @@ static int iot_slot_probe(struct platform_device *pdev)
 
 cleanup:
 	if (ret != 0) {
-		kfree(slot);
 		slots[new_slot_index] = NULL;
 	}
 unlock:
@@ -702,7 +701,6 @@ static int iot_slot_remove(struct platform_device *pdev)
 	}
 
 	iot_slot_release_resources(slot);
-	kfree(slot);
 	slots[slot_index] = NULL;
 
 done:
