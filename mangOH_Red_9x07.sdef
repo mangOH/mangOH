@@ -17,6 +17,7 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
+    $MANGOH_ROOT/apps/LedService/ledService
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
 
     // Disabled until Release 15 is released due to bug in power supply kernel support
@@ -43,6 +44,7 @@ interfaceSearch:
     $MANGOH_ROOT/apps/MuxControl
     $MANGOH_ROOT/apps/SocialService/interfaces
     $MANGOH_ROOT/apps/BatteryService
+    $MANGOH_ROOT/apps/LedService
 }
 
 kernelModules:
@@ -67,6 +69,7 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
     $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+    $MANGOH_ROOT/linux_kernel_modules/led/0-led
 
     // Disabled until compliation errors are fixed in wp76 kernel
     $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
@@ -78,7 +81,7 @@ kernelModules:
     // $LEGATO_ROOT/drivers/spisvc/spisvc
 
     // Not on the mangOH Red DV3
-    $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
+    //$MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
 
     // Required for BQ24296
     $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef

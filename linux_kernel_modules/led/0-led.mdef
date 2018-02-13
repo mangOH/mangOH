@@ -1,0 +1,13 @@
+sources:
+{
+    led.c
+}
+
+cflags:
+{
+//    -DDEBUG
+}
+
+params:
+{
+}

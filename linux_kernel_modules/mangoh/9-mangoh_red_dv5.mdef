@@ -5,6 +5,7 @@ cflags:
     -I${MANGOH_ROOT}/linux_kernel_modules/ltc294x
     -I${MANGOH_ROOT}/linux_kernel_modules/bq24296
     -I${MANGOH_ROOT}/linux_kernel_modules/iot_slot
+    -I${MANGOH_ROOT}/linux_kernel_modules/led
 }
 
 sources:
