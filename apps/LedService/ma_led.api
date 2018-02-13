@@ -1,0 +1,66 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_led mangOH LED  API
+ *
+ * @ref ma_led_interface.h "API Reference" <br>
+ * @subpage howToLed "How To Setup Led" <br>
+ *
+ * <HR>
+ *
+ * @section led_admin overview 
+ *
+ * This API is used to update up the LED and reads its current status.
+ *
+ * @section led_usage Usage
+ *
+ * The sample code in this section shows how to turn on/off the LED in a user space app
+ * written in C.
+ *
+ * ma_led_TurnOn() turns on the LED.
+ * ma_led_TurnOff() turns on the LED.
+ * @code
+ * ma_led_TurnOn();
+ * ma_led_TurnOff();
+ * @endcode
+ * 
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Charging status of battery
+ */
+//--------------------------------------------------------------------------------------------------
+ENUM LedStatus
+{
+    
+    OFF,   ///< The LED is off
+    ON,    ///< The LED is on
+};
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Turns on the LED.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION TurnOn();
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Turns off the LED.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION TurnOff();
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Provides battery health status
+ *
+ * @return
+ *     LE_OK on success or LE_FAULT on failure.
+ *     LE_BAD_PARAMETER for invalid parameter
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION LedStatus GetLedStatus();

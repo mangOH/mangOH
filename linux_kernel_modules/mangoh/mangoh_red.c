@@ -15,6 +15,7 @@
 #include "mangoh_red_mux.h"
 #include "mangoh_common.h"
 #include "iot-slot.h"
+#include "led.h"
 
 /*
  *-----------------------------------------------------------------------------
@@ -48,6 +49,7 @@ enum mangoh_red_board_rev {
 static void mangoh_red_release(struct device* dev);
 static int mangoh_red_probe(struct platform_device* pdev);
 static int mangoh_red_remove(struct platform_device* pdev);
+static void mangoh_red_led_release(struct device *dev);
 static void mangoh_red_iot_slot_release(struct device *dev);
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter);
 static int mangoh_red_iot_slot_release_i2c(struct i2c_adapter **adapter);
@@ -95,9 +97,11 @@ static struct mangoh_red_driver_data {
 	struct i2c_client* gpio_expander;
 	bool mux_initialized;
 	bool iot_slot_registered;
+        bool led_registered;
 } mangoh_red_driver_data = {
 	.mux_initialized = false,
 	.iot_slot_registered = false,
+        .led_registered = false,
 };
 
 static struct platform_device mangoh_red_device = {
@@ -157,7 +161,7 @@ static struct i2c_board_info mangoh_red_lsm6ds3_devinfo = {
 static struct i2c_board_info mangoh_red_pressure_devinfo = {
 	I2C_BOARD_INFO("bmp280", 0x76),
 };
-
+/*
 static struct ltc294x_platform_data mangoh_red_battery_gauge_platform_data = {
 	.r_sense = 18,
 	.prescaler_exp = 32,
@@ -167,7 +171,7 @@ static struct i2c_board_info mangoh_red_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("ltc2942", 0x64),
 	.platform_data = &mangoh_red_battery_gauge_platform_data,
 };
-
+*/
 static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq24190", 0x6B),
 };
@@ -185,6 +189,7 @@ static struct iot_slot_platform_data mangoh_red_iot_slot_pdata = {
 	.request_pcm	  = mangoh_red_iot_slot_request_pcm,
 	.release_pcm	  = mangoh_red_iot_slot_release_pcm,
 };
+
 static struct platform_device mangoh_red_iot_slot = {
 	.name = "iot-slot",
 	.id = 0, /* Means IoT slot 0 */
@@ -194,6 +199,17 @@ static struct platform_device mangoh_red_iot_slot = {
 	},
 };
 
+static struct led_platform_data mangoh_red_led_pdata = {
+	.gpio = -1,
+};
+
+static struct platform_device mangoh_red_led = {
+	.name = "led",
+	.dev = {
+		.platform_data = &mangoh_red_led_pdata,
+		.release = mangoh_red_led_release,
+	},
+};
 
 static void mangoh_red_release(struct device* dev)
 {
@@ -208,7 +224,11 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	struct gpio_chip *gpio_expander;
 	struct i2c_board_info *accelerometer_board_info;
 	struct i2c_adapter *other_adapter = NULL;
-	struct i2c_adapter *main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
+	struct i2c_adapter *main_adapter;
+
+        dev_info(&pdev->dev, "%s(): probe\n", __func__);
+
+        main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
 	if (!main_adapter) {
 		dev_err(&pdev->dev, "Failed to get primary I2C adapter (%d).\n",
 			PRIMARY_I2C_BUS);
@@ -229,9 +249,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	mangoh_red_driver_data.i2c_switch =
 		i2c_new_device(main_adapter, &mangoh_red_pca954x_device_info);
 	if (!mangoh_red_driver_data.i2c_switch) {
-		dev_err(
-			&pdev->dev,
-			"Failed to register %s\n",
+		dev_err(&pdev->dev, "Failed to register %s\n",
 			mangoh_red_pca954x_device_info.type);
 		ret = -ENODEV;
 		goto cleanup;
@@ -251,9 +269,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		i2c_new_device(other_adapter, &mangoh_red_gpio_expander_devinfo);
 	i2c_put_adapter(other_adapter);
 	if (!mangoh_red_driver_data.gpio_expander) {
-		dev_err(
-			&pdev->dev,
-			"Failed to register %s\n",
+		dev_err(&pdev->dev, "Failed to register %s\n",
 			mangoh_red_gpio_expander_devinfo.type);
 		ret = -ENODEV;
 		goto cleanup;
@@ -278,6 +294,15 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 	mangoh_red_driver_data.iot_slot_registered = true;
+
+        /* Map the LED */
+        mangoh_red_led_pdata.gpio = gpio_expander->base + 8;
+	ret = platform_device_register(&mangoh_red_led);
+	if (ret != 0) {
+		dev_err(&pdev->dev, "Failed to register LED device\n");
+		goto cleanup;
+	}
+	mangoh_red_driver_data.led_registered = true;
 
 	/* Map the accelerometer */
 	dev_dbg(&pdev->dev, "mapping accelerometer\n");
@@ -323,10 +348,9 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-
-	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
+//	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
 		/* Map the I2C ltc2942 battery gauge */
-		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
+/*		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
 		other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 		if (!other_adapter) {
 			dev_err(&pdev->dev, "No I2C bus %d.\n",
@@ -343,7 +367,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 			goto cleanup;
 		}
 	}
-
+*/
 	/*
 	 * TODO:
 	 * 3503 USB Hub: 0x08
@@ -374,14 +398,17 @@ static int mangoh_red_remove(struct platform_device* pdev)
 
 	dev_info(&pdev->dev, "Removing mangoh red platform device\n");
 
-	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
-		try_unregister_i2c_device(dd->battery_gauge);
+//	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
+//		try_unregister_i2c_device(dd->battery_gauge);
 
 	try_unregister_i2c_device(dd->battery_charger);
 	try_unregister_i2c_device(dd->pressure);
 	try_unregister_i2c_device(dd->accelerometer);
 
-	if (dd->iot_slot_registered)
+	if (dd->led_registered)
+		platform_device_unregister(&mangoh_red_led);
+
+        if (dd->iot_slot_registered)
 		platform_device_unregister(&mangoh_red_iot_slot);
 
 	if (dd->mux_initialized)
@@ -395,6 +422,7 @@ static int mangoh_red_remove(struct platform_device* pdev)
 
 /* Release function is needed to avoid warning when device is deleted */
 static void mangoh_red_iot_slot_release(struct device *dev) { /* do nothing */ }
+static void mangoh_red_led_release(struct device *dev) { /* do nothing */ }
 
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter)
 {
@@ -457,10 +485,8 @@ static int __init mangoh_red_init(void)
 	} else if (strcmp(revision, revision_dv5) == 0) {
 		mangoh_red_pdata.board_rev = MANGOH_RED_BOARD_REV_DV5;
 	} else {
-		pr_err(
-			"%s: Unsupported mangOH Red board revision (%s)\n",
-			__func__,
-			revision);
+		pr_err("%s: Unsupported mangOH Red board revision (%s)\n",
+			__func__, revision);
 		return -ENODEV; /* TODO: better value? */
 	}
 

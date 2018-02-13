@@ -1,0 +1,26 @@
+sources:
+{
+    ledService.c
+}
+
+
+cflags:
+{
+    -std=c99
+}
+
+requires:
+{
+    file:
+    {
+        /sys/devices/platform/led.0/led         /sys/devices/platform/led.0/
+    }
+}
+
+provides:
+{
+    api:
+    {
+        $CURDIR/../ma_led.api
+    }
+}
