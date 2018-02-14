@@ -38,20 +38,26 @@ static DEVICE_ATTR_RW(led);
 
 static int led_probe(struct platform_device *pdev)
 {
-	struct led_platform_data *pdata = dev_get_platdata(&pdev->dev);
 	struct led_device* dev;
 	int ret = 0;
+	struct led_platform_data *pdata = dev_get_platdata(&pdev->dev);
 
 	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
-	dev = kzalloc(sizeof(struct led_device), GFP_KERNEL);
+	if (!pdata) {
+		ret = -EINVAL;
+		dev_err(*pdev->dev, "Required platform data not provided\n");
+		goto  err_no_free;
+	}
+
+
+	dev = kzalloc(sizeof(*dev), GFP_KERNEL);
 	if (!dev)
 		goto err_out;
 
 	dev->pdev = pdev;
 	atomic_set(&dev->val, 0);
 
-	pdata = dev_get_platdata(&pdev->dev);
 	dev->gpio = pdata->gpio;
 
 	ret = gpio_request(dev->gpio, dev_name(&pdev->dev));
@@ -73,7 +79,7 @@ static int led_probe(struct platform_device *pdev)
 	}
 
 	platform_set_drvdata(pdev, dev);
-	return 0;
+	return ret;
 
 free_gpio:
 	gpio_direction_input(dev->gpio);
@@ -82,6 +88,8 @@ free_gpio:
 err_out:
 	if (dev)
 		kfree(dev);
+
+err_no_free:
 
 	return ret;
 }
