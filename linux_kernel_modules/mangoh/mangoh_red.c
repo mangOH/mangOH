@@ -53,7 +53,8 @@ static void mangoh_red_led_release(struct device *dev);
 static void mangoh_red_iot_slot_release(struct device *dev);
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter);
 static int mangoh_red_iot_slot_release_i2c(struct i2c_adapter **adapter);
-static int mangoh_red_iot_slot_request_spi(struct spi_master **spi_master, int *cs);
+static int mangoh_red_iot_slot_request_spi(struct spi_master **spi_master,
+                                           int *cs);
 static int mangoh_red_iot_slot_release_spi(void);
 static int mangoh_red_iot_slot_request_sdio(void);
 static int mangoh_red_iot_slot_release_sdio(void);
@@ -97,11 +98,11 @@ static struct mangoh_red_driver_data {
 	struct i2c_client* gpio_expander;
 	bool mux_initialized;
 	bool iot_slot_registered;
-        bool led_registered;
+	bool led_registered;
 } mangoh_red_driver_data = {
 	.mux_initialized = false,
 	.iot_slot_registered = false,
-        .led_registered = false,
+	.led_registered = false,
 };
 
 static struct platform_device mangoh_red_device = {
@@ -161,17 +162,19 @@ static struct i2c_board_info mangoh_red_lsm6ds3_devinfo = {
 static struct i2c_board_info mangoh_red_pressure_devinfo = {
 	I2C_BOARD_INFO("bmp280", 0x76),
 };
-/*
+
+#if 0
 static struct ltc294x_platform_data mangoh_red_battery_gauge_platform_data = {
 	.r_sense = 18,
 	.prescaler_exp = 32,
-        .name = "LTC2942",
+	.name = "LTC2942",
 };
 static struct i2c_board_info mangoh_red_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("ltc2942", 0x64),
 	.platform_data = &mangoh_red_battery_gauge_platform_data,
 };
-*/
+#endif
+
 static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq24190", 0x6B),
 };
@@ -226,9 +229,9 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	struct i2c_adapter *other_adapter = NULL;
 	struct i2c_adapter *main_adapter;
 
-        dev_info(&pdev->dev, "%s(): probe\n", __func__);
+	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
-        main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
+	main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
 	if (!main_adapter) {
 		dev_err(&pdev->dev, "Failed to get primary I2C adapter (%d).\n",
 			PRIMARY_I2C_BUS);
@@ -295,8 +298,8 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	}
 	mangoh_red_driver_data.iot_slot_registered = true;
 
-        /* Map the LED */
-        mangoh_red_led_pdata.gpio = gpio_expander->base + 8;
+	/* Map the LED */
+	mangoh_red_led_pdata.gpio = gpio_expander->base + 8;
 	ret = platform_device_register(&mangoh_red_led);
 	if (ret != 0) {
 		dev_err(&pdev->dev, "Failed to register LED device\n");
@@ -330,8 +333,8 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		return -ENODEV;
 	}
 
-        /* Map the I2C BQ24296 driver: for now use the BQ24190 driver code */
-        dev_dbg(&pdev->dev, "mapping bq24296 driver\n");
+	/* Map the I2C BQ24296 driver: for now use the BQ24190 driver code */
+	dev_dbg(&pdev->dev, "mapping bq24296 driver\n");
 	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 	if(!other_adapter) {
 		dev_err(&pdev->dev, "No I2C bus %d.\n",
@@ -339,22 +342,24 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		ret = -ENODEV;
 		goto cleanup;
 	}
-        mangoh_red_driver_data.battery_charger = i2c_new_device(
+	mangoh_red_driver_data.battery_charger = i2c_new_device(
 		other_adapter, &mangoh_red_battery_charger_devinfo);
 	i2c_put_adapter(other_adapter);
-        if (!mangoh_red_driver_data.battery_charger) {
+	if (!mangoh_red_driver_data.battery_charger) {
 		dev_err(&pdev->dev, "battery charger is missing\n");
 		ret = -ENODEV;
 		goto cleanup;
 	}
 
-//	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
+#if 0
+	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
 		/* Map the I2C ltc2942 battery gauge */
-/*		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
-		other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
+		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
+		other_adapter =
+			i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 		if (!other_adapter) {
 			dev_err(&pdev->dev, "No I2C bus %d.\n",
-				MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
+			        MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
 			ret = -ENODEV;
 			goto cleanup;
 		}
@@ -367,7 +372,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 			goto cleanup;
 		}
 	}
-*/
+#endif
 	/*
 	 * TODO:
 	 * 3503 USB Hub: 0x08
@@ -398,8 +403,10 @@ static int mangoh_red_remove(struct platform_device* pdev)
 
 	dev_info(&pdev->dev, "Removing mangoh red platform device\n");
 
-//	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
-//		try_unregister_i2c_device(dd->battery_gauge);
+#if 0
+	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
+		try_unregister_i2c_device(dd->battery_gauge);
+#endif
 
 	try_unregister_i2c_device(dd->battery_charger);
 	try_unregister_i2c_device(dd->pressure);
@@ -408,7 +415,7 @@ static int mangoh_red_remove(struct platform_device* pdev)
 	if (dd->led_registered)
 		platform_device_unregister(&mangoh_red_led);
 
-        if (dd->iot_slot_registered)
+	if (dd->iot_slot_registered)
 		platform_device_unregister(&mangoh_red_iot_slot);
 
 	if (dd->mux_initialized)
@@ -437,7 +444,8 @@ static int mangoh_red_iot_slot_release_i2c(struct i2c_adapter **adapter)
 	return 0;
 }
 
-static int mangoh_red_iot_slot_request_spi(struct spi_master **spi_master, int *cs)
+static int mangoh_red_iot_slot_request_spi(struct spi_master **spi_master,
+                                           int *cs)
 {
 	*spi_master = spi_busnum_to_master(PRIMARY_SPI_BUS);
 	*cs = 0;
