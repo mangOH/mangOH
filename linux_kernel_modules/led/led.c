@@ -22,10 +22,10 @@ static int led_store(struct device *dev, struct device_attribute *attr,
                      const char *buf, size_t count)
 {
 	struct led_device* led = dev_get_drvdata(dev);
-	unsigned int val;
+	u8 val;
 	int ret;
 
-	ret = kstrtoint(buf, 10, &val);
+	ret = kstrtou8(buf, 10, &val);
 	if (ret || val > 1)
 		return -EINVAL;
 
