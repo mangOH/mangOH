@@ -7,106 +7,95 @@
 
 struct led_device {
 	struct platform_device *pdev;
-        atomic_t val;
-        int gpio;
+	atomic_t val;
+	int gpio;
 };
 
-static ssize_t led_show(struct device *dev,
-			struct device_attribute *attr, char *buf)
+static ssize_t led_show(struct device *dev, struct device_attribute *attr,
+                        char *buf)
 {
-        struct led_device* led = dev_get_drvdata(dev);
-        return sprintf(buf, "%d\n", atomic_read(&led->val));
+	struct led_device* led = dev_get_drvdata(dev);
+	return sprintf(buf, "%d\n", atomic_read(&led->val));
 }
 
-static int led_store(struct device *dev,
-		     struct device_attribute *attr,
-		     const char *buf, size_t count)
+static int led_store(struct device *dev, struct device_attribute *attr,
+                     const char *buf, size_t count)
 {
-        struct led_device* led = dev_get_drvdata(dev);
-        unsigned int val;
-        int ret;
+	struct led_device* led = dev_get_drvdata(dev);
+	u8 val;
+	int ret;
 
-        ret = kstrtoint(buf, 10, &val);
-        if (ret || val > 1)
+	ret = kstrtou8(buf, 10, &val);
+	if (ret || val > 1)
 		return -EINVAL;
 
-        gpio_set_value_cansleep(led->gpio, val);
-        atomic_set(&led->val, val);
-        return count;
+	gpio_set_value_cansleep(led->gpio, val);
+	atomic_set(&led->val, val);
+	return count;
 }
 
 static DEVICE_ATTR_RW(led);
 
 static int led_probe(struct platform_device *pdev)
 {
-        struct led_platform_data *pdata = dev_get_platdata(&pdev->dev);
-        struct led_device* dev;
+	struct led_device* dev;
 	int ret = 0;
+	struct led_platform_data *pdata = dev_get_platdata(&pdev->dev);
 
-        dev_info(&pdev->dev, "%s(): probe\n", __func__);
+	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
-        dev = kzalloc(sizeof(struct led_device), GFP_KERNEL);
-	if (!dev)
-		goto err_out;
+	if (!pdata) {
+		ret = -EINVAL;
+		dev_err(&pdev->dev, "Required platform data not provided\n");
+		goto  done;
+	}
+
+
+	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
+	if (!dev) {
+		ret = -ENOMEM;
+		goto done;
+	}
 
 	dev->pdev = pdev;
-        atomic_set(&dev->val, 0);
+	atomic_set(&dev->val, 0);
+	dev->gpio = pdata->gpio;
 
-        pdata = dev_get_platdata(&pdev->dev);
-        dev->gpio = pdata->gpio;
-
-        ret = gpio_request(dev->gpio, dev_name(&pdev->dev));
-        if (ret) {
-                dev_err(&pdev->dev,
-			"failed to request LED gpio\n");
-                goto err_out;
-        }
-
-        ret = gpio_direction_output(dev->gpio, atomic_read(&dev->val));
-        if (ret) {
-                dev_err(&pdev->dev,
-			"failed to set LED gpio as output\n");
-                goto free_gpio;
-        }
-
-        ret = device_create_file(&pdev->dev, &dev_attr_led);
+	ret = devm_gpio_request(&pdev->dev, dev->gpio, dev_name(&pdev->dev));
 	if (ret) {
-		dev_err(&pdev->dev,
-			"failed to create led sysfs entry\n");
-                goto free_gpio;
-        }
+		dev_err(&pdev->dev, "failed to request LED gpio\n");
+		goto done;
+	}
 
-        platform_set_drvdata(pdev, dev);
-        return 0;
+	ret = gpio_direction_output(dev->gpio, atomic_read(&dev->val));
+	if (ret) {
+		dev_err(&pdev->dev, "failed to set LED gpio as output\n");
+		goto done;
+	}
 
-free_gpio:
-        gpio_direction_input(dev->gpio);
-        gpio_free(dev->gpio);
+	ret = device_create_file(&pdev->dev, &dev_attr_led);
+	if (ret) {
+		dev_err(&pdev->dev, "failed to create led sysfs entry\n");
+		goto done;
+	}
 
-err_out:
-	if (dev)
-		kfree(dev);
+	platform_set_drvdata(pdev, dev);
 
-        return ret;
+done:
+	return ret;
 }
 
 static int led_remove(struct platform_device *pdev)
 {
-        struct led_device *dev = platform_get_drvdata(pdev);
-        int ret;
+	struct led_device* led = dev_get_drvdata(&pdev->dev);
+	dev_info(&pdev->dev, "%s(): remove\n", __func__);
 
-        dev_info(&pdev->dev, "%s(): remove\n", __func__);
-
-        /* remove sysfs files */
+	/* remove sysfs files */
 	device_remove_file(&pdev->dev, &dev_attr_led);
-        ret = gpio_direction_input(dev->gpio);
-        if (ret) {
-                dev_err(&pdev->dev,
-			"failed to set LED gpio as input\n");
-        }
 
-        gpio_free(dev->gpio);
-        kfree(dev);
+	/* Turn off the LED as the device is removed */
+	gpio_set_value_cansleep(led->gpio, 0);
+
 	return 0;
 }
 
