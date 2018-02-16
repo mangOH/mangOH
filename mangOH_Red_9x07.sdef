@@ -19,6 +19,7 @@ apps:
     $MANGOH_ROOT/apps/SocialService/socialService
     $MANGOH_ROOT/apps/LedService/ledService
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+    $MANGOH_ROOT/apps/DataPushTest/dataPushTest
 
     // Disabled until Release 15 is released due to bug in power supply kernel support
     // $MANGOH_ROOT/apps/BatteryService/batteryService

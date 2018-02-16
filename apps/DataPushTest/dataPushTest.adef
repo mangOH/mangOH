@@ -1,0 +1,26 @@
+sandboxed: true
+start: manual
+version: 0.1
+
+executables:
+{
+    dataPushTest = (avPublisherComponent)
+}
+
+processes:
+{
+    run:
+    {
+        ( dataPushTest )
+    }
+
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+}
+
+bindings:
+{
+    dataPushTest.avPublisherComponent.le_avdata -> avcService.le_avdata
+}
