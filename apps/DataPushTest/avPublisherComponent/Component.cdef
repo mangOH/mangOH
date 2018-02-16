@@ -1,0 +1,17 @@
+cflags:
+{
+    -std=c99
+}
+
+requires:
+{
+    api:
+    {
+        airVantage/le_avdata.api
+    }
+}
+
+sources:
+{
+    avPublisher.c
+}
