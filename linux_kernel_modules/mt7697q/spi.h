@@ -27,7 +27,11 @@
 #define DRVNAME					"mt7697q"
 #define MT7697_SPI_GPIO_IRQ_NAME		"mt7697q irq"
 
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
 #define MT7697_SPI_INTR_GPIO_PIN		50
+#elif defined(CONFIG_ARCH_MDM9607) /* For WP76XX */
+#define MT7697_SPI_INTR_GPIO_PIN		8
+#endif
 #define MT7697_SPI_INTR_GPIO_PIN_INVALID	-1
 #define MT7697_SPI_BUS_NUM			32766
 #define MT7697_SPI_CS				0
