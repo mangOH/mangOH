@@ -65,11 +65,12 @@ kernelModules:
     // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
 
     // Used on mangOH Red DV3 and later
-    // Don't load bmi160 right now because there's a broken driver built into the wp76 kernel
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
-    $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+    // Disabled for now due to incompatibility with the way the TI wifi card is configured by the
+    // default yocto
+    // $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
     $MANGOH_ROOT/linux_kernel_modules/led/0-led
 
     // Disabled until compliation errors are fixed in wp76 kernel

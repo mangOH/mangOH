@@ -50,6 +50,7 @@ static void mangoh_red_release(struct device* dev);
 static int mangoh_red_probe(struct platform_device* pdev);
 static int mangoh_red_remove(struct platform_device* pdev);
 static void mangoh_red_led_release(struct device *dev);
+#ifdef ENABLE_IOT_SLOT
 static void mangoh_red_iot_slot_release(struct device *dev);
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter);
 static int mangoh_red_iot_slot_release_i2c(struct i2c_adapter **adapter);
@@ -60,6 +61,7 @@ static int mangoh_red_iot_slot_request_sdio(void);
 static int mangoh_red_iot_slot_release_sdio(void);
 static int mangoh_red_iot_slot_request_pcm(void);
 static int mangoh_red_iot_slot_release_pcm(void);
+#endif /* ENABLE_IOT_SLOT */
 
 /*
  *-----------------------------------------------------------------------------
@@ -179,6 +181,7 @@ static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq24190", 0x6B),
 };
 
+#ifdef ENABLE_IOT_SLOT
 static struct iot_slot_platform_data mangoh_red_iot_slot_pdata = {
 	.gpio		  = {CF3_GPIO42, CF3_GPIO13, CF3_GPIO7, CF3_GPIO8},
 	.reset_gpio	  = CF3_GPIO2,
@@ -201,6 +204,7 @@ static struct platform_device mangoh_red_iot_slot = {
 		.release = mangoh_red_iot_slot_release,
 	},
 };
+#endif /* ENABLE_IOT_SLOT */
 
 static struct led_platform_data mangoh_red_led_pdata = {
 	.gpio = -1,
@@ -222,8 +226,10 @@ static void mangoh_red_release(struct device* dev)
 static int mangoh_red_probe(struct platform_device* pdev)
 {
 	int ret = 0;
+#ifdef ENABLE_IOT_SLOT
 	int sdio_mux_gpio;
 	int pcm_mux_gpio;
+#endif /* ENABLE_IOT_SLOT */
 	struct gpio_chip *gpio_expander;
 	struct i2c_board_info *accelerometer_board_info;
 	struct i2c_adapter *other_adapter = NULL;
@@ -280,6 +286,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
 	gpio_expander = i2c_get_clientdata(
 		mangoh_red_driver_data.gpio_expander);
+#ifdef ENABLE_IOT_SLOT
 	sdio_mux_gpio = gpio_expander->base + 9;
 	pcm_mux_gpio = gpio_expander->base + 13;
 	ret = mangoh_red_mux_init(pdev, sdio_mux_gpio, pcm_mux_gpio);
@@ -297,6 +304,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 	mangoh_red_driver_data.iot_slot_registered = true;
+#endif /* ENABLE_IOT_SLOT */
 
 	/* Map the LED */
 	mangoh_red_led_pdata.gpio = gpio_expander->base + 8;
@@ -415,11 +423,13 @@ static int mangoh_red_remove(struct platform_device* pdev)
 	if (dd->led_registered)
 		platform_device_unregister(&mangoh_red_led);
 
+#ifdef ENABLE_IOT_SLOT
 	if (dd->iot_slot_registered)
 		platform_device_unregister(&mangoh_red_iot_slot);
 
 	if (dd->mux_initialized)
 		mangoh_red_mux_deinit();
+#endif /* ENABLE_IOT_SLOT */
 
 	try_unregister_i2c_device(dd->gpio_expander);
 	try_unregister_i2c_device(dd->i2c_switch);
@@ -428,9 +438,12 @@ static int mangoh_red_remove(struct platform_device* pdev)
 }
 
 /* Release function is needed to avoid warning when device is deleted */
+#ifdef ENABLE_IOT_SLOT
 static void mangoh_red_iot_slot_release(struct device *dev) { /* do nothing */ }
+#endif /* ENABLE_IOT_SLOT */
 static void mangoh_red_led_release(struct device *dev) { /* do nothing */ }
 
+#ifdef ENABLE_IOT_SLOT
 static int mangoh_red_iot_slot_request_i2c(struct i2c_adapter **adapter)
 {
 	*adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_IOT0);
@@ -480,6 +493,7 @@ static int mangoh_red_iot_slot_release_pcm(void)
 {
 	return mangoh_red_mux_pcm_release(PCM_SELECTION_IOT_SLOT);
 }
+#endif /* ENABLE_IOT_SLOT */
 
 static int __init mangoh_red_init(void)
 {

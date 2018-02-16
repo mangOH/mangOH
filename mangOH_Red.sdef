@@ -72,7 +72,9 @@ kernelModules:
     $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
     $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
 
-    $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+    // Disabled for now due to incompatibility with the way the TI wifi card is configured by the
+    // default yocto
+    // $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
 
     // Don't enable mt7697 drivers until a kernel is publicly available which supports the correct
     // cfg80211 and mac80211 modules
