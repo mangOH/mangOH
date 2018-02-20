@@ -17,6 +17,7 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
+    $MANGOH_ROOT/apps/LedService/ledService
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
 
