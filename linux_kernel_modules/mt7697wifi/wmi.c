@@ -49,9 +49,10 @@ static int mt7697_proc_mac_addr(const struct mt7697_rsp_hdr* rsp,
 		ret = (ret < 0) ? ret:-EIO;
 		goto cleanup;
 	}
-
+#ifdef DEBUG
 	print_hex_dump(KERN_DEBUG, DRVNAME" MAC address ",
 		DUMP_PREFIX_OFFSET, 16, 1, addr, ETH_ALEN, 0);
+#endif
 	memcpy(cfg->mac_addr.addr, addr, ETH_ALEN);
 
 	rtnl_lock();
@@ -184,9 +185,11 @@ static int mt7697_proc_get_cfg(const struct mt7697_rsp_hdr* rsp,
 		}
 
 		if (wifi_cfg->sta.bssid_present) {
+#ifdef DEBUG
 			print_hex_dump(KERN_DEBUG, DRVNAME"STA BSSID ",
 				DUMP_PREFIX_OFFSET, 16, 1,
 				wifi_cfg->sta.bssid, ETH_ALEN, 0);
+#endif
 		}
 
 		dev_dbg(cfg->dev, "%s(): STA passphrase len(%u)\n",
@@ -418,9 +421,10 @@ static int mt7697_proc_scan_ind(const struct mt7697_rsp_hdr* rsp,
 			ret = -ENOMEM;
 			goto cleanup;
 		}
-
+#ifdef DEBUG
 		print_hex_dump(KERN_DEBUG, DRVNAME" BSS BSSID ",
 			DUMP_PREFIX_OFFSET, 16, 1, bss->bssid, ETH_ALEN, 0);
+#endif
 		dev_dbg(cfg->dev,
 			"%s(): BSS signal(%d) scan width(%u) cap(0x%08x)\n",
 			__func__, bss->signal, bss->scan_width,
@@ -569,10 +573,10 @@ static int mt7697_proc_connect_ind(const struct mt7697_rsp_hdr* rsp,
 		ret = (ret < 0) ? ret:-EIO;
 		goto cleanup;
 	}
-
+#ifdef DEBUG
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ",
 		DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
-
+#endif
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
 		goto cleanup;
@@ -662,10 +666,10 @@ static int mt7697_proc_disconnect_ind(struct mt7697_cfg80211_info *cfg)
 		ret = (ret < 0) ? ret:-EIO;
 		goto cleanup;
 	}
-
+#ifdef DEBUG
 	print_hex_dump(KERN_DEBUG, DRVNAME" BSSID ",
 		DUMP_PREFIX_OFFSET, 16, 1, bssid, ETH_ALEN, 0);
-
+#endif
 	if (list_empty(&cfg->vif_list)) {
 		dev_dbg(cfg->dev, "%s(): no interfaces\n", __func__);
 		goto cleanup;
@@ -1385,9 +1389,11 @@ int mt7697_wr_scan_req(const struct mt7697_cfg80211_info *cfg, u32 if_idx,
 		dev_dbg(cfg->dev, "%s(): ssid len(%d)\n",
 			__func__, req->ssids[0].ssid_len);
 		scan_req.ssid_len = req->ssids[0].ssid_len;
+#ifdef DEBUG
 		print_hex_dump(KERN_DEBUG, DRVNAME" SSID ",
 			DUMP_PREFIX_OFFSET, 16, 1, req->ssids[0].ssid,
 			req->ssids[0].ssid_len, 0);
+#endif
 		memcpy(scan_req.ssid, req->ssids[0].ssid,
 			req->ssids[0].ssid_len);
 	}

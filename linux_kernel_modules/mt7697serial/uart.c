@@ -60,6 +60,8 @@ static int mt7697_uart_rx_poll(struct mt7697_uart_info* uart_info)
 	while (1) {
 		mask = uart_info->fd_hndl->f_op->poll(
 			uart_info->fd_hndl, &table.pt);
+                dev_dbg(uart_info->dev, "%s(): Rx data mask(0x%08x)\n",
+	                __func__, mask);
 		if (mask & POLLERR) {
 			dev_warn(uart_info->dev,
 			         "%s(): poll error\n", __func__);
@@ -71,8 +73,6 @@ static int mt7697_uart_rx_poll(struct mt7697_uart_info* uart_info)
 			ret = -EPIPE;
 			goto cleanup;
 		} else if (mask & (POLLRDNORM | POLLRDBAND | POLLIN)) {
-			dev_dbg(uart_info->dev, "%s(): Rx data mask(0x%08x)\n",
-			        __func__, mask);
 			break;
 		}
 
