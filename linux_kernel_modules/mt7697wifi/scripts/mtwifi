@@ -8,6 +8,13 @@ mt_wifi_start() {
     if [ `echo $1 | tr -s '[:upper:]' '[:lower:]'` = `echo "uart" | tr -s '[:upper:]' '[:lower:]'` ] ; then
 	echo "Setup MT7697 UART";
         stty -F /dev/ttyHS0 raw 921600 crtscts ignbrk -echo || exit 127
+
+        DEVICE=`cm info | grep Device: | cut -d':' -f2` | sed 's/^ *//g'`
+        echo "Device: "$DEVICE;
+        if [ $DEVICE = 'WP7603-1' -o $DEVICE = 'WP7603-3' ]; then
+            echo "Enable power control";
+            echo on > /sys/devices/78b0000.uart/power/control || exit 127
+        fi
     fi
 
     lsmod | grep mac80211 >/dev/null
