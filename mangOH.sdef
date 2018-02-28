@@ -1,0 +1,136 @@
+//--------------------------------------------------------------------------------------------------
+// Universal mangOH system definition that extends the wifi sdef from Legato. This SDEF aims to
+// support all mangOH boards and all WP modules.
+//
+// Copyright (C) Sierra Wireless Inc.  Use of this work is subject to license.
+//--------------------------------------------------------------------------------------------------
+
+#include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
+
+apps:
+{
+#if ${MANGOH_BOARD} = RED
+    /*
+     * There is a conflict between the following software components:
+     *  - sx1509 Linux kernel driver
+     *  - mangOH GPIO expander service
+     *  - gpioexp command line program
+     * All of these components attempt to control the sx1509 GPIO expander on mangOH Red. The sx1509
+     * driver is required for other kernel modules such as the iot slot driver and the LED driver to
+     * manipulate the GPIOs. The mangOH GPIO expander service is a userspace driver for the SX1509
+     * which provides a service conforming to le_gpio.api to access the GPIOs of the sx1509 from
+     * Legato apps. gpioexp is also a userspace command line program which can control the sx1509.
+     * This program is called from the /etc/init.d/tiwifi provided by the Sierra Wireless Linux
+     * distro in order to setup GPIOs to use the TI WiFi IoT card (without the iot slot module). The
+     * fundamental problem is that the gpiolib implementation in the Sierra Wireless kernels doesn't
+     * support accessing GPIOs from userspace through sysfs if they are not listed in the kernel at
+     * build time.
+     */
+    // $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
+
+    /*
+     * The heartbeat app is disabled on mangOH Red because the logging messages from the low power
+     * microcontroller make it very difficult to use the console port.
+     */
+    // $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
+
+    $MANGOH_ROOT/apps/LedService/ledService
+    $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
+    $MANGOH_ROOT/apps/DataPushTest/dataPushTest
+#if ${MANGOH_BATTERY_SERVICE_SUPPORTED} = 1
+    $MANGOH_ROOT/apps/BatteryService/batteryService
+#endif // MANGOH_BATTERY_SERVICE_SUPPORTED
+#elif ${MANGOH_BOARD} = GREEN
+    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
+    $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
+    $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
+    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
+    $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
+#endif // MANGOH_BOARD
+
+    $MANGOH_ROOT/apps/MqttClient/mqttClient
+    $MANGOH_ROOT/apps/DataRouter/dataRouter
+    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
+    $MANGOH_ROOT/apps/SocialService/socialService
+    $LEGATO_ROOT/apps/tools/devMode
+}
+
+commands:
+{
+#if ${MANGOH_BOARD} = GREEN
+    mux = muxCtrlTools:/bin/mux
+#endif // MANGOH_BOARD
+    dr = drTool:/bin/dr
+    twitter = socialService:/bin/twitter
+}
+
+interfaceSearch:
+{
+#if ${MANGOH_BOARD} = RED
+    $MANGOH_ROOT/apps/BatteryService
+#elif ${MANGOH_BOARD} = GREEN
+    $MANGOH_ROOT/apps/MuxControl
+#endif // MANGOH_BOARD
+    $MANGOH_ROOT/apps/DataRouter
+    $MANGOH_ROOT/apps/MqttClient
+    $MANGOH_ROOT/apps/SocialService/interfaces
+}
+
+kernelModules:
+{
+#if ${MANGOH_BOARD} = RED
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
+    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
+
+    // USB to SPI adapter connected to the mt7697 and RPi header
+    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
+
+    // temperature and pressure sensor
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/2-bmp280
+    $MANGOH_ROOT/linux_kernel_modules/bmp280/3-bmp280-i2c
+
+    // accelerometer on DV3 and later board revs
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
+    $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
+
+    // accelerometer on DV2 boards
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
+    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+
+    // battery gauge
+    $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
+
+    // battery charger
+    $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
+
+    // LED on GPIO driver
+    $MANGOH_ROOT/linux_kernel_modules/led/0-led
+
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+    // Required for bmp280 & bmi160
+    $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
+    $MANGOH_ROOT/linux_kernel_modules/iio/1-iio-kfifo-buf
+
+    // Required for bmi160
+    $MANGOH_ROOT/linux_kernel_modules/iio/2-iio-triggered-buffer
+#endif // MANGOH_KERNEL_LACKS_IIO
+
+#if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
+    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
+    $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
+    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+#endif // MANGOH_SUPPORT_MT7697_WIFI
+
+    // Disabled for now. See comment at top of file regarding GPIO expander service
+    // $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+#elif ${MANGOH_BOARD} = GREEN
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_green_dv4
+
+    // accelerometer driver
+    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
+    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+#endif // MANGOH_BOARD
+
+    $LEGATO_ROOT/drivers/spisvc/spisvc
+}

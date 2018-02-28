@@ -1,0 +1,20 @@
+//--------------------------------------------------------------------------------------------------
+// Definitions specific to Sierra Wireless modules that are based on the Qualcomm MDM9x07 chipset
+// family.
+//
+// Copyright (C), Sierra Wireless Inc.
+//--------------------------------------------------------------------------------------------------
+
+#include mdm9xxx.sinc
+
+buildVars:
+{
+    /*
+     * The battery service can't be enabled on 9x07 until the power supply unload lockup fix lands
+     * in an official release.
+     */
+    MANGOH_BATTERY_SERVICE_SUPPORTED = 0
+
+    MANGOH_SUPPORT_MT7697_WIFI = 1
+}
+
