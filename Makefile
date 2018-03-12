@@ -26,10 +26,11 @@ export PATH := $(LEGATO_ROOT)/bin:$(PATH)
 .PHONY: all
 all: green_wp85 green_wp750x red_wp85 red_wp750x red_wp76xx red_wp77xx
 
+LEGATO ?= 1
 .PHONY: legato_%
 legato_%:
-ifeq ($(NO_BUILD_LEGATO),1)
-	echo "Not building LEGATO due to \$NO_BUILD_LEGATO == 1"
+ifeq ($(LEGATO),0)
+	echo "Not building LEGATO due to \$$LEGATO == 0"
 else
 	$(eval LEGATO_TARGET := $(subst legato_,,$@))
 	$(MAKE) -C $(LEGATO_ROOT) framework_$(LEGATO_TARGET)
