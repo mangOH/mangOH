@@ -9,9 +9,13 @@ mt_wifi_start() {
 	echo "Setup MT7697 UART";
         stty -F /dev/ttyHS0 raw 921600 crtscts ignbrk -echo || exit 127
 
-        DEVICE=`cm info | grep Device: | cut -d':' -f2 | sed 's/^ *//g'`
+	# This is a workaround for an issue where the UART on the WP76/WP77 goes
+	# to sleep and then doesn't wake up again when data is received. This is
+	# tracked in QTI9X07-1602. It seems likely that this will be fixed in
+	# WP76/77 release 9. At that point, this workaround can be removed.
+        DEVICE=`cm info | grep Device: | cut -d':' -f2 | sed 's/^ *//g' | cut -c -4`
         echo "Device: "$DEVICE;
-        if [ $DEVICE = 'WP7603-1' -o $DEVICE = 'WP7603-3' ]; then
+        if [ $DEVICE = 'WP76' -o $DEVICE = 'WP77' ]; then
             echo "Enable power control";
             echo on > /sys/devices/78b0000.uart/power/control || exit 127
         fi
