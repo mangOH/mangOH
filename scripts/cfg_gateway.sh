@@ -280,11 +280,11 @@ if [ "${rsp}" = 'Y' ]; then
 
     echo "Reconfiguring the DHCP server..."
     /etc/init.d/dnsmasq stop || echo "UNABLE TO STOP THE DHCP server"
+
     ### Configure the IP addresses range for DHCP (dnsmasq)
     DHCP_CFG_FILE="$DHCP_CFG_FILE_PREFIX.$ITF_LAN.$DHCP_CFG_FILE_SUFFIX"
     test -L "/etc/dnsmasq.d/$DHCP_CFG_FILE" && rm -f "/etc/dnsmasq.d/$DHCP_CFG_FILE"
     test -f "/tmp/$DHCP_CFG_FILE" && rm -f "/tmp/$DHCP_CFG_FILE"
-    #test -L "/etc/dnsmasq.d/$DHCP_CFG_FILE" || ln -s "/tmp/$DHCP_CFG_FILE" "/etc/dnsmasq.d/$DHCP_CFG_FILE"
 
     echo "Generating the configuration file '/tmp/$DHCP_CFG_FILE' for the DHCP server..."
     echo -ne "log-dhcp\nlog-queries\n" \
@@ -294,7 +294,6 @@ if [ "${rsp}" = 'Y' ]; then
              "dhcp-option=$ITF_LAN,6,$LAN_IP\n" \
              "dhcp-range=$DHCP_IP_START,$DHCP_IP_END,24h\n" \
 	     "server=8.8.8.8\n" >> "/tmp/$DHCP_CFG_FILE"
-
     ln -s "/tmp/$DHCP_CFG_FILE" "/etc/dnsmasq.d/$DHCP_CFG_FILE"
 
     ### Start the DHCP server
