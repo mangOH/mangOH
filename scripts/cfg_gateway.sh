@@ -71,7 +71,7 @@ valid_net_mask()
                     zero=1
                 fi
             else
-                if eval [ $zero -ne 0 ]; then
+                if [ $zero -ne 0 ]; then
                     echo "Error net mask out of range ($net_mask)"
                     return 1
                 fi
@@ -88,19 +88,21 @@ valid_net_mask()
 echo "MangOH gateway configuration"
 
 read -p "Enter WAN (cellular) interface (default: rmnet_data0): " ITF_WAN
-if [ -n $ITF_WAN ]; then
+if [ -z "$ITF_WAN" ]; then
     ITF_WAN="rmnet_data0"
 fi
+echo "WAN interface $ITF_WAN"
 
 read -p "Enter LAN interface (default: eth0): " ITF_LAN
-if [ -n $ITF_LAN ]; then
+if [ -z "$ITF_LAN" ]; then
     ITF_LAN="eth0"
 fi
+echo "LAN interface $ITF_LAN"
 
 while true
 do
     read -p "Enter LAN IP (default: 192.168.20.1): " LAN_IP
-    if [ -n $LAN_IP ]; then
+    if [ -z "$LAN_IP" ]; then
         LAN_IP="192.168.20.1"
     fi
 
@@ -112,8 +114,8 @@ done
 
 while true
 do
-    read -p "Enter LAN IP Mask (default: 255.255.255.0): " NET_MASK
-    if [ -n $NET_MASK ]; then
+    read -p "Enter LAN Net Mask (default: 255.255.255.0): " NET_MASK
+    if [ -z "$NET_MASK" ]; then
         NET_MASK="255.255.255.0"
     fi
 
@@ -153,7 +155,7 @@ case "$ITF_WAN" in
         sleep 1
 
         read -p "Enter APN (default: internet.sierrawireless.com): " APN
-        if [ -n $APN ]; then
+        if [ -z "$APN" ]; then
             APN="internet.sierrawireless.com"
         fi
 
@@ -167,7 +169,7 @@ case "$ITF_WAN" in
 esac
 
 RETRY=0
-while [ ${RETRY} -lt 60 ] ; do
+while [ ${RETRY} -lt 30 ] ; do
     ITF_WAN_ADDR=$(/sbin/ifconfig "$ITF_WAN" | grep "inet addr" | cut -d ':' -f 2 | cut -d ' ' -f 1)
     if [ "${ITF_WAN_ADDR}" == "" ]; then
         sleep 1
@@ -205,6 +207,10 @@ fi
 
 echo "Enabling IP forwarding..."
 sysctl -w net.ipv4.ip_forward=1
+if [ "$?" -ne 0 ]; then
+    echo "Enabling IP forwarding failed"
+    exit 1
+fi
 
 echo "Configuring the NAT..."
 iptables -P INPUT ACCEPT
@@ -224,22 +230,22 @@ if [ "$?" -ne 0 ]; then
 fi
 iptables --table nat -A POSTROUTING -o $ITF_WAN -j MASQUERADE
 if [ "$?" -ne 0 ]; then
-    echo "iptables postrouting failed"
+    echo "iptables postrouting $ITF_WAN failed"
     exit 1
 fi
 iptables -A FORWARD -i $ITF_WAN -o $ITF_LAN -m state --state RELATED,ESTABLISHED -j ACCEPT
 if [ "$?" -ne 0 ]; then
-    echo "iptables forward failed"
+    echo "iptables forward $ITF_WAN -> $ITF_LAN failed"
     exit 1
 fi
 iptables -A FORWARD -i $ITF_LAN -o $ITF_WAN -m state --state NEW -j ACCEPT
 if [ "$?" -ne 0 ]; then
-    echo "iptables forward failed"
+    echo "iptables forward $ITF_LAN -> $ITF_WAN failed"
     exit 1
 fi
 iptables -A INPUT -m udp -p udp --sport 67:68 --dport 67:68 -j ACCEPT
 if [ "$?" -ne 0 ]; then
-    echo "iptables accept input failed"
+    echo "iptables accept UDP input on source/destination ports 67,68 failed"
     exit 1
 fi
 
@@ -255,7 +261,7 @@ if [ "${rsp}" = 'Y' ]; then
     while true
     do
         read -p "Enter start IP (default: 192.168.20.10): " DHCP_IP_START
-        if [ -n $DHCP_IP_START ]; then
+        if [ -z $DHCP_IP_START ]; then
             DHCP_IP_START="192.168.20.10"
         fi
 
@@ -268,7 +274,7 @@ if [ "${rsp}" = 'Y' ]; then
     while true
     do
         read -p "Enter end IP (default: 192.168.20.100): " DHCP_IP_END
-        if [ -n $DHCP_IP_END ]; then
+        if [ -z $DHCP_IP_END ]; then
             DHCP_IP_END="192.168.20.100"
         fi
 
@@ -279,7 +285,11 @@ if [ "${rsp}" = 'Y' ]; then
     done
 
     echo "Reconfiguring the DHCP server..."
-    /etc/init.d/dnsmasq stop || echo "UNABLE TO STOP THE DHCP server"
+    /etc/init.d/dnsmasq stop
+    if [ "$?" -ne 0 ]; then
+        echo "UNABLE TO STOP THE DHCP server"
+        exit 1
+    fi
 
     ### Configure the IP addresses range for DHCP (dnsmasq)
     DHCP_CFG_FILE="$DHCP_CFG_FILE_PREFIX.$ITF_LAN.$DHCP_CFG_FILE_SUFFIX"
@@ -295,10 +305,18 @@ if [ "${rsp}" = 'Y' ]; then
              "dhcp-range=$DHCP_IP_START,$DHCP_IP_END,24h\n" \
 	     "server=8.8.8.8\n" >> "/tmp/$DHCP_CFG_FILE"
     ln -s "/tmp/$DHCP_CFG_FILE" "/etc/dnsmasq.d/$DHCP_CFG_FILE"
+    if [ "$?" -ne 0 ]; then
+        echo "Create softlink for DHCP server configuration file failed"
+        exit 1
+    fi
 
     ### Start the DHCP server
     echo "Restarting the DHCP server..."
-    /etc/init.d/dnsmasq start || echo "UNABLE TO START THE DHCP server"
+    /etc/init.d/dnsmasq start
+    if [ "$?" -ne 0 ]; then
+        echo "UNABLE TO START THE DHCP server"
+        exit 1
+    fi
 fi
 
 echo "MangOH gateway configuration completed"
