@@ -165,7 +165,6 @@ static struct i2c_board_info mangoh_red_pressure_devinfo = {
 	I2C_BOARD_INFO("bmp280", 0x76),
 };
 
-#if 0
 static struct ltc294x_platform_data mangoh_red_battery_gauge_platform_data = {
 	.r_sense = 18,
 	.prescaler_exp = 32,
@@ -175,7 +174,6 @@ static struct i2c_board_info mangoh_red_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("ltc2942", 0x64),
 	.platform_data = &mangoh_red_battery_gauge_platform_data,
 };
-#endif
 
 static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq24190", 0x6B),
@@ -359,7 +357,6 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-#if 0
 	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
 		/* Map the I2C ltc2942 battery gauge */
 		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
@@ -380,7 +377,6 @@ static int mangoh_red_probe(struct platform_device* pdev)
 			goto cleanup;
 		}
 	}
-#endif
 	/*
 	 * TODO:
 	 * 3503 USB Hub: 0x08
@@ -411,10 +407,8 @@ static int mangoh_red_remove(struct platform_device* pdev)
 
 	dev_info(&pdev->dev, "Removing mangoh red platform device\n");
 
-#if 0
 	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
 		try_unregister_i2c_device(dd->battery_gauge);
-#endif
 
 	try_unregister_i2c_device(dd->battery_charger);
 	try_unregister_i2c_device(dd->pressure);
