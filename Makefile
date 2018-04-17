@@ -21,10 +21,8 @@ MKSYS_ARGS_RED = --output-dir=build/update_files/red -s $(MANGOH_ROOT)/apps/RedS
 
 export PATH := $(LEGATO_ROOT)/bin:$(PATH)
 
-# green_wp76xx and green_wp77xx are excluded because gpioExpanderService won't compile due to the
-# removal of i2c-utils in wp76 and wp77 yocto.
 .PHONY: all
-all: green_wp85 green_wp750x red_wp85 red_wp750x red_wp76xx red_wp77xx
+all: green_wp85 green_wp750x green_wp76xx green_wp77xx red_wp85 red_wp750x red_wp76xx red_wp77xx
 
 LEGATO ?= 1
 .PHONY: legato_%
