@@ -11,7 +11,7 @@ export MANGOH_ROOT = $(shell pwd)
 
 MKSYS_ARGS_COMMON = --object-dir=build/${@} -s $(MANGOH_ROOT)/apps/GpioExpander/gpioExpanderService
 MKSYS_ARGS_GREEN = --output-dir=build/update_files/green
-MKSYS_ARGS_RED = --output-dir=build/update_files/red -s $(MANGOH_ROOT)/apps/RedSensorToCloud
+MKSYS_ARGS_RED = --output-dir=build/update_files/red -s $(MANGOH_ROOT)/apps/RedSensorToCloud -s $(MANGOH_ROOT)/apps/LocationTriangulation
 
 # The comments below are for Developer Studio integration. Do not remove them.
 # DS_CLONE_ROOT(MANGOH_ROOT)
