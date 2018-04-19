@@ -37,7 +37,11 @@ apps:
 
     $MANGOH_ROOT/apps/LedService/ledService
     $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
-    $MANGOH_ROOT/apps/LocationTriangulation/locationTriangulation
+
+    /*
+     * The Location Triangulation application is disabled as it requires update qmi libraries
+     */
+    //$MANGOH_ROOT/apps/LocationTriangulation/locationTriangulation
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
 #if ${MANGOH_BATTERY_SERVICE_SUPPORTED} = 1
     $MANGOH_ROOT/apps/BatteryService/batteryService
