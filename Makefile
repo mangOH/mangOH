@@ -34,72 +34,59 @@ else
 	$(MAKE) -C $(LEGATO_ROOT) framework_$(LEGATO_TARGET)
 endif
 
-.PHONY: module_env_%
-module_env_%: legato_%
-	$(eval MODULE := $(subst module_env_,,$@))
-	$(eval MODULE_UPPER := $(shell echo $(MODULE) | tr [a-z] [A-Z]))
-	$(eval $(MODULE_UPPER)_TOOLCHAIN_DIR := $(shell $(LEGATO_ROOT)/bin/findtoolchain $(MODULE) dir))
-	$(eval $(MODULE_UPPER)_TOOLCHAIN_PREFIX := $(shell $(LEGATO_ROOT)/bin/findtoolchain $(MODULE) prefix))
-	$(eval TOOLCHAIN_DIR := $($(MODULE_UPPER)_TOOLCHAIN_DIR))
-	$(eval TOOLCHAIN_PREFIX := $($(MODULE_UPPER)_TOOLCHAIN_PREFIX))
-	echo "TOOLCHAIN_DIR=$(TOOLCHAIN_DIR), TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX)"
-ifeq ($(LEGATO_SYSROOT),)
-	$(eval LEGATO_SYSROOT := $($(MODULE_UPPER)_SYSROOT))
-endif
-
 .PHONY: green_wp85
-green_wp85: module_env_wp85
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+green_wp85: legato_wp85
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 prefix) \
 	MANGOH_BOARD=GREEN \
 	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: green_wp750x
-green_wp750x: module_env_wp750x
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+green_wp750x: legato_wp750x
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x prefix) \
 	MANGOH_BOARD=GREEN \
 	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: green_wp76xx
-green_wp76xx: module_env_wp76xx
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+green_wp76xx: legato_wp76xx
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
 	MANGOH_BOARD=GREEN \
 	mksys -t wp76xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: green_wp77xx
-green_wp77xx: module_env_wp77xx
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+green_wp77xx: legato_wp77xx
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx prefix) \
 	MANGOH_BOARD=GREEN \
 	mksys -t wp77xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: red_wp85
-red_wp85: module_env_wp85
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+red_wp85: legato_wp85
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 prefix) \
 	MANGOH_BOARD=RED \
 	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: red_wp750x
-red_wp750x: module_env_wp750x
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+red_wp750x: legato_wp750x
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x prefix) \
 	MANGOH_BOARD=RED \
 	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: red_wp76xx
-red_wp76xx: module_env_wp76xx
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+red_wp76xx: legato_wp76xx
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
 	MANGOH_BOARD=RED \
 	mksys -t wp76xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: red_wp77xx
-red_wp77xx: module_env_wp77xx
-	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
-	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+red_wp77xx: legato_wp77xx
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx prefix) \
 	MANGOH_BOARD=RED \
 	mksys -t wp77xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
