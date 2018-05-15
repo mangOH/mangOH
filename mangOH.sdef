@@ -82,6 +82,14 @@ interfaceSearch:
     $MANGOH_ROOT/apps/SocialService/interfaces
 }
 
+componentSearch:
+{
+    ${CURDIR}/apps/GpioExpander/gpioExpanderService
+    ${CURDIR}/apps/RedSensorToCloud
+    ${CURDIR}/apps/LocationTriangulation
+    ${CURDIR}/apps/MqttClient
+}
+
 kernelModules:
 {
 #if ${MANGOH_BOARD} = RED
