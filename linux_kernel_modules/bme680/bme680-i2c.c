@@ -223,7 +223,6 @@ static int bme680_i2c_probe(struct i2c_client *client,
 	int ret;
 	struct iio_dev *indio_dev;
         struct bme680_data *data;
-        u16 desired_settings = UINT16_C(65535);
 	u8 set_required_settings;
 
         dev_info(&client->dev, "%s(): probe chip ID(0x%lx)\n", __func__, id->driver_data);
@@ -278,12 +277,6 @@ static int bme680_i2c_probe(struct i2c_client *client,
         ret = bme680_init(&data->bme680_dev);
         if (ret) {
 		dev_err(&client->dev, "%s(): Error bme680_init() failed(%d)\n", __func__, ret);
-		goto exit;
-	}
-
-        ret = bme680_get_sensor_settings(desired_settings, &data->bme680_dev);
-        if (ret) {
-		dev_err(&client->dev, "%s(): Error bme680_get_sensor_settings() failed(%d)\n", __func__, ret);
 		goto exit;
 	}
 
