@@ -17,7 +17,7 @@ Base project containing apps and drivers for the mangOH hardware
        this command slightly to match the toolchain/module.
 1. Previously there was an issue where the toolchains were not able to build kernel modules due to
    missing scripts. The following steps fix that problem, but it should not be necessary to do so
-   for releases from WP85/WP75 release 15 and WP76/WP77 release 8 onwards.
+   for releases from WP76/WP77 release 8 onwards.
     1. `export PATH=$PATH:/opt/swi/yXX-ext-wpYYYY/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi`
        (Note that the *yXX-ext-wpYYYY* will be something like *y22-ext-wp76xx* depending on the
        module and the yocto version of the associated toolchain.)
