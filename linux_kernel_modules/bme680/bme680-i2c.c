@@ -46,7 +46,7 @@ static void bme680_delay_ms(u32 period)
          * Return control or wait,
          * for a period amount of milliseconds
          */
-        msleep(period);
+        msleep_interruptible(period);
 }
 
 static int bme680_read_raw(struct iio_dev *indio_dev,
@@ -58,38 +58,67 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 
 	mutex_lock(&data->lock);
 
-        dev_dbg(&indio_dev->dev, "%s(): mask(0x%08lx)\n", __func__, mask);
-	switch (mask) {
+        switch (mask) {
 	case IIO_CHAN_INFO_PROCESSED:
         {
                 uint16_t meas_period;
+                u8 set_required_settings;
+
+                /* Select the power mode */
+                /* Must be set before writing the sensor configuration */
+                data->bme680_dev.power_mode = BME680_FORCED_MODE; 
+
+                /* Set the required sensor settings needed */
+                set_required_settings = BME680_OST_SEL | BME680_OSP_SEL | BME680_OSH_SEL | BME680_FILTER_SEL 
+                        | BME680_GAS_SENSOR_SEL;
+
+                /* Set the desired sensor configuration */
+                ret = bme680_set_sensor_settings(set_required_settings, &data->bme680_dev);
+                if (ret) {
+		        dev_err(&indio_dev->dev, "%s(): bme680_set_sensor_settings() failed(%d)\n", __func__, ret);
+		        goto exit;
+	        }
+
+                /* Set the power mode */
+                ret = bme680_set_sensor_mode(&data->bme680_dev);
+                if (ret) {
+		        dev_err(&indio_dev->dev, "%s(): bme680_set_sensor_settings() failed(%d)\n", __func__, ret);
+		        goto exit;
+	        }
+
                 bme680_get_profile_dur(&meas_period, &data->bme680_dev);
 
                 /* Delay till the measurement is ready */
-                bme680_delay_ms(meas_period);
+                bme680_delay_ms(meas_period * 2);
 
                 ret = bme680_get_sensor_data(&data->field_data, &data->bme680_dev);
                 if (ret) {
                         if (ret != BME680_W_NO_NEW_DATA) {
-		                dev_err(&indio_dev->dev, "%s(): Error bme680_get_sensor_data() failed(%d)\n", 
+		                dev_err(&indio_dev->dev, "%s(): bme680_get_sensor_data() failed(%d)\n", 
                                         __func__, ret);
                         }
+                        else {
+                                dev_warn(&indio_dev->dev, "%s(): no new data\n", __func__);
+                                ret = BME680_OK;
+                        }
+
 		        goto exit;
 	        }
-                dev_dbg(&indio_dev->dev, "%s(): bme680 status(0x%02x) gas index(%u) meas index(%u)\n", 
-                        __func__, data->field_data.status, data->field_data.gas_index, 
-                        data->field_data.meas_index);
 
-                dev_dbg(&indio_dev->dev, "%s(): channel type(%u)\n", __func__, chan->type);
-		switch (chan->type) {
+                switch (chan->type) {
 		case IIO_GASRESISTANCE:
                         if (data->field_data.status & BME680_GASM_VALID_MSK) {
                                 dev_dbg(&indio_dev->dev, "%s(): gas resistance(%d)\n", 
                                         __func__, data->field_data.gas_resistance);
                                 *val = data->field_data.gas_resistance;
+                                ret = IIO_VAL_INT;
                         }
-                        else
-                                *val = 0;
+                        else {
+                                dev_warn(&indio_dev->dev, "%s(): unstable heating setup\n", 
+                                        __func__);
+                                ret = -EAGAIN;
+                                goto exit;
+                        }
 
 			break;
 		case IIO_PRESSURE:
@@ -97,6 +126,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
                                 __func__, data->field_data.pressure / 100, 
                                 data->field_data.pressure % 100);
                         *val = data->field_data.pressure;
+                        ret = IIO_VAL_INT;
                         break;
                 case IIO_HUMIDITYRELATIVE:
                         dev_dbg(&indio_dev->dev, "%s(): humidity(%d.%u %%rH)\n", 
@@ -104,6 +134,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
                                 data->field_data.humidity % 1000);
 			*val = data->field_data.humidity;
                         *val2 = 1000;
+                        ret = IIO_VAL_FRACTIONAL;
                         break;
 		case IIO_TEMP:
                         dev_dbg(&indio_dev->dev, "%s(): temperature(%d.%u degC)\n", 
@@ -111,25 +142,24 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
                                 data->field_data.temperature % 100);
 			*val = data->field_data.temperature;
                         *val2 = 100;
+                        ret = IIO_VAL_FRACTIONAL;
 			break;
 		default:
+                        dev_err(&indio_dev->dev, "%s(): unsupported channel type(%d)\n", 
+                                __func__, chan->type);
 			ret = -EINVAL;
 			goto exit;
 		}
 		break;
         }
 	default:
+                dev_err(&indio_dev->dev, "%s(): unsupported mask(%ld)\n", __func__, mask);
 		ret = -EINVAL;
 		goto exit;
 	}
 
 exit:
-        ret = bme680_set_sensor_mode(&data->bme680_dev);
-        if (ret) {
-                dev_err(&indio_dev->dev, "%s(): Error bme680_set_sensor_mode() failed(%d)\n", __func__, ret);
-        }
-
-	mutex_unlock(&data->lock);
+        mutex_unlock(&data->lock);
 	return ret;
 }
 
@@ -137,6 +167,7 @@ static int bme680_write_raw(struct iio_dev *indio_dev,
 			    struct iio_chan_spec const *chan,
 			    int val, int val2, long mask)
 {
+        dev_err(&indio_dev->dev, "%s(): unsupported\n", __func__);
 	return -EINVAL;
 }
 
@@ -149,7 +180,7 @@ static const struct iio_info bme680_info = {
 static int match(struct device *dev, void *data)
 {
         struct i2c_client *client = to_i2c_client(dev);
-        return (client->addr == BME680_I2C_ADDR_SECONDARY);
+        return (client->addr == BME680_I2C_ADDR_PRIMARY);
 }
 
 static struct i2c_client *bme680_i2c_get_client(void)
@@ -163,25 +194,26 @@ static struct i2c_client *bme680_i2c_get_client(void)
 
 static s8 bme680_i2c_read(u8 dev_id, u8 reg_addr, u8 *reg_data, u16 len)
 {
-        struct i2c_client *client;
+        static struct i2c_client *client = NULL;
         struct iio_dev *indio_dev;
         struct bme680_data *data;
         int ret = 0;
 
-        client = bme680_i2c_get_client();
-        if (IS_ERR(client)) {
-                dev_err(&client->dev, "%s(): Error bme680_i2c_get_client() failed()\n", __func__);
-                ret = PTR_ERR(client);
-                goto exit;
+        if (!client) {
+                client = bme680_i2c_get_client();
+                if (IS_ERR(client)) {
+                        dev_err(&client->dev, "%s(): bme680_i2c_get_client() failed()\n", __func__);
+                        ret = PTR_ERR(client);
+                        goto exit;
+                }
         }
 
         indio_dev = dev_get_drvdata(&client->dev);
         data = iio_priv(indio_dev);
 
-        dev_dbg(&client->dev, "%s(): read addr(0x%02x) len(%u)\n", __func__, reg_addr, len);
         ret = regmap_bulk_read(data->regmap, reg_addr, reg_data, len);
         if (ret < 0) {
-                dev_err(&client->dev, "%s(): Error regmap_bulk_read() failed(%d)\n", __func__, ret);
+                dev_err(&client->dev, "%s(): regmap_bulk_read() failed(%d)\n", __func__, ret);
                 goto exit;
         }
 
@@ -191,25 +223,26 @@ exit:
 
 static s8 bme680_i2c_write(u8 dev_id, u8 reg_addr, u8 *reg_data, u16 len)
 {
-        struct i2c_client *client;
+        static struct i2c_client *client = NULL;
         struct iio_dev *indio_dev;
         struct bme680_data *data;
         int ret = 0;
 
-        client = bme680_i2c_get_client();
-        if (IS_ERR(client)) {
-                dev_err(&client->dev, "%s(): Error bme680_i2c_get_client() failed\n", __func__);
-                ret = PTR_ERR(client);
-                goto exit;
+        if (!client) {
+                client = bme680_i2c_get_client();
+                if (IS_ERR(client)) {
+                        dev_err(&client->dev, "%s(): bme680_i2c_get_client() failed\n", __func__);
+                        ret = PTR_ERR(client);
+                        goto exit;
+                }
         }
 
         indio_dev = dev_get_drvdata(&client->dev);
         data = iio_priv(indio_dev);
 
-        dev_dbg(&client->dev, "%s(): write addr(0x%02x) len(%u)\n", __func__, reg_addr, len);
         ret = regmap_bulk_write(data->regmap, reg_addr, reg_data, len);
         if (ret < 0) {
-                dev_err(&client->dev, "%s(): Error regmap_bulk_write() failed(%d)\n", __func__, ret);
+                dev_err(&client->dev, "%s(): regmap_bulk_write() failed(%d)\n", __func__, ret);
                 goto exit;
         }
 
@@ -223,18 +256,17 @@ static int bme680_i2c_probe(struct i2c_client *client,
 	int ret;
 	struct iio_dev *indio_dev;
         struct bme680_data *data;
-	u8 set_required_settings;
 
         dev_info(&client->dev, "%s(): probe chip ID(0x%lx)\n", __func__, id->driver_data);
         if (id->driver_data != BME680_CHIP_ID) {
-                dev_err(&client->dev, "%s(): Error invalid chip ID(0x%lx)\n", __func__, id->driver_data);
+                dev_err(&client->dev, "%s(): invalid chip ID(0x%lx)\n", __func__, id->driver_data);
                 ret = -EINVAL;
 		goto exit;
         }
 
 	indio_dev = devm_iio_device_alloc(&client->dev, sizeof(*data));
 	if (IS_ERR(indio_dev)) {
-                dev_err(&client->dev, "%s(): Error devm_iio_device_alloc() failed(%d)\n", __func__, ret);
+                dev_err(&client->dev, "%s(): devm_iio_device_alloc() failed(%d)\n", __func__, ret);
 		ret = PTR_ERR(indio_dev);
                 goto exit;
         }
@@ -244,7 +276,7 @@ static int bme680_i2c_probe(struct i2c_client *client,
 
         data->regmap = devm_regmap_init_i2c(client, &bme680_regmap_config);
 	if (IS_ERR(data->regmap)) {
-		dev_err(&client->dev, "%s(): Error devm_regmap_init_i2c() failed(%d)\n", __func__, ret);
+		dev_err(&client->dev, "%s(): devm_regmap_init_i2c() failed(%d)\n", __func__, ret);
 		ret = PTR_ERR(data->regmap);
                 goto exit;
 	}
@@ -260,23 +292,19 @@ static int bme680_i2c_probe(struct i2c_client *client,
 
 	ret = iio_device_register(indio_dev);
         if (ret) {
-		dev_err(&client->dev, "%s(): Error iio_device_register() failed(%d)\n", __func__, ret);
+		dev_err(&client->dev, "%s(): iio_device_register() failed(%d)\n", __func__, ret);
 		goto exit;
 	}
 
-        data->bme680_dev.dev_id = BME680_I2C_ADDR_SECONDARY;
+        data->bme680_dev.dev_id = BME680_I2C_ADDR_PRIMARY;
         data->bme680_dev.intf = BME680_I2C_INTF;
         data->bme680_dev.read = bme680_i2c_read;
         data->bme680_dev.write = bme680_i2c_write;
         data->bme680_dev.delay_ms = bme680_delay_ms;
-        /* amb_temp can be set to 25 prior to configuring the gas sensor 
-         * or by performing a few temperature readings without operating the gas sensor.
-         */
-        data->bme680_dev.amb_temp = 25;
 
         ret = bme680_init(&data->bme680_dev);
         if (ret) {
-		dev_err(&client->dev, "%s(): Error bme680_init() failed(%d)\n", __func__, ret);
+		dev_err(&client->dev, "%s(): bme680_init() failed(%d)\n", __func__, ret);
 		goto exit;
 	}
 
@@ -294,25 +322,7 @@ static int bme680_i2c_probe(struct i2c_client *client,
 
         /* Select the power mode */
         /* Must be set before writing the sensor configuration */
-        data->bme680_dev.power_mode = BME680_FORCED_MODE; 
-
-        /* Set the required sensor settings needed */
-        set_required_settings = BME680_OST_SEL | BME680_OSP_SEL | BME680_OSH_SEL | BME680_FILTER_SEL 
-                | BME680_GAS_SENSOR_SEL;
-
-        /* Set the desired sensor configuration */
-        ret = bme680_set_sensor_settings(set_required_settings, &data->bme680_dev);
-        if (ret) {
-		dev_err(&client->dev, "%s(): Error bme680_set_sensor_settings() failed(%d)\n", __func__, ret);
-		goto exit;
-	}
-
-        /* Set the power mode */
-        ret = bme680_set_sensor_mode(&data->bme680_dev);
-        if (ret) {
-		dev_err(&client->dev, "%s(): Error bme680_set_sensor_settings() failed(%d)\n", __func__, ret);
-		goto exit;
-	}
+        data->bme680_dev.power_mode = BME680_FORCED_MODE;
 
 exit:
 	return ret;
@@ -363,5 +373,5 @@ static struct i2c_driver bme680_i2c_driver = {
 module_i2c_driver(bme680_i2c_driver);
 
 MODULE_AUTHOR("David Clark <dclark@sierrawireless.com>");
-MODULE_DESCRIPTION("Driver for Bosch Sensortec BME680 gas, pressure and temperature sensor");
+MODULE_DESCRIPTION("Driver for Bosch Sensortec BME680 gas, humidity, pressure and temperature sensor");
 MODULE_LICENSE("GPL v2");

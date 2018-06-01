@@ -12,6 +12,7 @@ static bool bme680_is_writeable_reg(struct device *dev, unsigned int reg)
 	case BME680_CONF_OS_H_ADDR:
 	case BME680_CONF_T_P_MODE_ADDR:
         case BME680_SOFT_RESET_ADDR:
+        case BME680_GAS_WAIT0_ADDR:
 		return true;
 	default:
                 if (((reg >= BME680_CONF_ODR_FILT_ADDR) && 
@@ -39,7 +40,7 @@ const struct regmap_config bme680_regmap_config = {
 	.val_bits = 8,
 
 	.max_register = BME680_COEFF_ADDR2 + BME680_COEFF_ADDR2_LEN,
-	.cache_type = REGCACHE_RBTREE,
+	.cache_type = REGCACHE_NONE,
 
 	.writeable_reg = bme680_is_writeable_reg,
 	.volatile_reg = bme680_is_volatile_reg,
