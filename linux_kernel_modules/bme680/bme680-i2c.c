@@ -202,7 +202,6 @@ static s8 bme680_i2c_read(u8 dev_id, u8 reg_addr, u8 *reg_data, u16 len)
         if (!client) {
                 client = bme680_i2c_get_client();
                 if (IS_ERR(client)) {
-                        dev_err(&client->dev, "%s(): bme680_i2c_get_client() failed()\n", __func__);
                         ret = PTR_ERR(client);
                         goto exit;
                 }
@@ -231,7 +230,6 @@ static s8 bme680_i2c_write(u8 dev_id, u8 reg_addr, u8 *reg_data, u16 len)
         if (!client) {
                 client = bme680_i2c_get_client();
                 if (IS_ERR(client)) {
-                        dev_err(&client->dev, "%s(): bme680_i2c_get_client() failed\n", __func__);
                         ret = PTR_ERR(client);
                         goto exit;
                 }
@@ -339,7 +337,7 @@ static int bme680_i2c_remove(struct i2c_client *client)
 }
 
 static const struct acpi_device_id bme680_acpi_i2c_match[] = {
-	{"BME0680", BME680_CHIP_ID },
+	{"BME680", BME680_CHIP_ID },
 	{ },
 };
 MODULE_DEVICE_TABLE(acpi, bme680_acpi_i2c_match);
