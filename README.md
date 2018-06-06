@@ -15,13 +15,13 @@ Base project containing apps and drivers for the mangOH hardware
        with the yocto version and Legato Linux distribution version.
     1. Run `ln -sf /opt/swi/y22-ext_SWI9X07Y_02.14.04.00 /opt/swi/y22-ext-wp76xx`, again modifying
        this command slightly to match the toolchain/module.
-1. Previously there was an issue where the toolchains were not able to build kernel modules due to
-   missing scripts. The following steps fix that problem, but it should not be necessary to do so
-   for releases from WP76/WP77 release 8 onwards.
-    1. `export PATH=$PATH:/opt/swi/yXX-ext-wpYYYY/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi`
-       (Note that the *yXX-ext-wpYYYY* will be something like *y22-ext-wp76xx* depending on the
-       module and the yocto version of the associated toolchain.)
-    1. `cd /opt/swi/y17-ext/sysroots/armv7a-vfp-neon-poky-linux-gnueabi/usr/src/kernel`
+1. Yocto 1.7 based systems have a problem with their toolchain where some scripts required for
+   building kernel modules aren't built. This currently affects the WP85 and WP75 release 15. To
+   correct this issue, do the following.
+    1. `export PATH=$PATH:/opt/swi/y17-ext-wpXXXX/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi`
+       (Note that the *y17-ext-wpXXXX* will be something like *y17-ext-wp750x* depending on the
+       module.)
+    1. `cd /opt/swi/y17-ext-wpXXXX/sysroots/armv7a-vfp-neon-poky-linux-gnueabi/usr/src/kernel`
     1. `sudo chown -R $USER .`
     1. `ARCH=arm CROSS_COMPILE=arm-poky-linux-gnueabi- make scripts`
     1. `sudo chown -R root .`
