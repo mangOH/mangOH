@@ -671,19 +671,18 @@ static ssize_t bmi088_show_accel_range(struct device *dev,
 {
         struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
         ssize_t ret;
-        u8 range;
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_RANGE_REG, 
-                &range, sizeof(range));
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        ret = sprintf(buf, "%u\n", range);
+        ret = sprintf(buf, "%u\n", data->bmi08x_dev->accel_cfg.range);
 
 exit:
         mutex_unlock(&data->mutex);
@@ -702,19 +701,24 @@ static ssize_t bmi088_store_accel_range(struct device *dev,
         ret = kstrtou8(buf, 10, &val);
 	if (ret < 0)
 		return ret;
-        else if (val > BMI088_ACCEL_RANGE_24G) {
-                dev_err(dev, "%s(): invalid accel range(%u > %u)\n", 
-                        __func__, val, BMI088_ACCEL_RANGE_24G);
-                return -EINVAL;
-        }
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_write(data->client->addr, BMI08X_ACCEL_RANGE_REG, 
-                &val, sizeof(val));
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
+                goto exit;
+        }
+
+        data->bmi08x_dev->accel_cfg.range = val;
+
+        ret = bmi08a_set_meas_conf(data->bmi08x_dev);
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi08a_set_meas_conf() failed(%d)\n", 
+                        __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
@@ -730,19 +734,18 @@ static ssize_t bmi088_show_accel_odr(struct device *dev,
 {
         struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
         ssize_t ret;
-        u8 odr;
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
-                &odr, sizeof(odr));
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        ret = sprintf(buf, "%u\n", odr & 0x0F);
+        ret = sprintf(buf, "%u\n", data->bmi08x_dev->accel_cfg.odr);
 
 exit:
         mutex_unlock(&data->mutex);
@@ -756,40 +759,29 @@ static ssize_t bmi088_store_accel_odr(struct device *dev,
         struct iio_dev *indio_dev = dev_to_iio_dev(dev);
         struct bmi08x_data *data = iio_priv(indio_dev);
 	int ret;
-        u8 cfg;
         u8 val;
 
         ret = kstrtou8(buf, 10, &val);
 	if (ret < 0)
 		return ret;
-        else if (val > BMI08X_ACCEL_ODR_1600_HZ) {
-                dev_err(dev, "%s(): invalid accel odr(%u > %u)\n", 
-                        __func__, val, BMI08X_ACCEL_ODR_1600_HZ);
-                return -EINVAL;
-        }
-        else if (val < BMI08X_ACCEL_ODR_12_5_HZ) {
-                dev_err(dev, "%s(): invalid accel odr(%u < %u)\n", 
-                        __func__, val, BMI08X_ACCEL_ODR_12_5_HZ);
-                return -EINVAL;
-        }
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
-                &cfg, sizeof(cfg));
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        cfg &= 0xF0;
-        cfg |= val & 0x0F;
-        ret = bmi088_write(data->client->addr, BMI08X_ACCEL_CONF_REG, 
-                &cfg, sizeof(cfg));
+        data->bmi08x_dev->accel_cfg.odr = val;
+
+        ret = bmi08a_set_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_set_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
@@ -805,19 +797,18 @@ static ssize_t bmi088_show_accel_bwp(struct device *dev,
 {
         struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
         ssize_t ret;
-        u8 odr;
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
-                &odr, sizeof(odr));
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        ret = sprintf(buf, "%u\n", (odr & 0x70) >> 4);
+        ret = sprintf(buf, "%u\n", data->bmi08x_dev->accel_cfg.bw);
 
 exit:
         mutex_unlock(&data->mutex);
@@ -831,35 +822,29 @@ static ssize_t bmi088_store_accel_bwp(struct device *dev,
         struct iio_dev *indio_dev = dev_to_iio_dev(dev);
         struct bmi08x_data *data = iio_priv(indio_dev);
 	int ret;
-        u8 cfg;
         u8 val;
 
         ret = kstrtou8(buf, 10, &val);
 	if (ret < 0)
 		return ret;
-        else if (val > BMI08X_ACCEL_BW_NORMAL) {
-                dev_err(dev, "%s(): invalid accel bwp(%u > %u)\n", 
-                        __func__, val, BMI08X_ACCEL_BW_NORMAL);
-                return -EINVAL;
-        }
-
+        
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
-                &cfg, sizeof(cfg));
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        cfg &= 0x1F;
-        cfg |= (val & 0x07) << 3;
-        ret = bmi088_write(data->client->addr, BMI08X_ACCEL_CONF_REG, 
-                &cfg, sizeof(cfg));
+        data->bmi08x_dev->accel_cfg.bw = val;
+
+        ret = bmi08a_set_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08a_set_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
@@ -875,19 +860,18 @@ static ssize_t bmi088_show_gyro_range(struct device *dev,
 {
         struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
         ssize_t ret;
-        u8 range;
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_GYRO_RANGE_REG, 
-                &range, sizeof(range));
+        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        ret = sprintf(buf, "%u\n", range);
+        ret = sprintf(buf, "%u\n", data->bmi08x_dev->gyro_cfg.range);
 
 exit:
         mutex_unlock(&data->mutex);
@@ -906,19 +890,24 @@ static ssize_t bmi088_store_gyro_range(struct device *dev,
         ret = kstrtou8(buf, 10, &val);
 	if (ret < 0)
 		return ret;
-        else if (val > BMI08X_GYRO_RANGE_125_DPS) {
-                dev_err(dev, "%s(): invalid gyro range(%u > %u)\n", 
-                        __func__, val, BMI08X_GYRO_RANGE_125_DPS);
-                return -EINVAL;
-        }
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_write(data->client->addr, BMI08X_GYRO_RANGE_REG, 
-                &val, sizeof(val));
+        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
+                goto exit;
+        }
+
+        data->bmi08x_dev->gyro_cfg.range = val;
+
+        ret = bmi08g_set_meas_conf(data->bmi08x_dev);
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi08g_set_meas_conf() failed(%d)\n", 
+                        __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
@@ -934,19 +923,18 @@ static ssize_t bmi088_show_gyro_odr(struct device *dev,
 {
         struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
         ssize_t ret;
-        u8 odr;
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_read(data->client->addr, BMI08X_GYRO_BANDWIDTH_REG, 
-                &odr, sizeof(odr));
+        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
-        ret = sprintf(buf, "%u\n", odr);
+        ret = sprintf(buf, "%u\n", data->bmi08x_dev->gyro_cfg.odr);
 
 exit:
         mutex_unlock(&data->mutex);
@@ -965,19 +953,24 @@ static ssize_t bmi088_store_gyro_odr(struct device *dev,
         ret = kstrtou8(buf, 10, &val);
 	if (ret < 0)
 		return ret;
-        else if (val > BMI08X_GYRO_BW_32_ODR_100_HZ) {
-                dev_err(dev, "%s(): invalid gyro odr(%u > %u)\n", 
-                        __func__, val, BMI08X_GYRO_BW_32_ODR_100_HZ);
-                return -EINVAL;
-        }
 
         mutex_lock(&data->mutex);
 
-        ret = bmi088_write(data->client->addr, BMI08X_GYRO_BANDWIDTH_REG, 
-                &val, sizeof(val));
+        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
         if (ret < 0) {
-                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
                         __func__, ret);
+                ret = -EINVAL;
+                goto exit;
+        }
+
+        data->bmi08x_dev->gyro_cfg.odr = val;
+
+        ret = bmi08g_set_meas_conf(data->bmi08x_dev);
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi08g_set_meas_conf() failed(%d)\n", 
+                        __func__, ret);
+                ret = -EINVAL;
                 goto exit;
         }
 
