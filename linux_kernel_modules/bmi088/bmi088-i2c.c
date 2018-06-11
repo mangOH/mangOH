@@ -772,9 +772,9 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                                         goto exit;
                                 }
 
-                                data->sensor_data.x = (data->sensor_data.x / 32767) * (2000 / (range + 1));
-                                data->sensor_data.y = (data->sensor_data.y / 32767) * (2000 / (range + 1));
-                                data->sensor_data.z = (data->sensor_data.z / 32767) * (2000 / (range + 1));
+                                data->sensor_data.x = (data->sensor_data.x / 32767) * (2000 / 2^range);
+                                data->sensor_data.y = (data->sensor_data.y / 32767) * (2000 / 2^range);
+                                data->sensor_data.z = (data->sensor_data.z / 32767) * (2000 / 2^range);
 
                                 dev_dbg(&indio_dev->dev, "%s(): (x, y, z) degrees/sec: (%d, %d, %d)\n", 
                                         __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
@@ -934,9 +934,9 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                         goto err;
                 }
 
-                ((s16 *)data->buff)[0] = (data->sensor_data.x / 32767) * (2000 / (range + 1));
-                ((s16 *)data->buff)[1] = (data->sensor_data.y / 32767) * (2000 / (range + 1));
-                ((s16 *)data->buff)[2] = (data->sensor_data.z / 32767) * (2000 / (range + 1));
+                ((s16 *)data->buff)[0] = (data->sensor_data.x / 32767) * (2000 / 2^range);
+                ((s16 *)data->buff)[1] = (data->sensor_data.y / 32767) * (2000 / 2^range);
+                ((s16 *)data->buff)[2] = (data->sensor_data.z / 32767) * (2000 / 2^range);
 
                 dev_dbg(&indio_dev->dev, "%s(): (x, y, z) degrees/sec: (%d, %d, %d)\n", 
                         __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
