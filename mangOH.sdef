@@ -144,6 +144,11 @@ kernelModules:
     // accelerometer driver
     $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
     $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+#elif ${MANGOH_BOARD} = YELLOW
+    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_yellow_dv1
+
+    $MANGOH_ROOT/linux_kernel_modules/bme680/3-bme680-i2c
+    $MANGOH_ROOT/linux_kernel_modules/bmi088/4-bmi088-i2c
 #endif // MANGOH_BOARD
 
     $LEGATO_ROOT/drivers/spisvc/spisvc

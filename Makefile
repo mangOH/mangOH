@@ -12,6 +12,7 @@ export MANGOH_ROOT = $(shell pwd)
 MKSYS_ARGS_COMMON = --object-dir=build/${@}
 MKSYS_ARGS_GREEN = --output-dir=build/update_files/green
 MKSYS_ARGS_RED = --output-dir=build/update_files/red
+MKSYS_ARGS_YELLOW = --output-dir=build/update_files/yellow
 
 # The comments below are for Developer Studio integration. Do not remove them.
 # DS_CLONE_ROOT(MANGOH_ROOT)
@@ -22,7 +23,7 @@ MKSYS_ARGS_RED = --output-dir=build/update_files/red
 export PATH := $(LEGATO_ROOT)/bin:$(PATH)
 
 .PHONY: all
-all: green_wp85 green_wp750x green_wp76xx green_wp77xx red_wp85 red_wp750x red_wp76xx red_wp77xx
+all: green_wp85 green_wp750x green_wp76xx green_wp77xx red_wp85 red_wp750x red_wp76xx red_wp77xx yellow_wp76xx
 
 LEGATO ?= 1
 .PHONY: legato_%
@@ -89,6 +90,13 @@ red_wp77xx: legato_wp77xx
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx prefix) \
 	MANGOH_BOARD=RED \
 	mksys -t wp77xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
+
+.PHONY: yellow_wp76xx
+yellow_wp76xx: legato_wp76xx
+	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
+	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
+	MANGOH_BOARD=YELLOW \
+	mksys -t wp76xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_YELLOW) mangOH.sdef
 
 .PHONY: clean
 clean:
