@@ -666,6 +666,328 @@ exit:
         return ret;
 }
 
+static ssize_t bmi088_show_accel_range(struct device *dev,
+                                       struct device_attribute *attr, char *buf)
+{
+        struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
+        ssize_t ret;
+        u8 range;
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_RANGE_REG, 
+                &range, sizeof(range));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = sprintf(buf, "%u\n", range);
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_store_accel_range(struct device *dev,
+		                        struct device_attribute *attr,
+		                        const char *buf, size_t len)
+{
+        struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+        struct bmi08x_data *data = iio_priv(indio_dev);
+	int ret;
+        u8 val;
+
+        ret = kstrtou8(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+        else if (val > BMI088_ACCEL_RANGE_24G) {
+                dev_err(dev, "%s(): invalid accel range(%u > %u)\n", 
+                        __func__, val, BMI088_ACCEL_RANGE_24G);
+                return -EINVAL;
+        }
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_write(data->client->addr, BMI08X_ACCEL_RANGE_REG, 
+                &val, sizeof(val));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = len;
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_show_accel_odr(struct device *dev,
+                                     struct device_attribute *attr, char *buf)
+{
+        struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
+        ssize_t ret;
+        u8 odr;
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
+                &odr, sizeof(odr));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = sprintf(buf, "%u\n", odr & 0x0F);
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_store_accel_odr(struct device *dev,
+		                      struct device_attribute *attr,
+		                      const char *buf, size_t len)
+{
+        struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+        struct bmi08x_data *data = iio_priv(indio_dev);
+	int ret;
+        u8 cfg;
+        u8 val;
+
+        ret = kstrtou8(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+        else if (val > BMI08X_ACCEL_ODR_1600_HZ) {
+                dev_err(dev, "%s(): invalid accel odr(%u > %u)\n", 
+                        __func__, val, BMI08X_ACCEL_ODR_1600_HZ);
+                return -EINVAL;
+        }
+        else if (val < BMI08X_ACCEL_ODR_12_5_HZ) {
+                dev_err(dev, "%s(): invalid accel odr(%u < %u)\n", 
+                        __func__, val, BMI08X_ACCEL_ODR_12_5_HZ);
+                return -EINVAL;
+        }
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
+                &cfg, sizeof(cfg));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        cfg &= 0xF0;
+        cfg |= val & 0x0F;
+        ret = bmi088_write(data->client->addr, BMI08X_ACCEL_CONF_REG, 
+                &cfg, sizeof(cfg));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = len;
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_show_accel_bwp(struct device *dev,
+                                     struct device_attribute *attr, char *buf)
+{
+        struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
+        ssize_t ret;
+        u8 odr;
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
+                &odr, sizeof(odr));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = sprintf(buf, "%u\n", (odr & 0x70) >> 4);
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_store_accel_bwp(struct device *dev,
+		                      struct device_attribute *attr,
+		                      const char *buf, size_t len)
+{
+        struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+        struct bmi08x_data *data = iio_priv(indio_dev);
+	int ret;
+        u8 cfg;
+        u8 val;
+
+        ret = kstrtou8(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+        else if (val > BMI08X_ACCEL_BW_NORMAL) {
+                dev_err(dev, "%s(): invalid accel bwp(%u > %u)\n", 
+                        __func__, val, BMI08X_ACCEL_BW_NORMAL);
+                return -EINVAL;
+        }
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_ACCEL_CONF_REG, 
+                &cfg, sizeof(cfg));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        cfg &= 0x1F;
+        cfg |= (val & 0x07) << 3;
+        ret = bmi088_write(data->client->addr, BMI08X_ACCEL_CONF_REG, 
+                &cfg, sizeof(cfg));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = len;
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_show_gyro_range(struct device *dev,
+                                      struct device_attribute *attr, char *buf)
+{
+        struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
+        ssize_t ret;
+        u8 range;
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_GYRO_RANGE_REG, 
+                &range, sizeof(range));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = sprintf(buf, "%u\n", range);
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_store_gyro_range(struct device *dev,
+		                       struct device_attribute *attr,
+		                       const char *buf, size_t len)
+{
+        struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+        struct bmi08x_data *data = iio_priv(indio_dev);
+	int ret;
+        u8 val;
+
+        ret = kstrtou8(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+        else if (val > BMI08X_GYRO_RANGE_125_DPS) {
+                dev_err(dev, "%s(): invalid gyro range(%u > %u)\n", 
+                        __func__, val, BMI08X_GYRO_RANGE_125_DPS);
+                return -EINVAL;
+        }
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_write(data->client->addr, BMI08X_GYRO_RANGE_REG, 
+                &val, sizeof(val));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = len;
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_show_gyro_odr(struct device *dev,
+                                    struct device_attribute *attr, char *buf)
+{
+        struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
+        ssize_t ret;
+        u8 odr;
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_read(data->client->addr, BMI08X_GYRO_BANDWIDTH_REG, 
+                &odr, sizeof(odr));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = sprintf(buf, "%u\n", odr);
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_store_gyro_odr(struct device *dev,
+		                        struct device_attribute *attr,
+		                        const char *buf, size_t len)
+{
+        struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+        struct bmi08x_data *data = iio_priv(indio_dev);
+	int ret;
+        u8 val;
+
+        ret = kstrtou8(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+        else if (val > BMI08X_GYRO_BW_32_ODR_100_HZ) {
+                dev_err(dev, "%s(): invalid gyro odr(%u > %u)\n", 
+                        __func__, val, BMI08X_GYRO_BW_32_ODR_100_HZ);
+                return -EINVAL;
+        }
+
+        mutex_lock(&data->mutex);
+
+        ret = bmi088_write(data->client->addr, BMI08X_GYRO_BANDWIDTH_REG, 
+                &val, sizeof(val));
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi088_read() failed(%d)\n", 
+                        __func__, ret);
+                goto exit;
+        }
+
+        ret = len;
+
+exit:
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
 static IIO_DEVICE_ATTR(in_accel_x_en,
         S_IRUSR | S_IWUSR, bmi088_show_accel_x_en, bmi088_store_accel_x_en, 0);
 static IIO_DEVICE_ATTR(in_accel_y_en,
@@ -678,6 +1000,16 @@ static IIO_DEVICE_ATTR(in_accel_nomotion_sel,
         S_IRUSR | S_IWUSR, bmi088_show_accel_nomotion_sel, bmi088_store_accel_nomotion_sel, 0);
 static IIO_DEVICE_ATTR(in_accel_duration,
         S_IRUSR | S_IWUSR, bmi088_show_accel_duration, bmi088_store_accel_duration, 0);
+static IIO_DEVICE_ATTR(in_accel_range,
+        S_IRUSR | S_IWUSR, bmi088_show_accel_range, bmi088_store_accel_range, 0);
+static IIO_DEVICE_ATTR(in_accel_odr,
+        S_IRUSR | S_IWUSR, bmi088_show_accel_odr, bmi088_store_accel_odr, 0);
+static IIO_DEVICE_ATTR(in_accel_bwp,
+        S_IRUSR | S_IWUSR, bmi088_show_accel_bwp, bmi088_store_accel_bwp, 0);
+static IIO_DEVICE_ATTR(in_gyro_range,
+        S_IRUSR | S_IWUSR, bmi088_show_gyro_range, bmi088_store_gyro_range, 0);
+static IIO_DEVICE_ATTR(in_gyro_odr,
+        S_IRUSR | S_IWUSR, bmi088_show_gyro_odr, bmi088_store_gyro_odr, 0);
 
 static struct attribute *bmi088a_attributes[] = {
         &iio_dev_attr_in_accel_x_en.dev_attr.attr,
@@ -686,6 +1018,11 @@ static struct attribute *bmi088a_attributes[] = {
         &iio_dev_attr_in_accel_threshold.dev_attr.attr,
         &iio_dev_attr_in_accel_nomotion_sel.dev_attr.attr,
         &iio_dev_attr_in_accel_duration.dev_attr.attr,
+        &iio_dev_attr_in_accel_range.dev_attr.attr,
+        &iio_dev_attr_in_accel_odr.dev_attr.attr,
+        &iio_dev_attr_in_accel_bwp.dev_attr.attr,
+        &iio_dev_attr_in_gyro_range.dev_attr.attr,
+        &iio_dev_attr_in_gyro_odr.dev_attr.attr,
         NULL,
 };
 
