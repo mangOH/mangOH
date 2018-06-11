@@ -255,7 +255,8 @@ static int bme680_i2c_probe(struct i2c_client *client,
 	struct iio_dev *indio_dev;
         struct bme680_data *data;
 
-        dev_info(&client->dev, "%s(): probe chip ID(0x%lx)\n", __func__, id->driver_data);
+        dev_info(&client->dev, "%s(): probe addr(0x%04x) chip ID(0x%lx)\n", 
+                __func__, client->addr, id->driver_data);
         if (id->driver_data != BME680_CHIP_ID) {
                 dev_err(&client->dev, "%s(): invalid chip ID(0x%lx)\n", __func__, id->driver_data);
                 ret = -EINVAL;
