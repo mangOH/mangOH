@@ -1058,6 +1058,7 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                         if (ret < 0) {
                                 dev_err(&indio_dev->dev, "%s(): bmi08a_get_sensor_temperature() failed(%d)\n", 
                                         __func__, ret);
+                                ret = -EINVAL;
                                 goto exit;
                         }
 
@@ -1072,6 +1073,7 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                         if (ret < 0) {
                                 dev_err(&indio_dev->dev, "%s(): bmi088_read() failed(%d)\n", 
                                         __func__, ret);
+                                ret = -EINVAL;
                                 goto exit;
                         }
 
@@ -1082,33 +1084,11 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                                 goto exit;
                         }
 
-                        data->sensor_data.x = (data->sensor_data.x * 1000) / 32768 * 2^(range + 1);
-                        data->sensor_data.y = (data->sensor_data.y * 1000) / 32768 * 2^(range + 1);
-                        data->sensor_data.z = (data->sensor_data.z * 1000) / 32768 * 2^(range + 1);
+                        data->sensor_data.x = ((data->sensor_data.x * 1000) / 32768) * (0x02 << range);
+                        data->sensor_data.y = ((data->sensor_data.y * 1000) / 32768) * (0x02 << range);
+                        data->sensor_data.z = ((data->sensor_data.z * 1000) / 32768) * (0x02 << range);
 
                         switch (chan->scan_index) {
-                                ret = bmi088_read(data->client->addr, BMI08X_GYRO_RANGE_REG, 
-                                        &range, sizeof(range));
-                                if (ret < 0) {
-                                        dev_err(&indio_dev->dev, "%s(): bmi088_read() failed(%d)\n", 
-                                                __func__, ret);
-                                        goto exit;
-                                }
-
-                                ret = bmi08g_get_data(&data->sensor_data, data->bmi08x_dev);
-                                if (ret < 0) {
-                                        dev_err(&indio_dev->dev, "%s(): bmi08g_get_data() failed(%d)\n", 
-                                                __func__, ret);
-                                        goto exit;
-                                }
-
-                                data->sensor_data.x = (data->sensor_data.x / 32767) * (2000 / 2^range);
-                                data->sensor_data.y = (data->sensor_data.y / 32767) * (2000 / 2^range);
-                                data->sensor_data.z = (data->sensor_data.z / 32767) * (2000 / 2^range);
-
-                                dev_dbg(&indio_dev->dev, "%s(): (x, y, z) degrees/sec: (%d, %d, %d)\n", 
-                                        __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
-
                         case BMI088_SCAN_X:
                                 *val = data->sensor_data.x;
                                 ret = IIO_VAL_INT;
@@ -1134,6 +1114,30 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                         break;
 
                 case IIO_ANGL_VEL:
+                        ret = bmi088_read(data->client->addr, BMI08X_GYRO_RANGE_REG, 
+                                &range, sizeof(range));
+                        if (ret < 0) {
+                                dev_err(&indio_dev->dev, "%s(): bmi088_read() failed(%d)\n", 
+                                        __func__, ret);
+                                ret = -EINVAL;
+                                goto exit;
+                        }
+
+                        ret = bmi08g_get_data(&data->sensor_data, data->bmi08x_dev);
+                        if (ret < 0) {
+                                dev_err(&indio_dev->dev, "%s(): bmi08g_get_data() failed(%d)\n", 
+                                        __func__, ret);
+                                ret = -EINVAL;
+                                goto exit;
+                        }
+
+                        data->sensor_data.x = ((data->sensor_data.x * 2000) / 32767) / (0x01 << range);
+                        data->sensor_data.y = ((data->sensor_data.y * 2000) / 32767) / (0x01 << range);
+                        data->sensor_data.z = ((data->sensor_data.z * 2000) / 32767) / (0x01 << range);
+
+                        dev_dbg(&indio_dev->dev, "%s(): (x, y, z) deg/sec: (%d, %d, %d)\n", 
+                                __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
+
                         switch (chan->scan_index) {
                         case BMI088_SCAN_X:
                                 *val = data->sensor_data.x;
@@ -1194,6 +1198,9 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
         struct iio_dev *indio_dev = pf->indio_dev;
         struct bmi08x_data *data = iio_priv(indio_dev);
         int64_t time_ns = iio_get_time_ns();
+        u64 time;
+        s32 sensor_temperature;
+        u32 sensor_time;
         int ret;
         u8 range;
 
@@ -1203,15 +1210,12 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                 __func__, data->client->addr);
 
         if (data->client->addr == BMI08X_ACCEL_I2C_ADDR_PRIMARY) {
-                s32 sensor_temperature;
-                u32 sensor_time;
-                u64 time;
-
                 ret = bmi088_read(data->client->addr, BMI08X_ACCEL_RANGE_REG, 
                         &range, sizeof(range));
                 if (ret < 0) {
                         dev_err(&indio_dev->dev, "%s(): bmi088_read() failed(%d)\n", 
                                 __func__, ret);
+                        ret = -EINVAL;
                         goto err;
                 }
 
@@ -1226,6 +1230,7 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                 if (ret < 0) {
                         dev_err(&indio_dev->dev, "%s(): bmi08a_get_sensor_temperature() failed(%d)\n", 
                                 __func__, ret);
+                        ret = -EINVAL;
                         goto err;
                 }
 
@@ -1233,15 +1238,21 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                 if (ret < 0) {
                         dev_err(&indio_dev->dev, "%s(): bmi08a_get_sensor_time() failed(%d)\n", 
                                 __func__, ret);
+                        ret = -EINVAL;
                         goto err;
                 }
 
-                ((s16 *)data->buff)[0] = (data->sensor_data.x * 1000) / 32768 * 2^(range + 1);
-                ((s16 *)data->buff)[1] = (data->sensor_data.y * 1000) / 32768 * 2^(range + 1);
-                ((s16 *)data->buff)[2] = (data->sensor_data.z * 1000) / 32768 * 2^(range + 1);
-                memcpy(&(((s16 *)data->buff)[3]), &sensor_temperature, sizeof(sensor_temperature));
+                dev_dbg(&indio_dev->dev, "%s(): range(%u) (x, y, z) raw: (%d, %d, %d)\n", 
+                        __func__, range, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
+
+                data->sensor_data.x = ((data->sensor_data.x * 1000) / 32768) * (0x02 << range);
+                data->sensor_data.y = ((data->sensor_data.y * 1000) / 32768) * (0x02 << range);
+                data->sensor_data.z = ((data->sensor_data.z * 1000) / 32768) * (0x02 << range);
+
+                memcpy(data->buff, &data->sensor_data, sizeof(data->sensor_data));
+                memcpy(&data->buff[sizeof(data->sensor_data)], &sensor_temperature, sizeof(sensor_temperature));
                 time = sensor_time;
-                memcpy(&(((s16 *)data->buff)[5]), &time, sizeof(time));
+                memcpy(&data->buff[sizeof(data->sensor_data) + sizeof(sensor_temperature)], &time, sizeof(time));
 
                 dev_dbg(&indio_dev->dev, "%s(): t(%u) %d.%u degC (x, y, z) cm/s^2: (%d, %d, %d)\n", 
                         __func__, sensor_time, sensor_temperature / 1000, 
@@ -1254,6 +1265,7 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                 if (ret < 0) {
                         dev_err(&indio_dev->dev, "%s(): bmi088_read() failed(%d)\n", 
                                 __func__, ret);
+                        ret = -EINVAL;
                         goto err;
                 }
 
@@ -1264,12 +1276,38 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                         goto err;
                 }
 
-                ((s16 *)data->buff)[0] = (data->sensor_data.x / 32767) * (2000 / 2^range);
-                ((s16 *)data->buff)[1] = (data->sensor_data.y / 32767) * (2000 / 2^range);
-                ((s16 *)data->buff)[2] = (data->sensor_data.z / 32767) * (2000 / 2^range);
+                ret = bmi08a_get_sensor_temperature(data->bmi08x_dev, &sensor_temperature);
+                if (ret < 0) {
+                        dev_err(&indio_dev->dev, "%s(): bmi08a_get_sensor_temperature() failed(%d)\n", 
+                                __func__, ret);
+                        ret = -EINVAL;
+                        goto err;
+                }
 
-                dev_dbg(&indio_dev->dev, "%s(): (x, y, z) degrees/sec: (%d, %d, %d)\n", 
+                ret = bmi08a_get_sensor_time(data->bmi08x_dev, &sensor_time);
+                if (ret < 0) {
+                        dev_err(&indio_dev->dev, "%s(): bmi08a_get_sensor_time() failed(%d)\n", 
+                                __func__, ret);
+                        ret = -EINVAL;
+                        goto err;
+                }
+
+                dev_dbg(&indio_dev->dev, "%s(): (x, y, z) raw: (%d, %d, %d)\n", 
                         __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
+
+                data->sensor_data.x = ((data->sensor_data.x * 2000) / 32767) / (0x01 << range);
+                data->sensor_data.y = ((data->sensor_data.y * 2000) / 32767) / (0x01 << range);
+                data->sensor_data.z = ((data->sensor_data.z * 2000) / 32767) / (0x01 << range);
+
+                memcpy(data->buff, &data->sensor_data, sizeof(data->sensor_data));
+                memcpy(&data->buff[sizeof(data->sensor_data)], &sensor_temperature, sizeof(sensor_temperature));
+                time = sensor_time;
+                memcpy(&data->buff[sizeof(data->sensor_data) + sizeof(sensor_temperature)], &time, sizeof(time));
+
+                dev_dbg(&indio_dev->dev, "%s(): t(%u) %d.%u degC (x, y, z) deg/sec: (%d, %d, %d)\n", 
+                        __func__, sensor_time, sensor_temperature / 1000,
+                        (sensor_temperature > 0) ? (sensor_temperature % 1000) : (-sensor_temperature % 1000),
+                        data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
         }
         else {
                 dev_err(&indio_dev->dev, "%s(): unsupported I2C addr(0x%04x)\n", 
