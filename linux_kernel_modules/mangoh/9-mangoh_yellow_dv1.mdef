@@ -1,0 +1,14 @@
+cflags:
+{
+
+}
+
+sources:
+{
+    mangoh_yellow.c
+}
+
+params:
+{
+    revision = "dv1"
+}
