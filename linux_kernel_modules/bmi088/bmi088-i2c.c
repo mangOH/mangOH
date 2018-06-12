@@ -128,7 +128,7 @@ struct bmi08x_data {
 	struct mutex                    mutex;
         struct bmi08x_sensor_data       sensor_data;
         struct bmi08x_int_cfg           int_cfg;
-        u8                              buff[32]; /* 3x 16-bit + 32-bit temperature + 64-bit timestamp */
+        u8                              buff[16]; /* 3x 16-bit + 32-bit temperature + 32-bit timestamp */
         struct bmi08x_dev               *bmi08x_dev;
         struct iio_trigger              *trig;
         struct i2c_client               *client;
@@ -673,18 +673,7 @@ static ssize_t bmi088_show_accel_range(struct device *dev,
         ssize_t ret;
 
         mutex_lock(&data->mutex);
-
-        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         ret = sprintf(buf, "%u\n", data->bmi08x_dev->accel_cfg.range);
-
-exit:
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -704,14 +693,6 @@ static ssize_t bmi088_store_accel_range(struct device *dev,
 
         mutex_lock(&data->mutex);
 
-        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         data->bmi08x_dev->accel_cfg.range = val;
 
         ret = bmi08a_set_meas_conf(data->bmi08x_dev);
@@ -725,6 +706,14 @@ static ssize_t bmi088_store_accel_range(struct device *dev,
         ret = len;
 
 exit:
+        if (ret < 0) {
+                ret = bmi08a_get_meas_conf(data->bmi08x_dev);
+                if (ret < 0) {
+                        dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
+                                __func__, ret);
+                }
+        }
+
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -736,18 +725,7 @@ static ssize_t bmi088_show_accel_odr(struct device *dev,
         ssize_t ret;
 
         mutex_lock(&data->mutex);
-
-        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         ret = sprintf(buf, "%u\n", data->bmi08x_dev->accel_cfg.odr);
-
-exit:
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -767,14 +745,6 @@ static ssize_t bmi088_store_accel_odr(struct device *dev,
 
         mutex_lock(&data->mutex);
 
-        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         data->bmi08x_dev->accel_cfg.odr = val;
 
         ret = bmi08a_set_meas_conf(data->bmi08x_dev);
@@ -788,6 +758,14 @@ static ssize_t bmi088_store_accel_odr(struct device *dev,
         ret = len;
 
 exit:
+        if (ret < 0) {
+                ret = bmi08a_get_meas_conf(data->bmi08x_dev);
+                if (ret < 0) {
+                        dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
+                                __func__, ret);
+                }
+        }
+
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -799,18 +777,7 @@ static ssize_t bmi088_show_accel_bwp(struct device *dev,
         ssize_t ret;
 
         mutex_lock(&data->mutex);
-
-        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         ret = sprintf(buf, "%u\n", data->bmi08x_dev->accel_cfg.bw);
-
-exit:
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -830,14 +797,6 @@ static ssize_t bmi088_store_accel_bwp(struct device *dev,
         
         mutex_lock(&data->mutex);
 
-        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         data->bmi08x_dev->accel_cfg.bw = val;
 
         ret = bmi08a_set_meas_conf(data->bmi08x_dev);
@@ -851,6 +810,14 @@ static ssize_t bmi088_store_accel_bwp(struct device *dev,
         ret = len;
 
 exit:
+        if (ret < 0) {
+                ret = bmi08a_get_meas_conf(data->bmi08x_dev);
+                if (ret < 0) {
+                        dev_err(dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
+                                __func__, ret);
+                }
+        }
+
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -862,18 +829,7 @@ static ssize_t bmi088_show_gyro_range(struct device *dev,
         ssize_t ret;
 
         mutex_lock(&data->mutex);
-
-        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         ret = sprintf(buf, "%u\n", data->bmi08x_dev->gyro_cfg.range);
-
-exit:
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -893,14 +849,6 @@ static ssize_t bmi088_store_gyro_range(struct device *dev,
 
         mutex_lock(&data->mutex);
 
-        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         data->bmi08x_dev->gyro_cfg.range = val;
 
         ret = bmi08g_set_meas_conf(data->bmi08x_dev);
@@ -914,6 +862,14 @@ static ssize_t bmi088_store_gyro_range(struct device *dev,
         ret = len;
 
 exit:
+        if (ret < 0) {
+                ret = bmi08g_get_meas_conf(data->bmi08x_dev);
+                if (ret < 0) {
+                        dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
+                                __func__, ret);
+                }
+        }
+
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -925,18 +881,7 @@ static ssize_t bmi088_show_gyro_odr(struct device *dev,
         ssize_t ret;
 
         mutex_lock(&data->mutex);
-
-        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         ret = sprintf(buf, "%u\n", data->bmi08x_dev->gyro_cfg.odr);
-
-exit:
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -956,14 +901,6 @@ static ssize_t bmi088_store_gyro_odr(struct device *dev,
 
         mutex_lock(&data->mutex);
 
-        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
-        if (ret < 0) {
-                dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
-                        __func__, ret);
-                ret = -EINVAL;
-                goto exit;
-        }
-
         data->bmi08x_dev->gyro_cfg.odr = val;
 
         ret = bmi08g_set_meas_conf(data->bmi08x_dev);
@@ -977,6 +914,14 @@ static ssize_t bmi088_store_gyro_odr(struct device *dev,
         ret = len;
 
 exit:
+        if (ret < 0) {
+                ret = bmi08g_get_meas_conf(data->bmi08x_dev);
+                if (ret < 0) {
+                        dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
+                                __func__, ret);
+                }
+        }
+
         mutex_unlock(&data->mutex);
         return ret;
 }
@@ -1084,9 +1029,9 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                                 goto exit;
                         }
 
-                        data->sensor_data.x = ((data->sensor_data.x * 1000) / 32768) * (0x02 << range);
-                        data->sensor_data.y = ((data->sensor_data.y * 1000) / 32768) * (0x02 << range);
-                        data->sensor_data.z = ((data->sensor_data.z * 1000) / 32768) * (0x02 << range);
+                        data->sensor_data.x = (data->sensor_data.x * 3 * 980 * (0x01 << range)) >> 15;
+                        data->sensor_data.y = (data->sensor_data.y * 3 * 980 * (0x01 << range)) >> 15;
+                        data->sensor_data.z = (data->sensor_data.z * 3 * 980 * (0x01 << range)) >> 15;
 
                         switch (chan->scan_index) {
                         case BMI088_SCAN_X:
@@ -1131,9 +1076,9 @@ static int bmi088_read_raw(struct iio_dev *indio_dev,
                                 goto exit;
                         }
 
-                        data->sensor_data.x = ((data->sensor_data.x * 2000) / 32767) / (0x01 << range);
-                        data->sensor_data.y = ((data->sensor_data.y * 2000) / 32767) / (0x01 << range);
-                        data->sensor_data.z = ((data->sensor_data.z * 2000) / 32767) / (0x01 << range);
+                        data->sensor_data.x = ((data->sensor_data.x * 2000) >> range) / 0x7FFF;
+                        data->sensor_data.y = ((data->sensor_data.y * 2000) >> range) / 0x7FFF;
+                        data->sensor_data.z = ((data->sensor_data.z * 2000) >> range) / 0x7FFF;
 
                         dev_dbg(&indio_dev->dev, "%s(): (x, y, z) deg/sec: (%d, %d, %d)\n", 
                                 __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
@@ -1198,7 +1143,6 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
         struct iio_dev *indio_dev = pf->indio_dev;
         struct bmi08x_data *data = iio_priv(indio_dev);
         int64_t time_ns = iio_get_time_ns();
-        u64 time;
         s32 sensor_temperature;
         u32 sensor_time;
         int ret;
@@ -1245,14 +1189,13 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                 dev_dbg(&indio_dev->dev, "%s(): range(%u) (x, y, z) raw: (%d, %d, %d)\n", 
                         __func__, range, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
 
-                data->sensor_data.x = ((data->sensor_data.x * 1000) / 32768) * (0x02 << range);
-                data->sensor_data.y = ((data->sensor_data.y * 1000) / 32768) * (0x02 << range);
-                data->sensor_data.z = ((data->sensor_data.z * 1000) / 32768) * (0x02 << range);
+                data->sensor_data.x = (data->sensor_data.x * 3 * 980 * (0x01 << range)) >> 15;
+                data->sensor_data.y = (data->sensor_data.y * 3 * 980 * (0x01 << range)) >> 15;
+                data->sensor_data.z = (data->sensor_data.z * 3 * 980 * (0x01 << range)) >> 15;
 
                 memcpy(data->buff, &data->sensor_data, sizeof(data->sensor_data));
                 memcpy(&data->buff[sizeof(data->sensor_data)], &sensor_temperature, sizeof(sensor_temperature));
-                time = sensor_time;
-                memcpy(&data->buff[sizeof(data->sensor_data) + sizeof(sensor_temperature)], &time, sizeof(time));
+                memcpy(&data->buff[sizeof(data->sensor_data) + sizeof(sensor_temperature)], &sensor_time, sizeof(sensor_time));
 
                 dev_dbg(&indio_dev->dev, "%s(): t(%u) %d.%u degC (x, y, z) cm/s^2: (%d, %d, %d)\n", 
                         __func__, sensor_time, sensor_temperature / 1000, 
@@ -1292,17 +1235,16 @@ static irqreturn_t bmi088_trigger_handler(int irq, void *p)
                         goto err;
                 }
 
-                dev_dbg(&indio_dev->dev, "%s(): (x, y, z) raw: (%d, %d, %d)\n", 
-                        __func__, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
+                dev_dbg(&indio_dev->dev, "%s(): range(%u) (x, y, z) raw: (%d, %d, %d)\n", 
+                        __func__, range, data->sensor_data.x, data->sensor_data.y, data->sensor_data.z);
 
-                data->sensor_data.x = ((data->sensor_data.x * 2000) / 32767) / (0x01 << range);
-                data->sensor_data.y = ((data->sensor_data.y * 2000) / 32767) / (0x01 << range);
-                data->sensor_data.z = ((data->sensor_data.z * 2000) / 32767) / (0x01 << range);
+                data->sensor_data.x = ((data->sensor_data.x * 2000) >> range) / 0x7FFF;
+                data->sensor_data.y = ((data->sensor_data.y * 2000) >> range) / 0x7FFF;
+                data->sensor_data.z = ((data->sensor_data.z * 2000) >> range) / 0x7FFF;
 
                 memcpy(data->buff, &data->sensor_data, sizeof(data->sensor_data));
                 memcpy(&data->buff[sizeof(data->sensor_data)], &sensor_temperature, sizeof(sensor_temperature));
-                time = sensor_time;
-                memcpy(&data->buff[sizeof(data->sensor_data) + sizeof(sensor_temperature)], &time, sizeof(time));
+                memcpy(&data->buff[sizeof(data->sensor_data) + sizeof(sensor_temperature)], &sensor_time, sizeof(sensor_time));
 
                 dev_dbg(&indio_dev->dev, "%s(): t(%u) %d.%u degC (x, y, z) deg/sec: (%d, %d, %d)\n", 
                         __func__, sensor_time, sensor_temperature / 1000,
@@ -1328,6 +1270,14 @@ static int bmi088_config_accel(struct i2c_client *client)
         struct iio_dev *indio_dev = i2c_get_clientdata(client);
         struct bmi08x_data *data = iio_priv(indio_dev);
         int ret;
+
+        ret = bmi08a_get_meas_conf(data->bmi08x_dev);
+        if (ret < 0) {
+		dev_err(&client->dev, "%s(): bmi08a_get_meas_conf() failed(%d)\n", 
+                        __func__, ret);
+                ret = -EINVAL;
+		goto exit;
+	}
 
         /* Assign the desired configurations */
         data->bmi08x_dev->accel_cfg.bw = BMI08X_ACCEL_BW_NORMAL;
@@ -1374,6 +1324,14 @@ static int bmi088_config_gyro(struct i2c_client *client)
          */
 	if (ret < 0) {
 		dev_err(&client->dev, "%s(): bmi08g_set_power_mode() failed(%d)\n", 
+                        __func__, ret);
+                ret = -EINVAL;
+		goto exit;
+	}
+
+        ret = bmi08g_get_meas_conf(data->bmi08x_dev);
+	if (ret < 0) {
+		dev_err(&client->dev, "%s(): bmi08g_set_meas_conf() failed(%d)\n", 
                         __func__, ret);
                 ret = -EINVAL;
 		goto exit;
