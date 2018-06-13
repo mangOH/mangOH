@@ -1649,7 +1649,7 @@ static int bmi088_remove(struct i2c_client *client)
 	        }
         }
 
-	free_irq(data->irq, data);
+	devm_free_irq(&client->dev, data->irq, data->trig);
 	gpio_free(data->gpio_pin);
 
 	iio_device_unregister(indio_dev);
