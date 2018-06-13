@@ -108,7 +108,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
                 switch (chan->type) {
 		case IIO_GASRESISTANCE:
                         if (data->field_data.status & BME680_GASM_VALID_MSK) {
-                                dev_dbg(&indio_dev->dev, "%s(): gas resistance(%d)\n", 
+                                dev_dbg(&indio_dev->dev, "%s(): gas resistance(%d ohms)\n", 
                                         __func__, data->field_data.gas_resistance);
                                 *val = data->field_data.gas_resistance;
                                 ret = IIO_VAL_INT;
