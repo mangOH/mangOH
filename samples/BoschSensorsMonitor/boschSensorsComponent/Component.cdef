@@ -1,0 +1,9 @@
+ldflags:
+{
+    -liio
+}
+
+sources:
+{
+    boschSensorsClient.c
+}

@@ -70,9 +70,19 @@ static const char * const iio_chan_type_name_spec[] = {
 	[IIO_CCT] = "cct",
 	[IIO_PRESSURE] = "pressure",
 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
-#ifdef CONFIG_IIO_CHAN_TYPE_GASRESISTANCE
-        [IIO_GASRESISTANCE] = "gasresistance",
-#endif /* CONFIG_IIO_CHAN_TYPE_GASRESISTANCE */
+        [IIO_ACTIVITY] = "activity",
+        [IIO_STEPS] = "steps",
+        [IIO_ENERGY] = "energy",
+        [IIO_DISTANCE] = "distance",
+        [IIO_VELOCITY] = "velocity",
+        [IIO_CONCENTRATION] = "concentration",
+        [IIO_RESISTANCE] = "resistance",
+        [IIO_PH] = "ph",
+        [IIO_UVINDEX] = "uvindex",
+        [IIO_ELECTRICALCONDUCTIVITY] = "electricalconductivity",
+        [IIO_COUNT] = "count",
+        [IIO_INDEX] = "index",
+        [IIO_GRAVITY] = "gravity",
 };
 
 static const char * const iio_modifier_names[] = {

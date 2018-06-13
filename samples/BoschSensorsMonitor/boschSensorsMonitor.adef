@@ -1,0 +1,25 @@
+sandboxed: false
+version: 1.0.0
+start: manual
+
+executables:
+{
+    boschSensorsClient = ( boschSensorsComponent )
+}
+
+processes:
+{
+    envVars:
+    {
+        LE_LOG_LEVEL = INFO
+    }
+    run:
+    {
+        ( boschSensorsClient )
+    }
+}
+
+bindings:
+{
+    
+}

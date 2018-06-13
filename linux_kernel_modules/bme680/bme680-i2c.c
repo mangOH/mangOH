@@ -35,7 +35,7 @@ static const struct iio_chan_spec bme680_channels[] = {
 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
         },
 	{
-		.type = IIO_GASRESISTANCE,
+		.type = IIO_RESISTANCE,
 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
 	},
 };
@@ -106,7 +106,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 	        }
 
                 switch (chan->type) {
-		case IIO_GASRESISTANCE:
+		case IIO_RESISTANCE:
                         if (data->field_data.status & BME680_GASM_VALID_MSK) {
                                 dev_dbg(&indio_dev->dev, "%s(): gas resistance(%d ohms)\n", 
                                         __func__, data->field_data.gas_resistance);

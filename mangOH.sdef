@@ -59,6 +59,10 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
     $LEGATO_ROOT/apps/tools/devMode
+
+#if ${MANGOH_BOARD} = YELLOW
+    $MANGOH_ROOT/samples/BoschSensorsMonitor/boschSensorsMonitor
+#endif
 }
 
 commands:

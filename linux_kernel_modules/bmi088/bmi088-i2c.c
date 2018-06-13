@@ -105,16 +105,18 @@
                 },                                                      \
         }
 
-#define BMI088_TEMP_CHANNEL {                                           \
-        .type = IIO_TEMP,                                               \
-        .info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),             \
-        .scan_index = BMI088_SCAN_TEMP,                                 \
-        .scan_type = {                                                  \
-                .sign = 's',                                            \
-                .realbits = 32,                                         \
-                .storagebits = 32,                                      \
-        },                                                              \
-}
+#define BMI088_TEMP_CHANNEL(si)                                         \
+        {                                                               \
+                .type = IIO_TEMP,                                       \
+                .info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),     \
+                .scan_index = BMI088_SCAN_TEMP,                         \
+                .scan_type = {                                          \
+                        .sign = 's',                                    \
+                        .realbits = 32,                                 \
+                        .shift = 0,                                     \
+                        .storagebits = 32,                              \
+                },                                                      \
+        }
 
 enum BMI088_AXIS_SCAN {
         BMI088_SCAN_X,
@@ -149,23 +151,23 @@ extern const struct regmap_config bmi088g_regmap_config;
 
 static const struct iio_chan_spec bmi088a_channels[] = {
         BMI088_CHANNELS_CONFIG(IIO_ACCEL, BMI088_SCAN_X, IIO_MOD_X, 
-                BMI08X_GYRO_X_LSB_REG, 16),
+                BMI08X_ACCEL_X_LSB_REG, 16),
         BMI088_CHANNELS_CONFIG(IIO_ACCEL, BMI088_SCAN_Y, IIO_MOD_Y, 
-                BMI08X_GYRO_Y_LSB_REG, 16),
+                BMI08X_ACCEL_Y_LSB_REG, 16),
         BMI088_CHANNELS_CONFIG(IIO_ACCEL, BMI088_SCAN_Z, IIO_MOD_Z, 
-                BMI08X_GYRO_Z_LSB_REG, 16),
-        BMI088_TEMP_CHANNEL,
+                BMI08X_ACCEL_Z_LSB_REG, 16),
+        BMI088_TEMP_CHANNEL(BMI088_SCAN_TEMP),
         IIO_CHAN_SOFT_TIMESTAMP(BMI088_SCAN_TIMESTAMP),
 };
 
 static const struct iio_chan_spec bmi088g_channels[] = {
         BMI088_CHANNELS_CONFIG(IIO_ANGL_VEL, BMI088_SCAN_X, IIO_MOD_X, 
-                BMI08X_ACCEL_X_LSB_REG, 16),
+                BMI08X_GYRO_X_LSB_REG, 16),
         BMI088_CHANNELS_CONFIG(IIO_ANGL_VEL, BMI088_SCAN_Y, IIO_MOD_Y, 
-                BMI08X_ACCEL_Y_LSB_REG, 16),
+                BMI08X_GYRO_Y_LSB_REG, 16),
         BMI088_CHANNELS_CONFIG(IIO_ANGL_VEL, BMI088_SCAN_Z, IIO_MOD_Z, 
-                BMI08X_ACCEL_Z_LSB_REG, 16),
-        BMI088_TEMP_CHANNEL,
+                BMI08X_GYRO_Z_LSB_REG, 16),
+        BMI088_TEMP_CHANNEL(BMI088_SCAN_TEMP),
         IIO_CHAN_SOFT_TIMESTAMP(BMI088_SCAN_TIMESTAMP),
 };
 
@@ -551,8 +553,7 @@ static ssize_t bmi088_store_accel_threshold(struct device *dev,
          * (threshold = X mg * 2,048 (5.11 format))
          */
         bmi08x_info.anymotion_cfg.threshold = val * 2048;
-        dev_dbg(dev, "%s(): accel threshold(%u)\n", 
-                __func__, bmi08x_info.anymotion_cfg.threshold / 2048);
+        dev_dbg(dev, "%s(): accel threshold(%u)\n", __func__, val);
 
         ret = bmi088_configure_anymotion(bmi08x_info.anymotion_cfg, data->bmi08x_dev);
         if (ret < 0) {
@@ -887,8 +888,8 @@ static ssize_t bmi088_show_gyro_odr(struct device *dev,
 }
 
 static ssize_t bmi088_store_gyro_odr(struct device *dev,
-		                        struct device_attribute *attr,
-		                        const char *buf, size_t len)
+		                     struct device_attribute *attr,
+		                     const char *buf, size_t len)
 {
         struct iio_dev *indio_dev = dev_to_iio_dev(dev);
         struct bmi08x_data *data = iio_priv(indio_dev);
@@ -926,46 +927,112 @@ exit:
         return ret;
 }
 
-static IIO_DEVICE_ATTR(in_accel_x_en,
+static ssize_t bmi088_show_gyro_bwp(struct device *dev,
+                                    struct device_attribute *attr, char *buf)
+{
+        struct bmi08x_data *data = iio_priv(dev_to_iio_dev(dev));
+        ssize_t ret;
+
+        mutex_lock(&data->mutex);
+        ret = sprintf(buf, "%u\n", data->bmi08x_dev->gyro_cfg.bw);
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static ssize_t bmi088_store_gyro_bwp(struct device *dev,
+		                     struct device_attribute *attr,
+		                     const char *buf, size_t len)
+{
+        struct iio_dev *indio_dev = dev_to_iio_dev(dev);
+        struct bmi08x_data *data = iio_priv(indio_dev);
+	int ret;
+        u8 val;
+
+        ret = kstrtou8(buf, 10, &val);
+	if (ret < 0)
+		return ret;
+        
+        mutex_lock(&data->mutex);
+
+        data->bmi08x_dev->gyro_cfg.bw = val;
+
+        ret = bmi08g_set_meas_conf(data->bmi08x_dev);
+        if (ret < 0) {
+                dev_err(dev, "%s(): bmi08g_set_meas_conf() failed(%d)\n", 
+                        __func__, ret);
+                ret = -EINVAL;
+                goto exit;
+        }
+
+        ret = len;
+
+exit:
+        if (ret < 0) {
+                ret = bmi08g_get_meas_conf(data->bmi08x_dev);
+                if (ret < 0) {
+                        dev_err(dev, "%s(): bmi08g_get_meas_conf() failed(%d)\n", 
+                                __func__, ret);
+                }
+        }
+
+        mutex_unlock(&data->mutex);
+        return ret;
+}
+
+static IIO_DEVICE_ATTR(accel_x_en,
         S_IRUSR | S_IWUSR, bmi088_show_accel_x_en, bmi088_store_accel_x_en, 0);
-static IIO_DEVICE_ATTR(in_accel_y_en,
+static IIO_DEVICE_ATTR(accel_y_en,
         S_IRUSR | S_IWUSR, bmi088_show_accel_y_en, bmi088_store_accel_y_en, 0);
-static IIO_DEVICE_ATTR(in_accel_z_en,
+static IIO_DEVICE_ATTR(accel_z_en,
         S_IRUSR | S_IWUSR, bmi088_show_accel_z_en, bmi088_store_accel_z_en, 0);
-static IIO_DEVICE_ATTR(in_accel_threshold,
+static IIO_DEVICE_ATTR(accel_threshold,
         S_IRUSR | S_IWUSR, bmi088_show_accel_threshold, bmi088_store_accel_threshold, 0);
-static IIO_DEVICE_ATTR(in_accel_nomotion_sel,
+static IIO_DEVICE_ATTR(accel_nomotion_sel,
         S_IRUSR | S_IWUSR, bmi088_show_accel_nomotion_sel, bmi088_store_accel_nomotion_sel, 0);
-static IIO_DEVICE_ATTR(in_accel_duration,
+static IIO_DEVICE_ATTR(accel_duration,
         S_IRUSR | S_IWUSR, bmi088_show_accel_duration, bmi088_store_accel_duration, 0);
-static IIO_DEVICE_ATTR(in_accel_range,
+static IIO_DEVICE_ATTR(accel_range,
         S_IRUSR | S_IWUSR, bmi088_show_accel_range, bmi088_store_accel_range, 0);
-static IIO_DEVICE_ATTR(in_accel_odr,
+static IIO_DEVICE_ATTR(accel_odr,
         S_IRUSR | S_IWUSR, bmi088_show_accel_odr, bmi088_store_accel_odr, 0);
-static IIO_DEVICE_ATTR(in_accel_bwp,
+static IIO_DEVICE_ATTR(accel_bwp,
         S_IRUSR | S_IWUSR, bmi088_show_accel_bwp, bmi088_store_accel_bwp, 0);
-static IIO_DEVICE_ATTR(in_gyro_range,
-        S_IRUSR | S_IWUSR, bmi088_show_gyro_range, bmi088_store_gyro_range, 0);
-static IIO_DEVICE_ATTR(in_gyro_odr,
-        S_IRUSR | S_IWUSR, bmi088_show_gyro_odr, bmi088_store_gyro_odr, 0);
 
 static struct attribute *bmi088a_attributes[] = {
-        &iio_dev_attr_in_accel_x_en.dev_attr.attr,
-        &iio_dev_attr_in_accel_y_en.dev_attr.attr,
-        &iio_dev_attr_in_accel_z_en.dev_attr.attr,
-        &iio_dev_attr_in_accel_threshold.dev_attr.attr,
-        &iio_dev_attr_in_accel_nomotion_sel.dev_attr.attr,
-        &iio_dev_attr_in_accel_duration.dev_attr.attr,
-        &iio_dev_attr_in_accel_range.dev_attr.attr,
-        &iio_dev_attr_in_accel_odr.dev_attr.attr,
-        &iio_dev_attr_in_accel_bwp.dev_attr.attr,
-        &iio_dev_attr_in_gyro_range.dev_attr.attr,
-        &iio_dev_attr_in_gyro_odr.dev_attr.attr,
+        &iio_dev_attr_accel_x_en.dev_attr.attr,
+        &iio_dev_attr_accel_y_en.dev_attr.attr,
+        &iio_dev_attr_accel_z_en.dev_attr.attr,
+        &iio_dev_attr_accel_threshold.dev_attr.attr,
+        &iio_dev_attr_accel_nomotion_sel.dev_attr.attr,
+        &iio_dev_attr_accel_duration.dev_attr.attr,
+        &iio_dev_attr_accel_range.dev_attr.attr,
+        &iio_dev_attr_accel_odr.dev_attr.attr,
+        &iio_dev_attr_accel_bwp.dev_attr.attr,
+        NULL,
+};
+
+static IIO_DEVICE_ATTR(gyro_range,
+        S_IRUSR | S_IWUSR, bmi088_show_gyro_range, bmi088_store_gyro_range, 0);
+static IIO_DEVICE_ATTR(gyro_odr,
+        S_IRUSR | S_IWUSR, bmi088_show_gyro_odr, bmi088_store_gyro_odr, 0);
+static IIO_DEVICE_ATTR(gyro_bwp,
+        S_IRUSR | S_IWUSR, bmi088_show_gyro_bwp, bmi088_store_gyro_bwp, 0);
+
+static struct attribute *bmi088g_attributes[] = {
+        &iio_dev_attr_gyro_range.dev_attr.attr,
+        &iio_dev_attr_gyro_odr.dev_attr.attr,
+        &iio_dev_attr_gyro_bwp.dev_attr.attr,
         NULL,
 };
 
 static const struct attribute_group bmi088a_attrs_group = {
         .attrs = bmi088a_attributes,
+        .name = "bmi088a",
+};
+
+static const struct attribute_group bmi088g_attrs_group = {
+        .attrs = bmi088g_attributes,
+        .name = "bmi088g",
 };
 
 static void bmi088_delay_milli_sec(u32 period)
@@ -1376,6 +1443,7 @@ static const struct iio_info bmi088a_info = {
 
 static const struct iio_info bmi088g_info = {
 	.driver_module = THIS_MODULE,
+        .attrs = &bmi088g_attrs_group,
         .read_raw = &bmi088_read_raw,
 	.write_raw = &bmi088_write_raw,
 };
@@ -1387,14 +1455,14 @@ static const struct iio_trigger_ops bmi088_trigger_ops = {
 };
 
 static int bmi088_probe(struct i2c_client *client,
-			    const struct i2c_device_id *id)
+			const struct i2c_device_id *id)
 {
 	int ret;
 	struct iio_dev *indio_dev;
         struct bmi08x_data *data;
 
-        dev_info(&client->dev, "%s(): probe addr(0x%04x) chip ID(0x%02lx)\n", 
-                __func__, client->addr, id->driver_data);
+        dev_info(&client->dev, "%s(): probe '%s' addr(0x%04x) chip ID(0x%02lx)\n", 
+                __func__, id->name, client->addr, id->driver_data);
         if ((id->driver_data != BMI08X_ACCEL_CHIP_ID) && 
             (id->driver_data != BMI08X_GYRO_CHIP_ID)) {
                 dev_err(&client->dev, "%s(): invalid chip ID(0x%lx)\n", 
@@ -1417,26 +1485,37 @@ static int bmi088_probe(struct i2c_client *client,
         data->client = client;
         data->bmi08x_dev = &bmi08x_info.bmi08x_dev;
 
-        data->regmap = devm_regmap_init_i2c(client, 
-                (id->driver_data == BMI08X_ACCEL_CHIP_ID) ? 
-                        &bmi088a_regmap_config:&bmi088g_regmap_config);
-	if (IS_ERR(data->regmap)) {
-		dev_err(&client->dev, "%s(): devm_regmap_init_i2c() failed(%d)\n", 
-                        __func__, ret);
-		ret = PTR_ERR(data->regmap);
-                goto exit;
-	}
-
 	indio_dev->dev.parent = &client->dev;
 	indio_dev->name = id->name;
-	indio_dev->channels = (id->driver_data == BMI08X_ACCEL_CHIP_ID) ? 
-                bmi088a_channels:bmi088g_channels;
-	indio_dev->info = (id->driver_data == BMI08X_ACCEL_CHIP_ID) ?
-                &bmi088a_info : &bmi088g_info;
-	indio_dev->modes = INDIO_DIRECT_MODE;
-	indio_dev->num_channels = (id->driver_data == BMI08X_ACCEL_CHIP_ID) ? 
-                ARRAY_SIZE(bmi088a_channels):ARRAY_SIZE(bmi088g_channels);
 
+        if (id->driver_data == BMI08X_ACCEL_CHIP_ID) {
+                data->regmap = devm_regmap_init_i2c(client, &bmi088a_regmap_config);
+	        if (IS_ERR(data->regmap)) {
+		        dev_err(&client->dev, "%s(): devm_regmap_init_i2c() failed(%d)\n", 
+                                __func__, ret);
+		        ret = PTR_ERR(data->regmap);
+                        goto exit;
+	        }
+
+	        indio_dev->channels = bmi088a_channels;
+	        indio_dev->info = &bmi088a_info;
+                indio_dev->num_channels = ARRAY_SIZE(bmi088a_channels);
+        }
+        else {
+                data->regmap = devm_regmap_init_i2c(client, &bmi088g_regmap_config);
+	        if (IS_ERR(data->regmap)) {
+		        dev_err(&client->dev, "%s(): devm_regmap_init_i2c() failed(%d)\n", 
+                                __func__, ret);
+		        ret = PTR_ERR(data->regmap);
+                        goto exit;
+	        }
+
+                indio_dev->channels = bmi088g_channels;
+	        indio_dev->info = &bmi088g_info;
+                indio_dev->num_channels = ARRAY_SIZE(bmi088g_channels);
+        }
+
+	indio_dev->modes = INDIO_DIRECT_MODE;
         dev_set_drvdata(&client->dev, indio_dev);
 
         data->trig = iio_trigger_alloc("%s-dev%d", indio_dev->name, indio_dev->id);
@@ -1649,7 +1728,7 @@ static int bmi088_remove(struct i2c_client *client)
 	        }
         }
 
-	free_irq(data->irq, data);
+	devm_free_irq(&client->dev, data->irq, data->trig);
 	gpio_free(data->gpio_pin);
 
 	iio_device_unregister(indio_dev);
