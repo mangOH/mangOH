@@ -30,5 +30,10 @@ buildVars:
      * I2C bus containing the battery charger and battery gauge
      */
     MANGOH_I2C_BUS_BATTERY = 2
+
+    /*
+     * CAN IOT card
+     */
+   MANGOH_CAN_9X15 = 1
 }
 

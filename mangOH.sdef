@@ -124,6 +124,33 @@ kernelModules:
     $CURDIR/linux_kernel_modules/mt7697q/mt7697q
     $CURDIR/linux_kernel_modules/mt7697serial/mt7697serial
 #endif // MANGOH_SUPPORT_MT7697_WIFI
+
+/*
+ * CAN Bus
+ *
+ * wp85 kernels don't include any CAN bus in the Kernel config - thus, all the modules are out of
+ * tree.
+ *
+ * wp7xx kernels include the CAN bus in the Kernel config as a built-in module, but not the chip
+ * driver. Thus, only the chip driver is out of tree for wp7xx kernels.
+ *
+ * The CAN Bus is COMMENTED OUT by default, please uncomment to use and be sure to comment out
+ * spisvc below.
+ */
+/*
+    $CURDIR/linux_kernel_modules/can_common/can_iot
+#if ${MANGOH_CAN_9X15} = 1
+    $CURDIR/linux_kernel_modules/can_9x15/can
+    $CURDIR/linux_kernel_modules/can_9x15/can-bcm
+    $CURDIR/linux_kernel_modules/can_9x15/can-raw
+    $CURDIR/linux_kernel_modules/can_9x15/can-dev
+    $CURDIR/linux_kernel_modules/can_9x15/vcan
+    $CURDIR/linux_kernel_modules/can_9x15/mcp251x
+#else 
+    $CURDIR/linux_kernel_modules/can_9x07/mcp251x
+#endif  // MANGOH_CAN_9X15
+*/
+
 #elif ${MANGOH_BOARD} = GREEN
     $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
 
