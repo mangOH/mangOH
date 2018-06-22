@@ -1,0 +1,21 @@
+cflags:
+{
+    // This driver depends on IIO
+    -DCONFIG_IIO
+}
+
+sources:
+{
+    bmp280-core.c
+    bmp280-regmap.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+        $CURDIR/../iio/iio-kfifo-buf
+#endif // MANGOH_KERNEL_LACKS_IIO
+    }
+}

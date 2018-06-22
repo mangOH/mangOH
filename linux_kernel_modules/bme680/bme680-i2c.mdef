@@ -9,8 +9,17 @@ cflags:
 
 sources:
 {
-    ./BME680_driver/bme680.c
+    BME680_driver/bme680.c
     bme680-i2c.c
     bme680-regmap.c
 }
 
+requires:
+{
+    kernelModules:
+    {
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+        $CURDIR/../iio/iio
+#endif // MANGOH_KERNEL_LACKS_IIO
+    }
+}

@@ -1,0 +1,12 @@
+sources:
+{
+    vcan.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/can
+    }
+}

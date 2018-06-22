@@ -13,3 +13,10 @@ sources:
     industrialio-triggered-buffer.c
 }
 
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/iio-kfifo-buf
+    }
+}

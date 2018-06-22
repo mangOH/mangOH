@@ -12,3 +12,11 @@ sources:
     kfifo_buf.c
 }
 
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/iio
+    }
+}

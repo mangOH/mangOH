@@ -28,10 +28,10 @@ mt_wifi_start() {
         sleep 2
     fi
 
-    lsmod | grep 2_mt7697wifi_core >/dev/null
+    lsmod | grep mt7697wifi_core >/dev/null
     if [ $? -eq 1 ]; then
 	hw_itf=`echo $1 | tr '[A-Z]' '[a-z]'`
-        insmod /legato/systems/current/modules/2-mt7697wifi_core.ko hw_itf=$hw_itf itf_idx_start=$2 || exit 127
+        insmod /legato/systems/current/modules/mt7697wifi_core.ko hw_itf=$hw_itf itf_idx_start=$2 || exit 127
         echo "Initialized MT7697 WiFi core";
         sleep 5
     fi
@@ -63,9 +63,9 @@ mt_wifi_stop() {
        ifconfig wlan$1 down
     fi
 
-    lsmod | grep 2_mt7697wifi_core >/dev/null
+    lsmod | grep mt7697wifi_core >/dev/null
     if [ $? -eq 0 ]; then
-        rmmod 2_mt7697wifi_core || exit 127
+        rmmod mt7697wifi_core || exit 127
         echo "Removed MT7697 WiFi core"; exit 127
     fi
 }

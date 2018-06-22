@@ -97,62 +97,51 @@ componentSearch:
 kernelModules:
 {
 #if ${MANGOH_BOARD} = RED
-    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv2
-    // $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv3
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_red_dv5
-
-    // USB to SPI adapter connected to the mt7697 and RPi header
-    $MANGOH_ROOT/linux_kernel_modules/cp2130/0-cp2130
-
-    // temperature and pressure sensor
-    $MANGOH_ROOT/linux_kernel_modules/bmp280/2-bmp280
-    $MANGOH_ROOT/linux_kernel_modules/bmp280/3-bmp280-i2c
-
-    // accelerometer on DV3 and later board revs
-    $MANGOH_ROOT/linux_kernel_modules/bmi160/3-bmi160
-    $MANGOH_ROOT/linux_kernel_modules/bmi160/4-bmi160-i2c
-
-    // accelerometer on DV2 boards
-    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
-    // $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
-
-    // battery gauge
-    $MANGOH_ROOT/linux_kernel_modules/ltc294x/0-ltc294x.mdef
-
-    // battery charger
-    $MANGOH_ROOT/linux_kernel_modules/bq24296/0-bq24296.mdef
-
-    // LED on GPIO driver
-    $MANGOH_ROOT/linux_kernel_modules/led/0-led
-
-#if ${MANGOH_KERNEL_LACKS_IIO} = 1
-    // Required for bmp280 & bmi160
-    $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
-    $MANGOH_ROOT/linux_kernel_modules/iio/1-iio-kfifo-buf
-
-    // Required for bmi160
-    $MANGOH_ROOT/linux_kernel_modules/iio/2-iio-triggered-buffer
-#endif // MANGOH_KERNEL_LACKS_IIO
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_red_dv5
 
 #if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
-    $MANGOH_ROOT/linux_kernel_modules/mt7697q/1-mt7697q
-    $MANGOH_ROOT/linux_kernel_modules/mt7697serial/1-mt7697serial
-    $MANGOH_ROOT/linux_kernel_modules/mt7697wifi/2-mt7697wifi_core
+    $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
 #endif // MANGOH_SUPPORT_MT7697_WIFI
 
-    // Disabled for now. See comment at top of file regarding GPIO expander service
-    // $MANGOH_ROOT/linux_kernel_modules/iot_slot/0-iot_slot
+    /*
+     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
+     * way that Legato kernel module dependencies work
+     */
+    $CURDIR/linux_kernel_modules/led/led
+    $CURDIR/linux_kernel_modules/bq24296/bq24296
+    $CURDIR/linux_kernel_modules/ltc294x/ltc294x
+    $CURDIR/linux_kernel_modules/cp2130/cp2130
+    $CURDIR/linux_kernel_modules/bmp280/bmp280-i2c
+    $CURDIR/linux_kernel_modules/bmp280/bmp280
+    $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
+    $CURDIR/linux_kernel_modules/bmi160/bmi160
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+    $CURDIR/linux_kernel_modules/iio/iio-triggered-buffer
+    $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
+    $CURDIR/linux_kernel_modules/iio/iio
+#endif // MANGOH_KERNEL_LACKS_IIO
+#if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
+    $CURDIR/linux_kernel_modules/mt7697q/mt7697q
+    $CURDIR/linux_kernel_modules/mt7697serial/mt7697serial
+#endif // MANGOH_SUPPORT_MT7697_WIFI
 #elif ${MANGOH_BOARD} = GREEN
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_green_dv4
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
 
-    // accelerometer driver
-    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/0-lsm6ds3
-    $MANGOH_ROOT/linux_kernel_modules/lsm6ds3/1-lsm6ds3-i2c
+    /*
+     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
+     * way that Legato kernel module dependencies work
+     */
+    $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
+    $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
 #elif ${MANGOH_BOARD} = YELLOW
-    $MANGOH_ROOT/linux_kernel_modules/mangoh/9-mangoh_yellow_dv1
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dv1
 
-    $MANGOH_ROOT/linux_kernel_modules/bme680/3-bme680-i2c
-    $MANGOH_ROOT/linux_kernel_modules/bmi088/4-bmi088-i2c
+    /*
+     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
+     * way that Legato kernel module dependencies work
+     */
+    $CURDIR/linux_kernel_modules/bme680/bme680-i2c
+    $CURDIR/linux_kernel_modules/bmi088/bmi088-i2c
 #endif // MANGOH_BOARD
 
     $LEGATO_ROOT/drivers/spisvc/spisvc

@@ -1,0 +1,12 @@
+sources:
+{
+    bmp280-i2c.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/bmp280
+    }
+}

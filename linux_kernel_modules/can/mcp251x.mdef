@@ -1,0 +1,12 @@
+sources:
+{
+    mcp251x.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/can-dev
+    }
+}

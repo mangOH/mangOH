@@ -1,0 +1,12 @@
+sources:
+{
+    bcm.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/can
+    }
+}

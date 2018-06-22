@@ -1,0 +1,12 @@
+sources:
+{
+    lsm6ds3_spi.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/lsm6ds3
+    }
+}
