@@ -1,0 +1,12 @@
+sources:
+{
+    raw.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/can
+    }
+}

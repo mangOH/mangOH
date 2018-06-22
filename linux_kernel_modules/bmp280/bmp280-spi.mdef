@@ -1,0 +1,12 @@
+sources:
+{
+    bmp280-spi.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/bmp280
+    }
+}

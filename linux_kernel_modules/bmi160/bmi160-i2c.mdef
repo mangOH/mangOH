@@ -15,3 +15,10 @@ sources:
     bmi160_i2c.c
 }
 
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/bmi160
+    }
+}

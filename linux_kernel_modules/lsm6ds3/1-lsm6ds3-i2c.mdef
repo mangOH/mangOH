@@ -1,4 +1,0 @@
-sources:
-{
-    lsm6ds3_i2c.c
-}

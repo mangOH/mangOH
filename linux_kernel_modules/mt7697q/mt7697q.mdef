@@ -1,0 +1,29 @@
+sources:
+{
+    io.c
+    interrupt.c
+    queue.c
+    spi.c
+}
+
+cflags:
+{
+//    -DDEBUG
+    -I$MANGOH_ROOT/linux_kernel_modules/cp2130
+    -I$MANGOH_ROOT/linux_kernel_modules/mt7697common
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/../cp2130/cp2130
+    }
+}
+
+/*
+ * The mt7697q module must be manual load because the init() will try to access
+ * the USB device provided by the cp2130 driver and the device may not have had
+ * time to enumerate at the time that the this module loads.
+ */
+// load: manual

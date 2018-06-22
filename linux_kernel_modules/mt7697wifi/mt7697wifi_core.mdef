@@ -26,3 +26,14 @@ cflags:
     -I$MANGOH_ROOT/linux_kernel_modules/mt7697q
     -I$MANGOH_ROOT/linux_kernel_modules/mt7697serial
 }
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/../mt7697q/mt7697q
+        $CURDIR/../mt7697serial/mt7697serial
+    }
+}
+
+load: manual
