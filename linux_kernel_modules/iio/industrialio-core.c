@@ -70,6 +70,7 @@ static const char * const iio_chan_type_name_spec[] = {
 	[IIO_CCT] = "cct",
 	[IIO_PRESSURE] = "pressure",
 	[IIO_HUMIDITYRELATIVE] = "humidityrelative",
+#ifdef CONFIG_IIO_CHAN_TYPE_EXTENSIONS
         [IIO_ACTIVITY] = "activity",
         [IIO_STEPS] = "steps",
         [IIO_ENERGY] = "energy",
@@ -83,6 +84,7 @@ static const char * const iio_chan_type_name_spec[] = {
         [IIO_COUNT] = "count",
         [IIO_INDEX] = "index",
         [IIO_GRAVITY] = "gravity",
+#endif /* CONFIG_IIO_CHAN_TYPE_EXTENSIONS */
 };
 
 static const char * const iio_modifier_names[] = {
