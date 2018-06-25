@@ -7,9 +7,6 @@
 #include <linux/spi/spi.h>
 #include <linux/delay.h>
 #include <linux/gpio/driver.h>
-#include <linux/irq.h>
-#include <linux/can/platform/mcp251x.h>
-#include <linux/gpio.h>
 
 #include "lsm6ds3_platform_data.h"
 #include "ltc294x-platform-data.h"
@@ -182,19 +179,6 @@ static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq24190", 0x6B),
 };
 
-static struct mcp251x_platform_data mcp2515_pdata = {
-        .oscillator_frequency   = 16*1000*1000,
-};
-
-static struct spi_board_info mcp2515_board_info= {
-                .modalias       = "mcp2515",
-                .platform_data  = &mcp2515_pdata,
-                .max_speed_hz   = 2*1000*1000,
-                .mode           = SPI_MODE_0,
-                .bus_num        = 0,
-                .chip_select    = 0,
-};
-
 #ifdef ENABLE_IOT_SLOT
 static struct iot_slot_platform_data mangoh_red_iot_slot_pdata = {
 	.gpio		  = {CF3_GPIO42, CF3_GPIO13, CF3_GPIO7, CF3_GPIO8},
@@ -248,8 +232,6 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	struct i2c_board_info *accelerometer_board_info;
 	struct i2c_adapter *other_adapter = NULL;
 	struct i2c_adapter *main_adapter;
-	struct spi_master *spi_master;
-	struct spi_device *spi_device;
 
 	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
@@ -321,25 +303,6 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	}
 	mangoh_red_driver_data.iot_slot_registered = true;
 #endif /* ENABLE_IOT_SLOT */
-
-	/* CAN Bus startup stuff - first hook irq */
-        if ((gpio_request(CF3_GPIO42, "can_irq") == 0) &&
-            (gpio_direction_input(CF3_GPIO42) == 0)) {
-                gpio_export(CF3_GPIO42, 0);
-                irq_set_irq_type(gpio_to_irq(CF3_GPIO42), IRQ_TYPE_EDGE_FALLING);
-        } else 
-                dev_err(&pdev->dev,"Could not hook gpio irq for MCP251X CAN bus interrupt\n");
-
-        mcp2515_board_info.irq = gpio_to_irq(CF3_GPIO42);
-
-	/* Hook into the SPI bus */
-	spi_master = spi_busnum_to_master(PRIMARY_SPI_BUS);
-	if (!spi_master)
-		dev_err(&pdev->dev,"No SPI Master on Primary SPI Bus\n");
-
-	spi_device = spi_new_device(spi_master, &mcp2515_board_info);
-        dev_info(&pdev->dev,"mcp2515 init (gpio:%d  irq:%d).\n",
-		CF3_GPIO42, mcp2515_board_info.irq);
 
 	/* Map the LED */
 	mangoh_red_led_pdata.gpio = gpio_expander->base + 8;

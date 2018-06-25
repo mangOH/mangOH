@@ -121,6 +121,30 @@ kernelModules:
     // LED on GPIO driver
     $MANGOH_ROOT/linux_kernel_modules/led/0-led
 
+// CAN Bus - The driver init data structures are in the mangOH
+//           core driver as are the IRQ hooks.
+#if ${MANGOH_CAN_9X15} = 1
+    // wp85 kernels don't include any CAN bus in the Kernel
+    // config - thus, all the modules are out of tree
+
+    $MANGOH_ROOT/linux_kernel_modules/can_9x07/can_iot
+    $MANGOH_ROOT/linux_kernel_modules/can_9x15/0-can
+    $MANGOH_ROOT/linux_kernel_modules/can_9x15/1-can-bcm
+    $MANGOH_ROOT/linux_kernel_modules/can_9x15/1-can-raw
+    $MANGOH_ROOT/linux_kernel_modules/can_9x15/2-can-dev
+    $MANGOH_ROOT/linux_kernel_modules/can_9x15/2-vcan
+    $MANGOH_ROOT/linux_kernel_modules/can_9x15/3-mcp251x
+
+// wp7xx kernels include the CAN bus in the Kernel
+// config as a built-in module, but not the chip driver
+// Thus, only the chip driver is out of tree
+
+#else 
+
+    $MANGOH_ROOT/linux_kernel_modules/can_9x07/can_iot
+    $MANGOH_ROOT/linux_kernel_modules/can_9x07/mcp251x
+#endif  // CAN Bus
+
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
     // Required for bmp280 & bmi160
     $MANGOH_ROOT/linux_kernel_modules/iio/0-iio
