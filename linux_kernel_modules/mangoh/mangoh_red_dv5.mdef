@@ -1,5 +1,6 @@
 cflags:
 {
+    -DDEBUG 
     // Needed for lsm6ds3 platform data type definition
     -I${MANGOH_ROOT}/linux_kernel_modules/lsm6ds3
     -I${MANGOH_ROOT}/linux_kernel_modules/ltc294x
@@ -17,4 +18,16 @@ sources:
 params:
 {
     revision = "dv5"
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/../led/led
+        $CURDIR/../bq24296/bq24296
+        $CURDIR/../ltc294x/ltc294x
+        $CURDIR/../bmp280/bmp280-i2c
+        $CURDIR/../bmi160/bmi160-i2c
+    }
 }

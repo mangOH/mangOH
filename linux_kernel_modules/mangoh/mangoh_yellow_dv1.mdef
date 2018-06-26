@@ -1,0 +1,24 @@
+cflags:
+{
+
+}
+
+sources:
+{
+    mangoh_yellow.c
+}
+
+params:
+{
+    revision = "dv1"
+}
+
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/../bme680/bme680-i2c
+        $CURDIR/../bmi088/bmi088-i2c
+    }
+}

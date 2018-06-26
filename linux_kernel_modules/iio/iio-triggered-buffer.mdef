@@ -1,0 +1,28 @@
+cflags:
+{
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGER
+    -DCONFIG_IIO_KFIFO_BUF
+    -DCONFIG_IIO_TRIGGERED_BUFFER
+}
+
+sources:
+{
+    // IIO_KFIFO_BUF
+    industrialio-triggered-buffer.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        /*
+	 * Due to a Legato bug in 18.05.1, this dependency has been
+	 * temporarily disabled.  It should be added back when the bug is
+	 * fixed.  The bug relates to modules that are depended on
+	 * multiple times.
+         */
+        // $CURDIR/iio-kfifo-buf
+    }
+}

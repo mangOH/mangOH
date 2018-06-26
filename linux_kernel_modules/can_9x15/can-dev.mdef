@@ -8,3 +8,10 @@ cflags:
     -DCONFIG_CAN_CALC_BITTIMING
 }
 
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/can
+    }
+}

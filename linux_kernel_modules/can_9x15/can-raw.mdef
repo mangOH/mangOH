@@ -1,13 +1,12 @@
 sources:
 {
-    mcp251x.c
+    raw.c
 }
 
 requires:
 {
     kernelModules:
     {
-        $CURDIR/../can_common/can_iot
+        $CURDIR/can
     }
 }
-

@@ -1,13 +1,12 @@
 sources:
 {
-    mcp251x.c
+    bmp280-i2c.c
 }
 
 requires:
 {
     kernelModules:
     {
-        $CURDIR/../can_common/can_iot
+        $CURDIR/bmp280
     }
 }
-

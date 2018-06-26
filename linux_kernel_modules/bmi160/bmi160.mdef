@@ -13,4 +13,12 @@ sources:
     bmi160_core.c
 }
 
-
+requires:
+{
+    kernelModules:
+    {
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+        $CURDIR/../iio/iio-triggered-buffer
+#endif // MANGOH_KERNEL_LACKS_IIO
+    }
+}

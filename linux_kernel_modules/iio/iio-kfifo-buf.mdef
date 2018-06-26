@@ -4,12 +4,19 @@ cflags:
     -DCONFIG_IIO_BUFFER
     -DCONFIG_IIO_TRIGGER
     -DCONFIG_IIO_KFIFO_BUF
-    -DCONFIG_IIO_TRIGGERED_BUFFER
 }
 
 sources:
 {
     // IIO_KFIFO_BUF
-    industrialio-triggered-buffer.c
+    kfifo_buf.c
 }
 
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/iio
+    }
+}

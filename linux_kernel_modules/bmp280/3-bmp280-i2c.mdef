@@ -1,5 +1,0 @@
-sources:
-{
-    bmp280-i2c.c
-}
-
