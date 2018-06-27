@@ -14,8 +14,14 @@ requires:
 {
     kernelModules:
     {
+        /*
+	 * Due to a Legato bug in 18.05.1, this dependency has been
+	 * temporarily disabled.  It should be added back when the bug is
+	 * fixed.  The bug relates to modules that are depended on
+	 * multiple times.
+         */
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
-        $CURDIR/../iio/iio-kfifo-buf
+        //$CURDIR/../iio/iio-kfifo-buf
 #endif // MANGOH_KERNEL_LACKS_IIO
     }
 }
