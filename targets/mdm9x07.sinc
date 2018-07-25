@@ -17,5 +17,10 @@ buildVars:
      * I2C bus containing the battery charger and battery gauge
      */
     MANGOH_I2C_BUS_BATTERY = 6
+
+    /*
+     * General purpose chipset definition
+     */
+    MANGOH_WP_CHIPSET_9X07 = 1
 }
 

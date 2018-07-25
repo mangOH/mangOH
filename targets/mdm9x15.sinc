@@ -34,6 +34,10 @@ buildVars:
     /*
      * CAN IOT card
      */
-   MANGOH_CAN_9X15 = 1
-}
+    MANGOH_CAN_9X15 = 1
 
+    /*
+     * General purpose chipset definition
+     */
+    MANGOH_WP_CHIPSET_9X15 = 1
+}
