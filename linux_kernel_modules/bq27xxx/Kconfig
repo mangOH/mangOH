@@ -1,0 +1,17 @@
+if POWER_SUPPLY
+
+config BATTERY_BQ27XXX
+	tristate "BQ27xxx battery driver"
+	help
+	  Say Y here to enable support for batteries with BQ27xxx chips.
+
+config BATTERY_BQ27XXX_I2C
+	tristate "BQ27xxx I2C support"
+	depends on BATTERY_BQ27XXX
+	depends on I2C
+	default y
+	help
+	  Say Y here to enable support for batteries with BQ27xxx chips
+	  connected over an I2C bus.
+
+endif # POWER_SUPPLY
