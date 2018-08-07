@@ -1,0 +1,12 @@
+sources:
+{
+    bq27xxx_battery_i2c.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/bq27xxx_battery
+    }
+}

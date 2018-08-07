@@ -1,0 +1,4 @@
+sources:
+{
+    bq27xxx_battery.c
+}
