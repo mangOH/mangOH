@@ -19,6 +19,5 @@ requires:
     kernelModules:
     {
         $CURDIR/../lsm6ds3/lsm6ds3-i2c
-        $LEGATO_ROOT/drivers/spisvc/spisvc
     }
 }

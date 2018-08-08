@@ -134,8 +134,7 @@ kernelModules:
  * wp7xx kernels include the CAN bus in the Kernel config as a built-in module, but not the chip
  * driver. Thus, only the chip driver is out of tree for wp7xx kernels.
  *
- * The CAN Bus is COMMENTED OUT by default, please uncomment to use and be sure to comment out
- * spisvc below.
+ * The CAN Bus is COMMENTED OUT by default, please uncomment to use.
  */
 /*
     $CURDIR/linux_kernel_modules/can_common/can_iot
@@ -170,6 +169,4 @@ kernelModules:
     $CURDIR/linux_kernel_modules/bme680/bme680-i2c
     $CURDIR/linux_kernel_modules/bmi088/bmi088-i2c
 #endif // MANGOH_BOARD
-
-    $LEGATO_ROOT/drivers/spisvc/spisvc
 }
