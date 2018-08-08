@@ -1,4 +1,5 @@
 sources:
 {
     bq27xxx_battery.c
+    power_supply_backport.c
 }

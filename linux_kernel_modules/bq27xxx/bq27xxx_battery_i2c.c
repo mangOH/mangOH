@@ -19,7 +19,7 @@
 #include <linux/module.h>
 #include <asm/unaligned.h>
 
-#include <linux/power/bq27xxx_battery.h>
+#include "bq27xxx_battery.h"
 
 static DEFINE_IDR(battery_id);
 static DEFINE_MUTEX(battery_mutex);

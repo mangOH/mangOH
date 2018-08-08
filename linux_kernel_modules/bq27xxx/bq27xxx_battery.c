@@ -56,7 +56,7 @@
 #include <linux/slab.h>
 #include <linux/of.h>
 
-#include <linux/power/bq27xxx_battery.h>
+#include "bq27xxx_battery.h"
 
 #define BQ27XXX_MANUFACTURER	"Texas Instruments"
 
