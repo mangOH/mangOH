@@ -565,9 +565,9 @@ static int bmi160_get_data(struct bmi160_data *data, int chan_type,
 	__le16 sample;
 	enum bmi160_sensor_type t = bmi160_to_sensor(chan_type);
 
-	reg = bmi160_regs[t].data + (axis - IIO_MOD_X) * sizeof(__le16);
+	reg = bmi160_regs[t].data + (axis - IIO_MOD_X) * sizeof(sample);
 
-	ret = regmap_bulk_read(data->regmap, reg, &sample, sizeof(__le16));
+	ret = regmap_bulk_read(data->regmap, reg, &sample, sizeof(sample));
 	if (ret < 0)
 		return ret;
 
@@ -632,8 +632,8 @@ static irqreturn_t bmi160_trigger_handler(int irq, void *p)
 
 	for_each_set_bit(i, indio_dev->active_scan_mask,
 			 indio_dev->masklength) {
-		ret = regmap_bulk_read(data->regmap, base + i * sizeof(__le16),
-				       &sample, sizeof(__le16));
+		ret = regmap_bulk_read(data->regmap, base + i * sizeof(sample),
+				       &sample, sizeof(sample));
 		if (ret < 0)
 			goto done;
 		buf[j++] = sample;
@@ -851,7 +851,6 @@ static const struct attribute_group bmi160_attrs_group = {
 };
 
 static const struct iio_info bmi160_info = {
-	.driver_module = THIS_MODULE,
 	.read_raw = bmi160_read_raw,
 	.write_raw = bmi160_write_raw,
 	.attrs = &bmi160_attrs_group,
