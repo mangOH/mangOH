@@ -230,13 +230,13 @@ static int mangoh_red_probe(struct platform_device* pdev)
 #endif /* ENABLE_IOT_SLOT */
 	struct gpio_chip *gpio_expander;
 	struct i2c_board_info *accelerometer_board_info;
-	struct i2c_adapter *other_adapter = NULL;
-	struct i2c_adapter *main_adapter;
+	struct i2c_adapter *i2c_adapter_primary, *i2c_adapter_gpio_exp = NULL,
+			   *i2c_adapter_batt_charger = NULL;
 
 	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
-	main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
-	if (!main_adapter) {
+	i2c_adapter_primary = i2c_get_adapter(PRIMARY_I2C_BUS);
+	if (!i2c_adapter_primary) {
 		dev_err(&pdev->dev, "Failed to get primary I2C adapter (%d).\n",
 			PRIMARY_I2C_BUS);
 		ret = -ENODEV;
@@ -254,7 +254,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	/* Map the I2C switch */
 	dev_dbg(&pdev->dev, "mapping i2c switch\n");
 	mangoh_red_driver_data.i2c_switch =
-		i2c_new_device(main_adapter, &mangoh_red_pca954x_device_info);
+		i2c_new_device(i2c_adapter_primary, &mangoh_red_pca954x_device_info);
 	if (!mangoh_red_driver_data.i2c_switch) {
 		dev_err(&pdev->dev, "Failed to register %s\n",
 			mangoh_red_pca954x_device_info.type);
@@ -262,19 +262,22 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-	/* Map the GPIO expander */
-	dev_dbg(&pdev->dev, "mapping gpio expander\n");
-	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_GPIO_EXPANDER);
-	if (!other_adapter) {
+	/* Get other i2c adapters required for probe */
+	i2c_adapter_gpio_exp =
+		i2c_get_adapter(MANGOH_RED_I2C_BUS_GPIO_EXPANDER);
+	i2c_adapter_batt_charger =
+		i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
+	if (!i2c_adapter_gpio_exp || !i2c_adapter_batt_charger) {
 		dev_err(&pdev->dev,
-			"Couldn't get I2C bus %d to add the GPIO expander.\n",
-			MANGOH_RED_I2C_BUS_GPIO_EXPANDER);
+			"Couldn't get necessary I2C buses downstream of I2C switch\n");
 		ret = -ENODEV;
 		goto cleanup;
 	}
+
+	/* Map the GPIO expander */
+	dev_dbg(&pdev->dev, "mapping gpio expander\n");
 	mangoh_red_driver_data.gpio_expander =
-		i2c_new_device(other_adapter, &mangoh_red_gpio_expander_devinfo);
-	i2c_put_adapter(other_adapter);
+		i2c_new_device(i2c_adapter_gpio_exp, &mangoh_red_gpio_expander_devinfo);
 	if (!mangoh_red_driver_data.gpio_expander) {
 		dev_err(&pdev->dev, "Failed to register %s\n",
 			mangoh_red_gpio_expander_devinfo.type);
@@ -324,7 +327,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_DV2 ?
 		&mangoh_red_lsm6ds3_devinfo : &mangoh_red_bmi160_devinfo;
 	mangoh_red_driver_data.accelerometer =
-		i2c_new_device(main_adapter, accelerometer_board_info);
+		i2c_new_device(i2c_adapter_primary, accelerometer_board_info);
 	if (!mangoh_red_driver_data.accelerometer) {
 		dev_err(&pdev->dev, "Accelerometer is missing\n");
 		return -ENODEV;
@@ -333,7 +336,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	/* Map the I2C BMP280 pressure sensor */
 	dev_dbg(&pdev->dev, "mapping bmp280 pressure sensor\n");
 	mangoh_red_driver_data.pressure =
-		i2c_new_device(main_adapter, &mangoh_red_pressure_devinfo);
+		i2c_new_device(i2c_adapter_primary, &mangoh_red_pressure_devinfo);
 	if (!mangoh_red_driver_data.pressure) {
 		dev_err(&pdev->dev, "Pressure sensor is missing\n");
 		return -ENODEV;
@@ -341,42 +344,26 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
 	/* Map the I2C BQ24296 driver: for now use the BQ24190 driver code */
 	dev_dbg(&pdev->dev, "mapping bq24296 driver\n");
-	other_adapter = i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
-	if(!other_adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n",
-			MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
-		ret = -ENODEV;
-		goto cleanup;
-	}
 	mangoh_red_driver_data.battery_charger = i2c_new_device(
-		other_adapter, &mangoh_red_battery_charger_devinfo);
-	i2c_put_adapter(other_adapter);
+		i2c_adapter_batt_charger, &mangoh_red_battery_charger_devinfo);
 	if (!mangoh_red_driver_data.battery_charger) {
 		dev_err(&pdev->dev, "battery charger is missing\n");
 		ret = -ENODEV;
 		goto cleanup;
 	}
-
 	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
 		/* Map the I2C ltc2942 battery gauge */
 		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
-		other_adapter =
-			i2c_get_adapter(MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
-		if (!other_adapter) {
-			dev_err(&pdev->dev, "No I2C bus %d.\n",
-			        MANGOH_RED_I2C_BUS_BATTERY_CHARGER);
-			ret = -ENODEV;
-			goto cleanup;
-		}
 		mangoh_red_driver_data.battery_gauge = i2c_new_device(
-			other_adapter, &mangoh_red_battery_gauge_devinfo);
-		i2c_put_adapter(other_adapter);
+			i2c_adapter_batt_charger,
+			&mangoh_red_battery_gauge_devinfo);
 		if (!mangoh_red_driver_data.battery_gauge) {
 			dev_err(&pdev->dev, "battery gauge is missing\n");
 			ret = -ENODEV;
 			goto cleanup;
 		}
 	}
+
 	/*
 	 * TODO:
 	 * 3503 USB Hub: 0x08
@@ -386,19 +373,13 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	 */
 
 cleanup:
-	i2c_put_adapter(main_adapter);
+	i2c_put_adapter(i2c_adapter_primary);
+	i2c_put_adapter(i2c_adapter_gpio_exp);
+	i2c_put_adapter(i2c_adapter_batt_charger);
 	if (ret != 0)
 		mangoh_red_remove(pdev);
 done:
 	return ret;
-}
-
-static void try_unregister_i2c_device(struct i2c_client *client)
-{
-	if (client != NULL) {
-		i2c_unregister_device(client);
-		i2c_put_adapter(client->adapter);
-	}
 }
 
 static int mangoh_red_remove(struct platform_device* pdev)
@@ -408,11 +389,11 @@ static int mangoh_red_remove(struct platform_device* pdev)
 	dev_info(&pdev->dev, "Removing mangoh red platform device\n");
 
 	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
-		try_unregister_i2c_device(dd->battery_gauge);
+		i2c_unregister_device(dd->battery_gauge);
 
-	try_unregister_i2c_device(dd->battery_charger);
-	try_unregister_i2c_device(dd->pressure);
-	try_unregister_i2c_device(dd->accelerometer);
+	i2c_unregister_device(dd->battery_charger);
+	i2c_unregister_device(dd->pressure);
+	i2c_unregister_device(dd->accelerometer);
 
 	if (dd->led_registered)
 		platform_device_unregister(&mangoh_red_led);
@@ -425,8 +406,8 @@ static int mangoh_red_remove(struct platform_device* pdev)
 		mangoh_red_mux_deinit();
 #endif /* ENABLE_IOT_SLOT */
 
-	try_unregister_i2c_device(dd->gpio_expander);
-	try_unregister_i2c_device(dd->i2c_switch);
+	i2c_unregister_device(dd->gpio_expander);
+	i2c_unregister_device(dd->i2c_switch);
 
 	return 0;
 }

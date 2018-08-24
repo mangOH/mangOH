@@ -116,6 +116,7 @@ static void mangoh_green_release(struct device* dev)
 
 static int mangoh_green_probe(struct platform_device* pdev)
 {
+	int ret = 0;
 	struct i2c_adapter* adapter;
 	dev_info(&pdev->dev, "In the probe\n");
 
@@ -134,7 +135,8 @@ static int mangoh_green_probe(struct platform_device* pdev)
 		dev_err(&pdev->dev,
 			"Failed to get the primary I2C adapter (%d).\n",
 			PRIMARY_I2C_BUS);
-		return -ENODEV;
+		ret = -ENODEV;
+		goto done;
 	}
 
 	/* Map the I2C switch */
@@ -146,21 +148,18 @@ static int mangoh_green_probe(struct platform_device* pdev)
 			&pdev->dev,
 			"Failed to register %s\n",
 			mangoh_green_pca954x_device_info.type);
-		return -ENODEV;
+		ret = -ENODEV;
+		goto cleanup;
 	}
 
 	/* Map the accelerometer */
 	dev_dbg(&pdev->dev, "mapping bmi160 accelerometer\n");
-	adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
-	if (!adapter) {
-		dev_err(&pdev->dev, "No I2C bus %d.\n", 0);
-		return -ENODEV;
-	}
 	mangoh_green_driver_data.accelerometer =
 		i2c_new_device(adapter, &mangoh_green_lsm6ds3_devinfo);
 	if (!mangoh_green_driver_data.accelerometer) {
 		dev_err(&pdev->dev, "Accelerometer is missing\n");
-		return -ENODEV;
+		ret = -ENODEV;
+		goto cleanup;
 	}
 
 	/*
@@ -185,18 +184,19 @@ static int mangoh_green_probe(struct platform_device* pdev)
 	 *    https://chromium.googlesource.com/chromiumos/platform/ec/+/master/driver/charger/bq24192.c
 	*/
 
-	return 0;
+cleanup:
+	i2c_put_adapter(adapter);
+	if (ret != 0)
+		mangoh_green_remove(pdev);
+done:
+	return ret;
 }
 
 static int mangoh_green_remove(struct platform_device* pdev)
 {
 	dev_info(&pdev->dev, "In the remove\n");
-
 	i2c_unregister_device(mangoh_green_driver_data.accelerometer);
-	i2c_put_adapter(mangoh_green_driver_data.accelerometer->adapter);
-
 	i2c_unregister_device(mangoh_green_driver_data.i2c_switch);
-	i2c_put_adapter(mangoh_green_driver_data.i2c_switch->adapter);
 	return 0;
 }
 

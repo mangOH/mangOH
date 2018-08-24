@@ -13,7 +13,7 @@
  *-----------------------------------------------------------------------------
  */
 #define MANGOH_YELLOW_I2C_SW_BUS_BASE		(PRIMARY_I2C_BUS + 1)
-#define MANGOH_YELLOW_I2C_BUS_IOT0	        (MANGOH_YELLOW_I2C_SW_BUS_BASE + 0)
+#define MANGOH_YELLOW_I2C_BUS_IOT0		(MANGOH_YELLOW_I2C_SW_BUS_BASE + 0)
 #define MANGOH_YELLOW_I2C_BUS_BATTERY_CHARGER	(MANGOH_YELLOW_I2C_SW_BUS_BASE + 1)
 #define MANGOH_YELLOW_I2C_BUS_USB_HUB		(MANGOH_YELLOW_I2C_SW_BUS_BASE + 1)
 #define MANGOH_YELLOW_I2C_BUS_GPIO_EXPANDER	(MANGOH_YELLOW_I2C_SW_BUS_BASE + 2)
@@ -62,9 +62,9 @@ static struct mangoh_yellow_platform_data {
 } mangoh_yellow_pdata;
 
 static struct mangoh_yellow_driver_data {
-        struct i2c_client* bme680;
-        struct i2c_client* bmi088a;
-        struct i2c_client* bmi088g;
+	struct i2c_client* bme680;
+	struct i2c_client* bmi088a;
+	struct i2c_client* bmi088g;
 } mangoh_yellow_driver_data = {
 };
 
@@ -97,12 +97,12 @@ static void mangoh_yellow_release(struct device* dev)
 static int mangoh_yellow_probe(struct platform_device* pdev)
 {
 	int ret = 0;
-	struct i2c_adapter *main_adapter;
+	struct i2c_adapter *i2c_adapter_primary;
 
 	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
-	main_adapter = i2c_get_adapter(PRIMARY_I2C_BUS);
-	if (!main_adapter) {
+	i2c_adapter_primary = i2c_get_adapter(PRIMARY_I2C_BUS);
+	if (!i2c_adapter_primary) {
 		dev_err(&pdev->dev, "Failed to get primary I2C adapter (%d).\n",
 			PRIMARY_I2C_BUS);
 		ret = -ENODEV;
@@ -117,51 +117,40 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 
 	platform_set_drvdata(pdev, &mangoh_yellow_driver_data);
 
-        /* Map the I2C BME680 humidity/gas/temp/pressure sensor */
-	dev_dbg(&pdev->dev, "mapping bme680 gas/temperature/pressure sensor\n");    
+	/* Map the I2C BME680 humidity/gas/temp/pressure sensor */
+	dev_dbg(&pdev->dev, "mapping bme680 gas/temperature/pressure sensor\n");
 	mangoh_yellow_driver_data.bme680 =
-		i2c_new_device(main_adapter, &mangoh_yellow_bme680_devinfo);
-        i2c_put_adapter(main_adapter);
+		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_bme680_devinfo);
 	if (!mangoh_yellow_driver_data.bme680) {
 		dev_err(&pdev->dev, "Gas/Humidity/Temp sensor is missing\n");
 		ret = -ENODEV;
-                goto cleanup;
-	}      
+		goto cleanup;
+	}
 
-        /* Map the I2C BMI088 gyro/accel sensor */
-	dev_dbg(&pdev->dev, "mapping bmi088 gyro/accel sensor\n"); 
-        mangoh_yellow_driver_data.bmi088a =
-		i2c_new_device(main_adapter, &mangoh_yellow_bmi088a_devinfo);
-        i2c_put_adapter(main_adapter);
+	/* Map the I2C BMI088 gyro/accel sensor */
+	dev_dbg(&pdev->dev, "mapping bmi088 gyro/accel sensor\n");
+	mangoh_yellow_driver_data.bmi088a =
+		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_bmi088a_devinfo);
 	if (!mangoh_yellow_driver_data.bmi088a) {
 		dev_err(&pdev->dev, "bmi088 accel sensor is missing\n");
 		ret = -ENODEV;
-                goto cleanup;
-	}   
+		goto cleanup;
+	}
 
-        mangoh_yellow_driver_data.bmi088g =
-		i2c_new_device(main_adapter, &mangoh_yellow_bmi088g_devinfo);
-        i2c_put_adapter(main_adapter);
+	mangoh_yellow_driver_data.bmi088g =
+		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_bmi088g_devinfo);
 	if (!mangoh_yellow_driver_data.bmi088g) {
 		dev_err(&pdev->dev, "bmi088 gyro sensor is missing\n");
 		ret = -ENODEV;
-                goto cleanup;
+		goto cleanup;
 	}
 
 cleanup:
-	i2c_put_adapter(main_adapter);
+	i2c_put_adapter(i2c_adapter_primary);
 	if (ret != 0)
 		mangoh_yellow_remove(pdev);
 done:
 	return ret;
-}
-
-static void try_unregister_i2c_device(struct i2c_client *client)
-{
-	if (client != NULL) {
-		i2c_unregister_device(client);
-		i2c_put_adapter(client->adapter);
-	}
 }
 
 static int mangoh_yellow_remove(struct platform_device* pdev)
@@ -170,9 +159,9 @@ static int mangoh_yellow_remove(struct platform_device* pdev)
 
 	dev_info(&pdev->dev, "Removing mangoh red platform device\n");
 
-        try_unregister_i2c_device(dd->bmi088a);
-        try_unregister_i2c_device(dd->bmi088g);
-        try_unregister_i2c_device(dd->bme680);
+	i2c_unregister_device(dd->bmi088a);
+	i2c_unregister_device(dd->bmi088g);
+	i2c_unregister_device(dd->bme680);
 
 	return 0;
 }
