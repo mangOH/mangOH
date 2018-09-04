@@ -23,6 +23,7 @@
 #define CF3_GPIO2	(59)
 #define CF3_GPIO33	(78)
 #define CF3_GPIO36     SWIMCU_GPIO_TO_SYS(2)
+#define CF3_GPIO32	(30)
 
 #elif defined(CONFIG_ARCH_MDM9607) /* For WP76XX */
 
@@ -36,6 +37,8 @@
 #define CF3_GPIO2	(38)
 #define CF3_GPIO33	(78)
 #define CF3_GPIO36     SWIMCU_GPIO_TO_SYS(2)
-#endif
+#define CF3_GPIO32	(77)
+
+#endif /* CONFIG_ARCH_? */
 
 #endif /* MANGOH_COMMON_H */

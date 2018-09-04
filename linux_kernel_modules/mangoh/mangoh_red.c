@@ -8,6 +8,7 @@
 #include <linux/delay.h>
 #include <linux/gpio/driver.h>
 #include <linux/platform_data/at24.h>
+#include <linux/gpio.h>
 
 #include "lsm6ds3_platform_data.h"
 #include "ltc294x-platform-data.h"
@@ -148,7 +149,6 @@ static struct sx150x_platform_data mangoh_red_gpio_expander_platform_data = {
 static const struct i2c_board_info mangoh_red_gpio_expander_devinfo = {
 	I2C_BOARD_INFO("sx1509q", 0x3e),
 	.platform_data = &mangoh_red_gpio_expander_platform_data,
-	.irq = 0,
 };
 
 static struct i2c_board_info mangoh_red_bmi160_devinfo = {
@@ -303,6 +303,15 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
 	/* Map the GPIO expander */
 	dev_dbg(&pdev->dev, "mapping gpio expander\n");
+	if (devm_gpio_request_one(&pdev->dev, CF3_GPIO32, GPIOF_DIR_IN,
+				  "gpio expander")) {
+		dev_err(&pdev->dev, "Couldn't request GPIO expander interrupt GPIO");
+		return -ENODEV;
+		goto cleanup;
+	}
+	mangoh_red_gpio_expander_platform_data.irq_summary = gpio_to_irq(CF3_GPIO32);
+	/* TODO: Find a better way to assign irq_base */
+	mangoh_red_gpio_expander_platform_data.irq_base = 500;
 	mangoh_red_driver_data.gpio_expander =
 		i2c_new_device(i2c_adapter_gpio_exp, &mangoh_red_gpio_expander_devinfo);
 	if (!mangoh_red_driver_data.gpio_expander) {
