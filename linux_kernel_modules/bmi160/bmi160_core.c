@@ -17,12 +17,14 @@
 #include <linux/delay.h>
 
 #include <linux/iio/iio.h>
+#include <linux/iio/trigger.h>
 #include <linux/iio/triggered_buffer.h>
 #include <linux/iio/trigger_consumer.h>
 #include <linux/iio/buffer.h>
 #include <linux/iio/sysfs.h>
 #include <linux/version.h>
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 8, 0)
+#include <linux/slab.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0)
 #include <linux/bitfield.h>
 #else
 #define __bf_shf(x) (__builtin_ffsll(x) - 1)
@@ -30,9 +32,14 @@
 	({								\
 		((typeof(_mask))(_val) << __bf_shf(_mask)) & (_mask);	\
 	})
+#define FIELD_GET(_mask, _reg)						\
+	({								\
+		(typeof(_mask))(((_reg) & (_mask)) >> __bf_shf(_mask));	\
+	})
 #endif
 
 #include "bmi160.h"
+#include "bmi160_pdata.h"
 
 #define BMI160_REG_CHIP_ID			0x00
 #define BMI160_CHIP_ID_VAL			0xD1
@@ -43,6 +50,9 @@
 #define BMI160_REG_DATA_MAGN_XOUT_L		0x04
 #define BMI160_REG_DATA_GYRO_XOUT_L		0x0C
 #define BMI160_REG_DATA_ACCEL_XOUT_L		0x12
+#define BMI160_REG_SENSOR_TIME_0		0x18
+#define BMI160_REG_SENSOR_TIME_1		0x19
+#define BMI160_REG_SENSOR_TIME_2		0x1A
 
 #define BMI160_REG_STATUS			0x1B
 #define BMI160_STATUS_GYR_SELF_TEST_OK		BIT(1)
@@ -96,6 +106,9 @@
 
 #define BMI160_REG_TEMPERATURE_0		0x20
 #define BMI160_REG_TEMPERATURE_1		0x21
+#define BMI160_REG_FIFO_LENGTH_0		0x22
+#define BMI160_REG_FIFO_LENGTH_1		0x23
+#define BMI160_REG_FIFO_DATA			0x24
 
 #define BMI160_REG_ACCEL_CONFIG			0x40
 #define BMI160_ACCEL_CONFIG_ODR_MASK		GENMASK(3, 0)
@@ -118,6 +131,18 @@
 #define BMI160_GYRO_RANGE_250DPS		0x03
 #define BMI160_GYRO_RANGE_125DPS		0x04
 
+#define BMI160_REG_FIFO_CONFIG_0		0x46
+#define BMI160_FIFO_CONFIG_0_WATER_MARK		GENMASK(7, 0)
+
+#define BMI160_REG_FIFO_CONFIG_1		0x47
+#define BMI160_FIFO_CONFIG_1_TIME_EN		BIT(1)
+#define BMI160_FIFO_CONFIG_1_TAG_INT2_EN	BIT(2)
+#define BMI160_FIFO_CONFIG_1_TAG_INT1_EN	BIT(3)
+#define BMI160_FIFO_CONFIG_1_HEADER_EN		BIT(4)
+#define BMI160_FIFO_CONFIG_1_MAG_EN		BIT(5)
+#define BMI160_FIFO_CONFIG_1_ACC_EN		BIT(6)
+#define BMI160_FIFO_CONFIG_1_GYR_EN		BIT(7)
+
 #define BMI160_REG_INT_EN_0			0x50
 #define BMI160_INT_EN_0_ANYM_X			BIT(0)
 #define BMI160_INT_EN_0_ANYM_Y			BIT(1)
@@ -128,29 +153,35 @@
 #define BMI160_INT_EN_0_FLAT			BIT(7)
 
 #define BMI160_REG_INT_EN_1			0x51
-#define BMI160_INT_EN_1_HIGHX			BIT(0)
-#define BMI160_INT_EN_1_HIGHY			BIT(1)
-#define BMI160_INT_EN_1_HIGHZ			BIT(2)
-#define BMI160_INT_EN_1_LOW			BIT(3)
+#define BMI160_INT_EN_1_HIGHG_X			BIT(0)
+#define BMI160_INT_EN_1_HIGHG_Y			BIT(1)
+#define BMI160_INT_EN_1_HIGHG_Z			BIT(2)
+#define BMI160_INT_EN_1_LOWG			BIT(3)
 #define BMI160_INT_EN_1_DRDY			BIT(4)
 #define BMI160_INT_EN_1_FFULL			BIT(5)
 #define BMI160_INT_EN_1_FWM			BIT(6)
 
 #define BMI160_REG_INT_EN_2			0x52
-#define BMI160_INT_EN_2_NOMOX			BIT(0)
-#define BMI160_INT_EN_2_NOMOY			BIT(1)
-#define BMI160_INT_EN_2_NOMOZ			BIT(2)
+#define BMI160_INT_EN_2_NOMO_X			BIT(0)
+#define BMI160_INT_EN_2_NOMO_Y			BIT(1)
+#define BMI160_INT_EN_2_NOMO_Z			BIT(2)
 #define BMI160_INT_EN_2_STEP_DET		BIT(3)
 
 #define BMI160_REG_INT_OUT_CTRL			0x53
-#define BMI160_INT_OUT_CTRL_INT1_EDGE		BIT(0)
+#define BMI160_INT_OUT_CTRL_INT1_TRIG		BIT(0)
 #define BMI160_INT_OUT_CTRL_INT1_LVL		BIT(1)
 #define BMI160_INT_OUT_CTRL_INT1_OD		BIT(2)
 #define BMI160_INT_OUT_CTRL_INT1_OUTPUT_EN	BIT(3)
-#define BMI160_INT_OUT_CTRL_INT2_EDGE		BIT(4)
+#define BMI160_INT_OUT_CTRL_INT2_TRIG		BIT(4)
 #define BMI160_INT_OUT_CTRL_INT2_LVL		BIT(5)
 #define BMI160_INT_OUT_CTRL_INT2_OD		BIT(6)
 #define BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN	BIT(7)
+
+/*
+ * Relevant to BMI160_INT_OUT_CTRL_INT2_TRIG and BMI160_INT_OUT_CTRL_INT1_TRIG
+ */
+#define BMI160_INT_TRIGGER_EDGE			0
+#define BMI160_INT_TRIGGER_LEVEL		1
 
 #define BMI160_REG_INT_LATCH			0x54
 #define BMI160_INT_LATCH_MODE			GENMASK(3, 0)
@@ -260,9 +291,26 @@
 
 #define BMI160_REG_DUMMY			0x7F
 
+#define BMI160_FIFO_HDR_MODE			GENMASK(7, 6)
+#define   BMI160_FIFO_MODE_CONTROL		0x1
+#define   BMI160_FIFO_MODE_REGULAR		0x2
+#define BMI160_FIFO_HDR_PARM			GENMASK(5, 2)
+#define   BMI160_FIFO_PARM_CONTROL_SKIP		0x0
+#define   BMI160_FIFO_PARM_CONTROL_SENSORTIME	0x1
+#define   BMI160_FIFO_PARM_CONTROL_INPUT_CONFIG	0x2
+#define BMI160_FIFO_HDR_EXT			GENMASK(5, 2)
+
+#define BMI160_INPUT_CONFIG_ACC_CONF		BIT(0)
+#define BMI160_INPUT_CONFIG_ACC_RANGE		BIT(1)
+#define BMI160_INPUT_CONFIG_GYR_CONF		BIT(2)
+#define BMI160_INPUT_CONFIG_GYR_RANGE		BIT(3)
+
 #define BMI160_ACCEL_PMU_MIN_USLEEP		3800
 #define BMI160_GYRO_PMU_MIN_USLEEP		80000
 #define BMI160_SOFTRESET_USLEEP			1000
+
+#define BMI160_FIFO_SIZE			1024
+#define BMI160_SENSORTIME_TICK_NS		(39 * NSEC_PER_USEC)
 
 #define BMI160_CHANNEL(_type, _axis, _index) {			\
 	.type = _type,						\
@@ -293,7 +341,6 @@ enum bmi160_scan_axis {
 	BMI160_SCAN_ACCEL_Y,
 	BMI160_SCAN_ACCEL_Z,
 	BMI160_SCAN_TIMESTAMP,
-	BMI160_SCAN_TEMPERATURE,
 };
 
 enum bmi160_sensor_type {
@@ -312,6 +359,7 @@ enum bmi160_pmu_state {
 };
 
 struct bmi160_data {
+	struct mutex mutex;
 	struct regmap *regmap;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
 	/*
@@ -320,6 +368,9 @@ struct bmi160_data {
 	 */
 	struct device *dev;
 #endif
+	int int1_irq;
+	int int2_irq;
+	struct iio_trigger *drdy_trigger;
 };
 
 const struct regmap_config bmi160_regmap_config = {
@@ -464,7 +515,6 @@ static const struct iio_chan_spec bmi160_channels[] = {
 	BMI160_CHANNEL(IIO_ANGL_VEL, X, BMI160_SCAN_GYRO_X),
 	BMI160_CHANNEL(IIO_ANGL_VEL, Y, BMI160_SCAN_GYRO_Y),
 	BMI160_CHANNEL(IIO_ANGL_VEL, Z, BMI160_SCAN_GYRO_Z),
-	IIO_CHAN_SOFT_TIMESTAMP(BMI160_SCAN_TIMESTAMP),
 	/*
 	 * The temperature sensor is somewhat linked to the gyro. If the gyro is
 	 * in normal mode, the temperature is updated every 10ms. When the gyro
@@ -476,7 +526,7 @@ static const struct iio_chan_spec bmi160_channels[] = {
 		.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |
 		                      BIT(IIO_CHAN_INFO_SCALE) |
 		                      BIT(IIO_CHAN_INFO_OFFSET),
-		.scan_index = BMI160_SCAN_TEMPERATURE,
+		.scan_index = -1,
 		.scan_type = {
 			.sign = 's',
 			.realbits = 16,
@@ -484,6 +534,108 @@ static const struct iio_chan_spec bmi160_channels[] = {
 			.endianness = IIO_LE,
 		},
 	},
+	IIO_CHAN_SOFT_TIMESTAMP(BMI160_SCAN_TIMESTAMP),
+};
+
+
+static int bmi160_buffer_preenable(struct iio_dev *indio_dev)
+{
+	int ret;
+	struct bmi160_data *data = iio_priv(indio_dev);
+	struct device *dev = &indio_dev->dev;
+	const bool gyroRequired =
+		test_bit(BMI160_SCAN_GYRO_X, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_GYRO_Y, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_GYRO_Z, indio_dev->active_scan_mask);
+	const bool accelRequired =
+		test_bit(BMI160_SCAN_ACCEL_X, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_ACCEL_Y, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_ACCEL_Z, indio_dev->active_scan_mask);
+
+	mutex_lock(&data->mutex);
+	/* Flush the FIFO */
+	ret = regmap_write(data->regmap, BMI160_REG_CMD, BMI160_CMD_FIFO_FLUSH);
+	if (ret != 0) {
+		dev_err(dev,
+			"Couldn't write BMI160_REG_CMD with BMI160_CMD_FIFO_FLUSH");
+		goto unlock;
+	}
+
+	ret = regmap_update_bits(data->regmap, BMI160_REG_FIFO_CONFIG_1,
+				 (BMI160_FIFO_CONFIG_1_GYR_EN |
+				  BMI160_FIFO_CONFIG_1_ACC_EN |
+				  BMI160_FIFO_CONFIG_1_MAG_EN |
+				  BMI160_FIFO_CONFIG_1_HEADER_EN |
+				  BMI160_FIFO_CONFIG_1_TAG_INT1_EN |
+				  BMI160_FIFO_CONFIG_1_TAG_INT2_EN |
+				  BMI160_FIFO_CONFIG_1_TIME_EN),
+				 ((gyroRequired ? BMI160_FIFO_CONFIG_1_GYR_EN : 0) |
+				  (accelRequired ? BMI160_FIFO_CONFIG_1_ACC_EN : 0) |
+				  BMI160_FIFO_CONFIG_1_HEADER_EN |
+				  BMI160_FIFO_CONFIG_1_TIME_EN));
+	if (ret != 0) {
+		dev_err(dev, "Couldn't enable FIFO fields");
+		goto unlock;
+	}
+
+unlock:
+	mutex_unlock(&data->mutex);
+	return ret;
+}
+
+static int bmi160_buffer_postdisable(struct iio_dev *indio_dev)
+{
+	struct bmi160_data *data = iio_priv(indio_dev);
+	struct device *dev = &indio_dev->dev;
+	int ret;
+
+	mutex_lock(&data->mutex);
+
+	/* disable all channels for the FIFO */
+	ret = regmap_update_bits(data->regmap, BMI160_REG_FIFO_CONFIG_1,
+				 (BMI160_FIFO_CONFIG_1_GYR_EN |
+				  BMI160_FIFO_CONFIG_1_ACC_EN |
+				  BMI160_FIFO_CONFIG_1_MAG_EN |
+				  BMI160_FIFO_CONFIG_1_HEADER_EN |
+				  BMI160_FIFO_CONFIG_1_TAG_INT1_EN |
+				  BMI160_FIFO_CONFIG_1_TAG_INT2_EN |
+				  BMI160_FIFO_CONFIG_1_TIME_EN), 0);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't disable FIFO fields");
+		goto unlock;
+	}
+
+unlock:
+	mutex_unlock(&data->mutex);
+	return ret;
+}
+
+static bool bmi160_buffer_validate_scan_mask(struct iio_dev *indio_dev,
+					     const unsigned long *scan_mask)
+{
+	struct device *dev = &indio_dev->dev;
+	const unsigned long allowed = (BIT(BMI160_SCAN_GYRO_X) |
+				       BIT(BMI160_SCAN_GYRO_Y) |
+				       BIT(BMI160_SCAN_GYRO_Z) |
+				       BIT(BMI160_SCAN_ACCEL_X) |
+				       BIT(BMI160_SCAN_ACCEL_Y) |
+				       BIT(BMI160_SCAN_ACCEL_Z));
+	const unsigned long remaining = ((*scan_mask) & (~allowed));
+	if (remaining) {
+		dev_warn(dev,
+			 "Scan mask (0x%08lX) is invalid. Invalid bits are: 0x%08lX\n",
+			 *scan_mask, remaining);
+		return false;
+	}
+	return true;
+}
+
+static const struct iio_buffer_setup_ops bmi160_iio_buffer_setup_ops = {
+	.preenable	    = &bmi160_buffer_preenable,
+	.postenable	    = &iio_triggered_buffer_postenable,
+	.predisable	    = &iio_triggered_buffer_predisable,
+	.postdisable	    = &bmi160_buffer_postdisable,
+	.validate_scan_mask = &bmi160_buffer_validate_scan_mask,
 };
 
 static enum bmi160_sensor_type bmi160_to_sensor(enum iio_chan_type iio_type)
@@ -567,13 +719,18 @@ static int bmi160_get_data(struct bmi160_data *data, int chan_type,
 
 	reg = bmi160_regs[t].data + (axis - IIO_MOD_X) * sizeof(sample);
 
+	mutex_lock(&data->mutex);
 	ret = regmap_bulk_read(data->regmap, reg, &sample, sizeof(sample));
 	if (ret < 0)
-		return ret;
+		goto unlock;
+	else
+		ret = 0;
 
 	*val = sign_extend32(le16_to_cpu(sample), 15);
 
-	return 0;
+unlock:
+	mutex_unlock(&data->mutex);
+	return ret;
 }
 
 static
@@ -581,6 +738,7 @@ int bmi160_set_odr(struct bmi160_data *data, enum bmi160_sensor_type t,
 		   int odr, int uodr)
 {
 	int i;
+	int ret;
 
 	for (i = 0; i < bmi160_odr_table[t].num; i++)
 		if (bmi160_odr_table[t].tbl[i].odr == odr &&
@@ -590,10 +748,13 @@ int bmi160_set_odr(struct bmi160_data *data, enum bmi160_sensor_type t,
 	if (i >= bmi160_odr_table[t].num)
 		return -EINVAL;
 
-	return regmap_update_bits(data->regmap,
-				  bmi160_regs[t].config,
-				  bmi160_regs[t].config_odr_mask,
-				  bmi160_odr_table[t].tbl[i].bits);
+	mutex_lock(&data->mutex);
+	ret = regmap_update_bits(data->regmap,
+				 bmi160_regs[t].config,
+				 bmi160_regs[t].config_odr_mask,
+				 bmi160_odr_table[t].tbl[i].bits);
+	mutex_unlock(&data->mutex);
+	return ret;
 }
 
 static int bmi160_get_odr(struct bmi160_data *data, enum bmi160_sensor_type t,
@@ -601,7 +762,9 @@ static int bmi160_get_odr(struct bmi160_data *data, enum bmi160_sensor_type t,
 {
 	int i, val, ret;
 
+	mutex_lock(&data->mutex);
 	ret = regmap_read(data->regmap, bmi160_regs[t].config, &val);
+	mutex_unlock(&data->mutex);
 	if (ret < 0)
 		return ret;
 
@@ -625,39 +788,270 @@ static irqreturn_t bmi160_trigger_handler(int irq, void *p)
 	struct iio_poll_func *pf = p;
 	struct iio_dev *indio_dev = pf->indio_dev;
 	struct bmi160_data *data = iio_priv(indio_dev);
-	__le16 buf[16];
-	/* 3 sens x 3 axis x __le16 + 3 x __le16 pad + 4 x __le16 tstamp */
-	int i, ret, j = 0, base = BMI160_REG_DATA_MAGN_XOUT_L;
-	__le16 sample;
+	struct device *dev = &indio_dev->dev;
+	u16 fifo_length;
+	int ret;
+	u16 buff_offset = 0;
+	u16 read_bytes;
+	u8 *read_buffer = NULL;
+	const bool mask_includes_mag =
+		test_bit(BMI160_SCAN_EXT_MAGN_X, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_EXT_MAGN_Y, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_EXT_MAGN_Z, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_RHALL, indio_dev->active_scan_mask);
+	const bool mask_includes_gyr =
+		test_bit(BMI160_SCAN_GYRO_X, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_GYRO_Y, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_GYRO_Z, indio_dev->active_scan_mask);
+	const bool mask_includes_acc =
+		test_bit(BMI160_SCAN_ACCEL_X, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_ACCEL_Y, indio_dev->active_scan_mask) ||
+		test_bit(BMI160_SCAN_ACCEL_Z, indio_dev->active_scan_mask);
+	const u8 data_frame_payload_len = ((mask_includes_mag ? (4 * 2) : 0) +
+					   (mask_includes_gyr ? (3 * 2) : 0) +
+					   (mask_includes_acc ? (3 * 2) : 0));
+	size_t max_data_frames;
+	u8 *samples = NULL;
+	size_t num_samples = 0;
+	u8 length_buf[2];
 
-	for_each_set_bit(i, indio_dev->active_scan_mask,
-			 indio_dev->masklength) {
-		ret = regmap_bulk_read(data->regmap, base + i * sizeof(sample),
-				       &sample, sizeof(sample));
-		if (ret < 0)
-			goto done;
-		buf[j++] = sample;
+	mutex_lock(&data->mutex);
+
+	ret = regmap_bulk_read(data->regmap, BMI160_REG_FIFO_LENGTH_0,
+			       length_buf, 2);
+	if (ret != 0) {
+		dev_err(dev, "Failed to read FIFO length");
+		goto done;
+	}
+	fifo_length = (length_buf[0] | ((length_buf[1] & 0x07) << 8));
+	dev_dbg(dev, "Processing FIFO when length=%u, scan_bytes=%d\n",
+		 fifo_length, indio_dev->scan_bytes);
+
+	/*
+	 * Read an extra 2 data frames of data to try to ensure that we get a
+	 * timestamp.
+	 */
+	read_bytes = fifo_length + (2 * (data_frame_payload_len + 1));
+	read_buffer = kmalloc(read_bytes, GFP_KERNEL);
+	if (!read_buffer) {
+		goto done;
+	}
+	ret = regmap_bulk_read(data->regmap, BMI160_REG_FIFO_DATA, read_buffer,
+			       read_bytes);
+	if (ret != 0) {
+		dev_err(dev, "Failed to read %d bytes from the FIFO",
+			read_bytes);
+		goto done;
 	}
 
-	iio_push_to_buffers_with_timestamp(indio_dev, buf, iio_get_time_ns(
+	max_data_frames = read_bytes / (1 + data_frame_payload_len); 
+	samples = kmalloc(max_data_frames * indio_dev->scan_bytes, GFP_KERNEL);
+	if (!samples) {
+		goto done;
+	}
+
+	while (buff_offset < read_bytes) {
+		const u8 hdr_mode = FIELD_GET(BMI160_FIFO_HDR_MODE,
+					      read_buffer[buff_offset]);
+		const u8 hdr_parm = FIELD_GET(BMI160_FIFO_HDR_PARM,
+					      read_buffer[buff_offset]);
+		const u8 hdr_ext = FIELD_GET(BMI160_FIFO_HDR_EXT,
+					     read_buffer[buff_offset]);
+		/*
+		dev_info(dev, "Processing frame: mode=%d, parm=%d, ext=%d\n",
+			 hdr_mode, hdr_parm, hdr_ext);
+		*/
+		buff_offset++;
+
+		if (hdr_mode == BMI160_FIFO_MODE_CONTROL) {
+			if (hdr_parm == BMI160_FIFO_PARM_CONTROL_SKIP) {
+				dev_warn(dev, "Dropped frames (%d)\n", hdr_ext);
+			} else if (hdr_parm == BMI160_FIFO_PARM_CONTROL_SENSORTIME) {
+				u32 now_hw;
+				s64 now;
+				u32 last_sample_hw;
+				s64 last_sample;
+				int i;
+				/* TODO: make dynamic based on ODR. See datasheet table 11 */
+				s64 sample_period_ns = 10 * NSEC_PER_MSEC;
+				if (buff_offset + 3 > read_bytes) {
+					dev_err(dev,
+						"Can't process partial sensortime frame\n");
+					goto done;
+				}
+				last_sample_hw = ((read_buffer[buff_offset] << 0) |
+						  (read_buffer[buff_offset + 1] << 8) |
+						  (read_buffer[buff_offset + 2] << 16));
+				buff_offset += 3;
+
+				/*
+				 * We are done with read_buffer, so re-use it to
+				 * get the current hardware timestamp
+				 */
+				ret = regmap_bulk_read(data->regmap,
+						       BMI160_REG_SENSOR_TIME_0,
+						       read_buffer, 3);
+				if (ret != 0)
+					goto done;
+				now_hw = ((read_buffer[0] << 0) |
+					  (read_buffer[1] << 8) |
+					  (read_buffer[2] << 16));
+				now = iio_get_time_ns(
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
-						   indio_dev
+					indio_dev
 #endif
-						   ));
+					);
+				if (now_hw >= last_sample_hw) {
+					last_sample = now - (
+						(now_hw - last_sample_hw) *
+						BMI160_SENSORTIME_TICK_NS);
+				} else {
+					last_sample = now - (
+						(now_hw +
+						 (GENMASK(23, 0) - last_sample_hw)) *
+						BMI160_SENSORTIME_TICK_NS);
+				}
+
+				for (i = 0; i < num_samples; i++) {
+					u8 *sample = &samples[i * indio_dev->scan_bytes];
+					s64 t = last_sample - (num_samples - (i - 1)) * sample_period_ns;
+					ret = iio_push_to_buffers_with_timestamp(indio_dev, sample, t);
+					if (ret != 0) {
+						dev_err(dev, "Couldn't push data to buffer");
+						goto done;
+					}
+				}
+				break;
+			} else if (hdr_parm == BMI160_FIFO_PARM_CONTROL_INPUT_CONFIG) {
+				dev_info(dev,
+					 "Config changed: ACC_CONF=%ld, ACC_RANGE=%ld, GYR_CONF=%ld, GYR_RANGE=%ld\n",
+					 FIELD_GET(BMI160_INPUT_CONFIG_ACC_CONF, read_buffer[buff_offset]),
+					 FIELD_GET(BMI160_INPUT_CONFIG_ACC_RANGE, read_buffer[buff_offset]),
+					 FIELD_GET(BMI160_INPUT_CONFIG_GYR_CONF, read_buffer[buff_offset]),
+					 FIELD_GET(BMI160_INPUT_CONFIG_GYR_CONF, read_buffer[buff_offset]));
+				buff_offset += 1;
+			} else {
+				dev_err(dev,
+					"Unexpected FIFO header mode=%d\n, parm=%d",
+					hdr_mode, hdr_parm);
+				goto done;
+			}
+		} else if (hdr_mode == BMI160_FIFO_MODE_REGULAR) {
+			const bool includes_mag =
+				(FIELD_GET(BIT(2), hdr_parm) != 0);
+			const bool includes_gyr =
+				(FIELD_GET(BIT(1), hdr_parm) != 0);
+			const bool includes_acc =
+				(FIELD_GET(BIT(0), hdr_parm) != 0);
+			u8 *sample = &samples[num_samples * indio_dev->scan_bytes];
+			u8 sample_offset = 0;
+
+			if (includes_mag != mask_includes_mag ||
+			    includes_gyr != mask_includes_gyr ||
+			    includes_acc != mask_includes_acc) {
+				dev_err(dev,
+					"Data frame header (%d/%d/%d) inconsistent with channel mask (%d/%d/%d)\n",
+					includes_mag, includes_gyr,
+					includes_acc, mask_includes_mag,
+					mask_includes_gyr, mask_includes_acc);
+				goto done;
+			}
+
+			if (buff_offset + data_frame_payload_len > read_bytes) {
+				dev_err(dev,
+					"Payload extends past read buffer. This should never happen.\n");
+				goto done;
+			}
+
+			if (includes_mag) {
+				/*
+				 * Magnetometer isn't currently supported, so
+				 * just skip over the data for now if it is
+				 * present, but there should be no reason for it
+				 * to be present.
+				 */
+				dev_warn(dev,
+					 "Magnetometer data in FIFO, but magnetometer not yet supported\n");
+				buff_offset += (4 * 2);
+			}
+			if (includes_gyr) {
+				if (test_bit(BMI160_SCAN_GYRO_X,
+					     indio_dev->active_scan_mask)) {
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 0];
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 1];
+				}
+				if (test_bit(BMI160_SCAN_GYRO_Y,
+					     indio_dev->active_scan_mask)) {
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 2];
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 3];
+				}
+				if (test_bit(BMI160_SCAN_GYRO_Z,
+					     indio_dev->active_scan_mask)) {
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 4];
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 5];
+				}
+				buff_offset += (3 * 2);
+			}
+			if (includes_acc) {
+				if (test_bit(BMI160_SCAN_ACCEL_X,
+					     indio_dev->active_scan_mask)) {
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 0];
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 1];
+				}
+				if (test_bit(BMI160_SCAN_ACCEL_Y,
+					     indio_dev->active_scan_mask)) {
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 2];
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 3];
+				}
+				if (test_bit(BMI160_SCAN_ACCEL_Z,
+					     indio_dev->active_scan_mask)) {
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 4];
+					sample[sample_offset++] =
+						read_buffer[buff_offset + 5];
+				}
+				buff_offset += (3 * 2);
+			}
+			num_samples++;
+		} else {
+			dev_err(dev, "Unexpected FIFO header mode=%d\n",
+				hdr_mode);
+			goto done;
+		}
+	}
+
 done:
+	kfree(samples);
+	kfree(read_buffer);
 	iio_trigger_notify_done(indio_dev->trig);
+	mutex_unlock(&data->mutex);
 	return IRQ_HANDLED;
 }
 
-static int bmi160_read_temperature_reg(struct regmap *regmap, int *val)
+static int bmi160_read_temperature_reg(struct bmi160_data *data, int *val)
 {
 	int ret;
 	__le16 sample;
 	const unsigned int reg = BMI160_REG_TEMPERATURE_0;
-	ret = regmap_bulk_read(regmap, reg, &sample, sizeof(sample));
+
+	mutex_lock(&data->mutex);
+	ret = regmap_bulk_read(data->regmap, reg, &sample, sizeof(sample));
 	if (ret < 0)
-		return ret;
+		goto unlock;
 	*val = sign_extend32(le16_to_cpu(sample), 15);
+
+unlock:
+	mutex_unlock(&data->mutex);
 	return IIO_VAL_INT;
 }
 
@@ -697,7 +1091,7 @@ static int bmi160_read_raw(struct iio_dev *indio_dev,
 	case IIO_TEMP:
 		switch (mask) {
 		case IIO_CHAN_INFO_RAW:
-			return bmi160_read_temperature_reg(data->regmap, val);
+			return bmi160_read_temperature_reg(data, val);
 
 		case IIO_CHAN_INFO_SCALE:
 			/* 1000x multiplier to convert to milli-degrees celcius */
@@ -751,35 +1145,205 @@ static int bmi160_write_raw(struct iio_dev *indio_dev,
 	return 0;
 }
 
-static int bmi160_setup_sigmot_int(struct bmi160_data *data)
+static irqreturn_t bmi160_sigmot_interrupt_thread(int irq, void *p)
 {
-	int ret = 0;
-	/* Route any motion/significant motion interrupt to int2 */
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_MAP_0,
-		0);
-	if (ret < 0)
-		return ret;
+	struct bmi160_data *data = p;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
+	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
+	dev_info(dev, "bmi160_sigmot_interrupt_thread");
 
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_MAP_1,
-		0);
-	if (ret < 0)
-		return ret;
+	return IRQ_HANDLED;
+}
 
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_MAP_2,
-		BMI160_INT_MAP_2_INT2_ANYM_SIGMOT);
-	if (ret < 0)
+int bmi160_drdy_trigger_set_state(struct iio_trigger *trig, bool state)
+{
+	int ret;
+	struct iio_dev *indio_dev = iio_trigger_get_drvdata(trig);
+	struct bmi160_data *data = iio_priv(indio_dev);
+
+	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_1,
+				 BMI160_INT_EN_1_DRDY,
+				 FIELD_PREP(BMI160_INT_EN_1_DRDY,
+					    state ? 1 : 0));
+	if (ret != 0) {
+		dev_err(&indio_dev->dev,
+			"Failed to %s data ready interrupt",
+			state ? "enable" : "disable");
 		return ret;
+	}
+
+	return ret;
+}
+
+static const struct iio_trigger_ops bmi160_drdy_trig_ops = {
+	.owner = THIS_MODULE,
+	.set_trigger_state = bmi160_drdy_trigger_set_state,
+};
+
+static irqreturn_t bmi160_drdy_irq_handler(int irq, void *private)
+{
+	iio_trigger_poll_chained(private
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+				 , iio_get_time_ns()
+#endif
+		);
+	return IRQ_HANDLED;
+}
+
+static int bmi160_register_drdy_trigger(struct bmi160_data *data)
+{
+	int ret;
+	struct iio_dev *indio_dev = iio_priv_to_dev(data);
+	struct device *dev = &indio_dev->dev;
+	struct iio_trigger *trig;
+	if (data->int1_irq <= 0) {
+		dev_warn(dev,
+			 "Couldn't create data ready trigger because int1 IRQ was not specified");
+		return -ENODEV;
+	}
+
+	trig = devm_iio_trigger_alloc(
+		dev, "%s-dev%d", indio_dev->name, indio_dev->id);
+	if (!trig)
+		return -ENOMEM;
+
+	data->drdy_trigger = trig;
+
+	ret = devm_request_threaded_irq(dev, data->int1_irq, NULL,
+					bmi160_drdy_irq_handler,
+					IRQF_TRIGGER_RISING, "bmi160_drdy",
+					trig);
+	if (ret != 0) {
+		dev_err(dev,
+			"Couldn't request irq %d for data ready interrupt",
+			data->int1_irq);
+		goto err_free_trig;
+	}
+
+	trig->dev.parent = dev->parent;
+	trig->ops = &bmi160_drdy_trig_ops;
+	iio_trigger_set_drvdata(trig, indio_dev);
+
+	indio_dev->trig = iio_trigger_get(trig);
+
+	ret = iio_trigger_register(trig);
+	if (ret != 0)
+	{
+		dev_err(dev, "failed to register data ready trigger");
+		goto err_free_trig;
+	}
+
+	return ret;
+
+err_free_trig:
+	devm_iio_trigger_free(dev, trig);
+	return ret;
+}
+
+/*
+ * The bmi160 has two interrupt pins. We use int1 for the data ready
+ * interrupt and int2 for the significant interrupt.
+ */
+static int bmi160_setup_interrupts(struct bmi160_data *data)
+{
+	int ret;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
+	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
+
+	/* Disable all interrupts */
+	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_0,
+				 (BMI160_INT_EN_0_FLAT | BMI160_INT_EN_0_ORIENT |
+				  BMI160_INT_EN_0_STAP | BMI160_INT_EN_0_DTAP |
+				  BMI160_INT_EN_0_ANYM_Z |
+				  BMI160_INT_EN_0_ANYM_Y |
+				  BMI160_INT_EN_0_ANYM_X), 0);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_0");
+		return ret;
+	}
+	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_1,
+				 (BMI160_INT_EN_1_FWM | BMI160_INT_EN_1_FFULL |
+				  BMI160_INT_EN_1_DRDY | BMI160_INT_EN_1_LOWG |
+				  BMI160_INT_EN_1_HIGHG_Z |
+				  BMI160_INT_EN_1_HIGHG_Y |
+				  BMI160_INT_EN_1_HIGHG_X), 0);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_1");
+		return ret;
+	}
+	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_2,
+				 (BMI160_INT_EN_2_STEP_DET |
+				  BMI160_INT_EN_2_NOMO_Z |
+				  BMI160_INT_EN_2_NOMO_Y |
+				  BMI160_INT_EN_2_NOMO_X), 0);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_2");
+		return ret;
+	}
+
+	/* Configure both interrupt pins of the BMI160 as outputs */
+	ret = regmap_write(data->regmap, BMI160_REG_INT_OUT_CTRL,
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN, 1) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT2_OD, 0) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT2_LVL, 1) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT2_TRIG,
+				      BMI160_INT_TRIGGER_EDGE) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT1_OUTPUT_EN, 1) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT1_OD, 0) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT1_LVL, 1) |
+			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT1_TRIG,
+				      BMI160_INT_TRIGGER_EDGE));
+	if (ret != 0) {
+		dev_err(dev, "Couldn't write BMI160_REG_INT_OUT_CTRL");
+		return ret;
+	}
+
+	/*
+	 * Disable input mode on both INT1 and INT2 and set interrupts to
+	 * non-latched mode.
+	 */
+	regmap_update_bits(data->regmap, BMI160_REG_INT_LATCH,
+			   (BMI160_INT_LATCH_INT2_INPUT_EN |
+			    BMI160_INT_LATCH_INT1_INPUT_EN |
+			    BMI160_INT_LATCH_MODE),
+			   (FIELD_PREP(BMI160_INT_LATCH_INT2_INPUT_EN, 0) |
+			    FIELD_PREP(BMI160_INT_LATCH_INT1_INPUT_EN, 0) |
+			    FIELD_PREP(BMI160_INT_LATCH_MODE,
+				       BMI160_INT_LATCH_MODE_NON_LATCHED)));
+
+	/*
+	 * Map the data ready interrupt to INT1 and any motion/significant
+	 * motion interrupt to INT2.
+	 */
+	ret = regmap_write(data->regmap, BMI160_REG_INT_MAP_0, 0);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't write BMI160_REG_INT_MAP_0");
+		return ret;
+	}
+	ret = regmap_write(data->regmap, BMI160_REG_INT_MAP_1,
+			   BMI160_INT_MAP_1_INT1_DRDY);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't write BMI160_REG_INT_MAP_1");
+		return ret;
+	}
+	ret = regmap_write(data->regmap, BMI160_REG_INT_MAP_2,
+			   BMI160_INT_MAP_2_INT2_ANYM_SIGMOT);
+	if (ret != 0) {
+		dev_err(dev, "Couldn't write BMI160_REG_INT_MAP_2");
+		return ret;
+	}
+
 	/*
 	 * Select the significant motion interrupt instead of anymotion and set
-	 * "skip" which is the minimum time between two anymotion events and
-	 * "proof" which is the duration of motion required to trigger the
-	 * significant motion event.
+	 * "skip" which is the minimum time between two significant motion
+	 * events and "proof" which is the duration of motion required to
+	 * trigger the significant motion event.
 	 */
 	ret = regmap_write(
 		data->regmap,
@@ -789,38 +1353,43 @@ static int bmi160_setup_sigmot_int(struct bmi160_data *data)
 			    BMI160_SIG_MOT_SKIP_TIME_1500_MS) |
 		 FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_PROOF,
 			    BMI160_SIG_MOT_PROOF_TIME_2000_MS)));
-	if (ret < 0)
+	if (ret != 0) {
+		dev_err(dev, "Couldn't write BMI160_REG_INT_MOTION_3");
 		return ret;
+	}
 
-	/*
-	 * Enable a long latch period to easily catch the signal while polling.
-	 */
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_LATCH,
-		(FIELD_PREP(BMI160_INT_LATCH_MODE,
-			    BMI160_INT_LATCH_MODE_TMP_2560_MS)));
-	if (ret < 0)
+	/* Register the interrupt handlers */
+	ret = bmi160_register_drdy_trigger(data);
+	if (ret != 0) {
+		dev_err(dev, "Failed to create data ready trigger");
 		return ret;
+	}
 
-	/* Enable edge interrupt on INT2 pin */
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_OUT_CTRL,
-		(BMI160_INT_OUT_CTRL_INT2_EDGE |
-		 BMI160_INT_OUT_CTRL_INT2_LVL |
-		 BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN));
-	if (ret < 0)
-		return ret;
+	if (data->int2_irq > 0) {
+		ret = devm_request_threaded_irq(dev, data->int2_irq, NULL,
+						bmi160_sigmot_interrupt_thread,
+						IRQF_TRIGGER_RISING,
+						"bmi160_sigmot", data);
+		if (ret != 0) {
+			dev_err(dev,
+				"Couldn't request irq %d for significant motion interrupt",
+				data->int1_irq);
+			return ret;
+		}
+	}
 
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_EN_0,
-		(BMI160_INT_EN_0_ANYM_X|
-		 BMI160_INT_EN_0_ANYM_Y|
-		 BMI160_INT_EN_0_ANYM_Z));
-	if (ret < 0)
+	/* Enable the significant motion interrupt */
+	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_0,
+				 (BMI160_INT_EN_0_ANYM_Z |
+				  BMI160_INT_EN_0_ANYM_Y |
+				  BMI160_INT_EN_0_ANYM_X),
+				 (FIELD_PREP(BMI160_INT_EN_0_ANYM_Z, 1) |
+				  FIELD_PREP(BMI160_INT_EN_0_ANYM_Y, 1) |
+				  FIELD_PREP(BMI160_INT_EN_0_ANYM_X, 1)));
+	if (ret != 0) {
+		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_0");
 		return ret;
+	}
 
 	return ret;
 }
@@ -880,7 +1449,6 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 	ret = regmap_write(data->regmap, BMI160_REG_CMD, BMI160_CMD_SOFTRESET);
 	if (ret < 0)
 		return ret;
-
 	usleep_range(BMI160_SOFTRESET_USLEEP, BMI160_SOFTRESET_USLEEP + 1);
 
 	/*
@@ -912,15 +1480,15 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 	if (ret < 0)
 		return ret;
 
-	ret = bmi160_setup_sigmot_int(data);
-	if (ret < 0)
-		return ret;
-
 	return 0;
 }
 
 static void bmi160_chip_uninit(struct bmi160_data *data)
 {
+	if (data->int2_irq > 0)
+		free_irq(data->int2_irq, data);
+	if (data->int1_irq > 0)
+		free_irq(data->int1_irq, data);
 	/*
 	 * Putting the gyro in suspend and the accelerometer in lower power mode
 	 * still allows the significant motion interrupt to fire while linux is
@@ -936,6 +1504,7 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 	struct iio_dev *indio_dev;
 	struct bmi160_data *data;
 	int ret;
+	struct bmi160_platform_data *pdata;
 
 	indio_dev = devm_iio_device_alloc(dev, sizeof(*data));
 	if (!indio_dev)
@@ -948,22 +1517,37 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 	data->dev = dev;
 #endif
 
+	pdata = dev_get_platdata(dev);
+	if (pdata)
+	{
+		data->int1_irq = pdata->int1_irq;
+		data->int2_irq = pdata->int2_irq;
+	}
+
+	if (!name && ACPI_HANDLE(dev))
+		name = bmi160_match_acpi_device(dev);
+
 	ret = bmi160_chip_init(data, use_spi);
 	if (ret < 0)
 		return ret;
 
-	if (!name && ACPI_HANDLE(dev))
-		name = bmi160_match_acpi_device(dev);
+	mutex_init(&data->mutex);
 
 	indio_dev->dev.parent = dev;
 	indio_dev->channels = bmi160_channels;
 	indio_dev->num_channels = ARRAY_SIZE(bmi160_channels);
 	indio_dev->name = name;
-	indio_dev->modes = INDIO_DIRECT_MODE;
+	indio_dev->modes = INDIO_DIRECT_MODE | INDIO_BUFFER_TRIGGERED;
 	indio_dev->info = &bmi160_info;
 
+	ret = bmi160_setup_interrupts(data);
+	if (ret < 0)
+		return ret;
+
+
 	ret = iio_triggered_buffer_setup(indio_dev, NULL,
-					 bmi160_trigger_handler, NULL);
+					 bmi160_trigger_handler,
+					 &bmi160_iio_buffer_setup_ops);
 	if (ret < 0)
 		goto uninit;
 
