@@ -2,7 +2,7 @@
  * An I2C driver for the PCF85063 RTC
  * Copyright 2014 Rose Technology
  *
- * Author: Søren Andersen <san@rosetechnology.dk>
+ * Author: SÃ¸ren Andersen <san@rosetechnology.dk>
  * Maintainers: http://www.nslu2-linux.org/
  *
  * based on the other drivers in this same directory.
@@ -22,8 +22,8 @@
  *  http://www.nxp.com/documents/data_sheet/PCF85063A.pdf
  *  http://www.nxp.com/documents/data_sheet/PCF85063TP.pdf
  *
- *  PCF85063A -- Rev. 6 — 18 November 2015
- *  PCF85063TP -- Rev. 4 — 6 May 2015
+ *  PCF85063A -- Rev. 6 â€” 18 November 2015
+ *  PCF85063TP -- Rev. 4 â€” 6 May 2015
 */
 
 #define PCF85063_REG_CTRL1		0x00 /* status */
@@ -228,6 +228,6 @@ static struct i2c_driver pcf85063_driver = {
 
 module_i2c_driver(pcf85063_driver);
 
-MODULE_AUTHOR("Søren Andersen <san@rosetechnology.dk>");
+MODULE_AUTHOR("SÃ¸ren Andersen <san@rosetechnology.dk>");
 MODULE_DESCRIPTION("PCF85063 RTC driver");
 MODULE_LICENSE("GPL");

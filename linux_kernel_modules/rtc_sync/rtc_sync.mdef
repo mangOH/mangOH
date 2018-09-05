@@ -8,6 +8,6 @@ requires:
     kernelModules:
     {
         $CURDIR/../rtc-pcf85063/rtc-pcf85063
-        $CURDIR/../mangoh/mangoh_red_dv5
+        $CURDIR/../mangoh/mangoh_yellow
     }
 }

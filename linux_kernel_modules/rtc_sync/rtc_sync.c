@@ -1,5 +1,5 @@
 /*
- * rtc_sync.c: module that syncs sytem time with rtc time 
+ * rtc_sync.c: module that syncs system time with rtc time
  * and vice versa with 10 seconds interval
  *
  * Copyright (C) 2018 Sierra Wireless.
@@ -27,11 +27,13 @@
 #include <linux/sched.h>
 #include <linux/kthread.h>
 
-
 static struct task_struct *time_check_thread;
 
+/*
+ * this function syncs system time with RTC when startup
+ * if there is valid time store in RTC static int rtc_hctosys(void)
+ */
 
-//this function syncs system time with RTC when startup - if there is valid time store in RTC
 static int rtc_hctosys(void)
 {
 	int err;
@@ -75,11 +77,11 @@ static int rtc_hctosys(void)
 	return 0;
 }
 
-//systohc sets RTC with system time
+/*systohc sets RTC with system time*/
+
 static int systohc(struct timespec now)
 {
-	
-        struct rtc_device *rtc;
+	struct rtc_device *rtc;
 	struct rtc_time tm;
 	int err = -ENODEV;
 	printk("Setting time to %lld\n", timespec_to_ns(&now));
@@ -91,7 +93,7 @@ static int systohc(struct timespec now)
 
 	rtc = rtc_class_open("rtc1");
 
-        if (rtc == NULL) {
+	if (rtc == NULL) {
 		printk("%s: unable to open rtc device (rtc1) for systohc\n",
 			__FILE__);
 		return -ENODEV;
@@ -100,30 +102,32 @@ static int systohc(struct timespec now)
 	if (rtc) {
 		/* rtc_hctosys exclusively uses UTC, so we call set_time here,
 		 * not set_mmss. */
-		if (rtc->ops &&
-		    (rtc->ops->set_time ||
-		     rtc->ops->set_mmss))
+		if (rtc->ops && (rtc->ops->set_time || rtc->ops->set_mmss))
 			err = rtc_set_time(rtc, &tm);
-		rtc_class_close(rtc);
+			rtc_class_close(rtc);
 	}
-        
 	return 0;
 }
 
-//time_check chekcs if the system time has been modified during the last checking period by comparing the expected time after checking period with a time allowance
+/*
+ * time_check chekcs if the system time has been modified during 
+ * the last checking period by comparing the expected time after 
+ * checking period with a time allowance static int time_check(void *data)
+ */
+
 static int time_check(void *data)
 {
-        //checking period
-        struct timespec delta_expected = { .tv_sec=10 };
-        //time allowance
+	/*checking period*/
+	struct timespec delta_expected = { .tv_sec=10 };
+	/*time allowance*/
 	struct timespec delta_delta_acceptable = { .tv_sec=1 };
-        long long allowance = timespec_to_ns(&delta_delta_acceptable);
+	long long allowance = timespec_to_ns(&delta_delta_acceptable);
 
 	while (!kthread_should_stop()) {
 		struct timespec before;
 		struct timespec after;
-        	struct timespec delta_actual;
-        	long long timelapse;
+		struct timespec delta_actual;
+		long long timelapse;
 		long long timediff;
 		long timeout = 10 * HZ;
 
@@ -133,26 +137,20 @@ static int time_check(void *data)
 			timeout = schedule_timeout(timeout);
 		ktime_get_real_ts(&after);
 
-		//compare current time with previous
+		/*compare current time with previous*/
 		delta_actual = timespec_sub(after, before);
-		timelapse = timespec_to_ns(&delta_actual);
-		//absolute value of timelapse
-		if (timelapse <= 0)
-		    timelapse = 0 - timelapse;
+		timelapse = abs64(timespec_to_ns(&delta_actual));
 		timediff = timelapse - timespec_to_ns(&delta_expected);
 		if (timediff > allowance || timediff < (0 - allowance))
-		    systohc(after);
+			systohc(after);
 	}
 	return 0;
 }
 
 static int __init rtc_sync_init(void)
 {
-        
 	rtc_hctosys();
-
 	time_check_thread = kthread_run(time_check, NULL, "check_time");
-
 	return 0;
 }
 
@@ -163,14 +161,9 @@ static void __exit rtc_sync_exit(void)
 	}
 }
 
-
-
-
-
 module_init(rtc_sync_init);
 module_exit(rtc_sync_exit);
 
-
-MODULE_DESCRIPTION("Sets the system time based on rtc1");
+MODULE_DESCRIPTION("Syncs system time with rtc time when waked up from ULPM. Checks if system time has been changed during a given period, if changed, saves system time to rtc.");
 MODULE_LICENSE("GPL v2");
 
