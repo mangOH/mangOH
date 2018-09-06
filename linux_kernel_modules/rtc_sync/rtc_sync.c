@@ -33,7 +33,6 @@ static struct task_struct *time_check_thread;
  * this function syncs system time with RTC when startup
  * if there is valid time store in RTC static int rtc_hctosys(void)
  */
-
 static int rtc_hctosys(void)
 {
 	int err;
@@ -78,12 +77,11 @@ static int rtc_hctosys(void)
 }
 
 /*systohc sets RTC with system time*/
-
 static int systohc(struct timespec now)
 {
 	struct rtc_device *rtc;
 	struct rtc_time tm;
-	int err = -ENODEV;
+	int res = -ENODEV;
 	printk("Setting time to %lld\n", timespec_to_ns(&now));
 
 	if (now.tv_nsec < (NSEC_PER_SEC >> 1))
@@ -96,52 +94,39 @@ static int systohc(struct timespec now)
 	if (rtc == NULL) {
 		printk("%s: unable to open rtc device (rtc1) for systohc\n",
 			__FILE__);
-		return -ENODEV;
+		return res;
 	}
 
-	if (rtc) {
-		/* rtc_hctosys exclusively uses UTC, so we call set_time here,
-		 * not set_mmss. */
-		if (rtc->ops && (rtc->ops->set_time || rtc->ops->set_mmss))
-			err = rtc_set_time(rtc, &tm);
-			rtc_class_close(rtc);
-	}
-	return 0;
+	/* rtc_hctosys exclusively uses UTC, so we call set_time here,
+	* not set_mmss. */
+	if (rtc->ops && (rtc->ops->set_time || rtc->ops->set_mmss))
+		res = rtc_set_time(rtc, &tm);
+	rtc_class_close(rtc);
+
+	return res;
 }
 
 /*
- * time_check chekcs if the system time has been modified during 
- * the last checking period by comparing the expected time after 
+ * time_check chekcs if the system time has been modified during
+ * the last checking period by comparing the expected time after
  * checking period with a time allowance static int time_check(void *data)
  */
-
 static int time_check(void *data)
 {
-	/*checking period*/
-	struct timespec delta_expected = { .tv_sec=10 };
-	/*time allowance*/
-	struct timespec delta_delta_acceptable = { .tv_sec=1 };
-	long long allowance = timespec_to_ns(&delta_delta_acceptable);
-
 	while (!kthread_should_stop()) {
+		const long long expected_delta_ns = 10 * NSEC_PER_SEC;
+		long timeout = 10 * HZ;
 		struct timespec before;
 		struct timespec after;
-		struct timespec delta_actual;
-		long long timelapse;
-		long long timediff;
-		long timeout = 10 * HZ;
+		long long delta_ns;
 
 		ktime_get_real_ts(&before);
-
 		while (timeout > 0)
 			timeout = schedule_timeout(timeout);
 		ktime_get_real_ts(&after);
 
-		/*compare current time with previous*/
-		delta_actual = timespec_sub(after, before);
-		timelapse = abs64(timespec_to_ns(&delta_actual));
-		timediff = timelapse - timespec_to_ns(&delta_expected);
-		if (timediff > allowance || timediff < (0 - allowance))
+		delta_ns = timespec_to_ns(&after) - timespec_to_ns(&before);
+		if (abs64(delta_ns - expected_delta_ns) > 1 * NSEC_PER_SEC)
 			systohc(after);
 	}
 	return 0;
