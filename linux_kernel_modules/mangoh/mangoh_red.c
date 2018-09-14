@@ -7,6 +7,7 @@
 #include <linux/spi/spi.h>
 #include <linux/delay.h>
 #include <linux/gpio/driver.h>
+#include <linux/platform_data/at24.h>
 
 #include "lsm6ds3_platform_data.h"
 #include "ltc294x-platform-data.h"
@@ -92,6 +93,7 @@ static struct mangoh_red_platform_data {
 } mangoh_red_pdata;
 
 static struct mangoh_red_driver_data {
+	struct i2c_client* eeprom;
 	struct i2c_client* i2c_switch;
 	struct i2c_client* accelerometer;
 	struct i2c_client* pressure;
@@ -216,6 +218,21 @@ static struct platform_device mangoh_red_led = {
 	},
 };
 
+/*
+ * The EEPROM is marked as read-only to prevent accidental writes. The mangOH
+ * Red has the write protect (WP) pin pulled high which has the effect of making
+ * the upper 1/4 of the address space of the EEPROM write protected by hardware.
+ */
+static struct at24_platform_data mangoh_red_eeprom_data = {
+	.byte_len = 4096,
+	.page_size = 32,
+	.flags = (AT24_FLAG_ADDR16 | AT24_FLAG_READONLY),
+};
+static struct i2c_board_info mangoh_red_eeprom_info = {
+	I2C_BOARD_INFO("at24", 0x51),
+	.platform_data = &mangoh_red_eeprom_data,
+};
+
 static void mangoh_red_release(struct device* dev)
 {
 	/* Nothing alloc'd, so nothign to free */
@@ -250,6 +267,16 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	msleep(5000);
 
 	platform_set_drvdata(pdev, &mangoh_red_driver_data);
+
+	dev_dbg(&pdev->dev, "mapping eeprom\n");
+	mangoh_red_driver_data.eeprom =
+		i2c_new_device(i2c_adapter_primary, &mangoh_red_eeprom_info);
+	if (!mangoh_red_driver_data.eeprom) {
+		dev_err(&pdev->dev, "Failed to register %s\n",
+			mangoh_red_eeprom_info.type);
+		ret = -ENODEV;
+		goto cleanup;
+	}
 
 	/* Map the I2C switch */
 	dev_dbg(&pdev->dev, "mapping i2c switch\n");
@@ -408,6 +435,7 @@ static int mangoh_red_remove(struct platform_device* pdev)
 
 	i2c_unregister_device(dd->gpio_expander);
 	i2c_unregister_device(dd->i2c_switch);
+	i2c_unregister_device(dd->eeprom);
 
 	return 0;
 }
