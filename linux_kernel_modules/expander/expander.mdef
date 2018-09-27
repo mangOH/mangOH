@@ -1,0 +1,13 @@
+sources:
+{
+    expander.c
+}
+
+cflags:
+{
+//    -DDEBUG
+}
+
+params:
+{
+}
