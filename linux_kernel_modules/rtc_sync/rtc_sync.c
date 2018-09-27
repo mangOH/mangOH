@@ -114,8 +114,8 @@ static int systohc(struct timespec now)
 static int time_check(void *data)
 {
 	while (!kthread_should_stop()) {
-		const long long expected_delta_ns = 10 * NSEC_PER_SEC;
-		long timeout = 10 * HZ;
+		const long long expected_delta_ns = 10LL * NSEC_PER_SEC;
+		long timeout = 10L * HZ;
 		struct timespec before;
 		struct timespec after;
 		long long delta_ns;
