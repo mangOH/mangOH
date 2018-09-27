@@ -107,6 +107,7 @@ kernelModules:
      * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
      * way that Legato kernel module dependencies work
      */
+
     $CURDIR/linux_kernel_modules/led/led
     $CURDIR/linux_kernel_modules/bq24296/bq24296
     $CURDIR/linux_kernel_modules/ltc294x/ltc294x
@@ -161,14 +162,27 @@ kernelModules:
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
 #elif ${MANGOH_BOARD} = YELLOW
-    $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dv1
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+    $CURDIR/linux_kernel_modules/iio/iio-triggered-buffer
+    $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
+    $CURDIR/linux_kernel_modules/iio/iio
+#endif // MANGOH_KERNEL_LACKS_IIO
 
-    /*
-     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
-     * way that Legato kernel module dependencies work
-     */
-    $CURDIR/linux_kernel_modules/bme680/bme680-i2c
-    $CURDIR/linux_kernel_modules/bmi088/bmi088-i2c
+    // $CURDIR/linux_kernel_modules/bme680/bme680-i2c
+    // $CURDIR/linux_kernel_modules/bme680/bme680
+
+    $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
+    $CURDIR/linux_kernel_modules/bmi160/bmi160
+
+    $CURDIR/linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
+    $CURDIR/linux_kernel_modules/rtc_sync/rtc_sync
+    $CURDIR/linux_kernel_modules/bq25601/bq25601
+    // $CURDIR/linux_kernel_modules/bq27426/bq27426-i2c
+    // $CURDIR/linux_kernel_modules/bmm150/bmm150-i2c
+    $CURDIR/linux_kernel_modules/opt300x/opt300x
+    $CURDIR/linux_kernel_modules/expander/expander
+
 #endif // MANGOH_BOARD
 
     $LEGATO_ROOT/drivers/spisvc/spisvc
