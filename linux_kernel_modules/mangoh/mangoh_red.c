@@ -9,10 +9,12 @@
 #include <linux/gpio/driver.h>
 #include <linux/platform_data/at24.h>
 #include <linux/gpio.h>
+#include <linux/interrupt.h>
 
 #include "lsm6ds3_platform_data.h"
 #include "ltc294x-platform-data.h"
 #include "bq24190-platform-data.h"
+#include "bmi160_pdata.h"
 
 #include "mangoh_red_mux.h"
 #include "mangoh_common.h"
@@ -151,8 +153,14 @@ static const struct i2c_board_info mangoh_red_gpio_expander_devinfo = {
 	.platform_data = &mangoh_red_gpio_expander_platform_data,
 };
 
+static struct bmi160_platform_data mangoh_red_bmi160_platform_data = {
+	/* Values to be initialized during probe() */
+	.int1_irq = 0,
+	.int2_irq = 0,
+};
 static struct i2c_board_info mangoh_red_bmi160_devinfo = {
 	I2C_BOARD_INFO("bmi160", 0x68),
+	.platform_data = &mangoh_red_bmi160_platform_data,
 };
 
 static struct lsm6ds3_platform_data mangoh_red_lsm6ds3_platform_data = {
@@ -306,7 +314,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	if (devm_gpio_request_one(&pdev->dev, CF3_GPIO32, GPIOF_DIR_IN,
 				  "gpio expander")) {
 		dev_err(&pdev->dev, "Couldn't request GPIO expander interrupt GPIO");
-		return -ENODEV;
+		ret = -ENODEV;
 		goto cleanup;
 	}
 	mangoh_red_gpio_expander_platform_data.irq_summary = gpio_to_irq(CF3_GPIO32);
@@ -323,6 +331,7 @@ static int mangoh_red_probe(struct platform_device* pdev)
 
 	gpio_expander = i2c_get_clientdata(
 		mangoh_red_driver_data.gpio_expander);
+
 #ifdef ENABLE_IOT_SLOT
 	sdio_mux_gpio = gpio_expander->base + 9;
 	pcm_mux_gpio = gpio_expander->base + 13;
@@ -359,9 +368,45 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	 * and INT2 pins respectively. It does not appear that the bmi160 driver
 	 * makes use of these interrupt pins.
 	 */
-	accelerometer_board_info =
-		mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_DV2 ?
-		&mangoh_red_lsm6ds3_devinfo : &mangoh_red_bmi160_devinfo;
+	if (mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_DV2) {
+		accelerometer_board_info = &mangoh_red_lsm6ds3_devinfo;
+	} else {
+		unsigned gpio;
+		int irq;
+		accelerometer_board_info = &mangoh_red_bmi160_devinfo;
+
+		gpio = gpio_expander->base + 11;
+		if (devm_gpio_request_one(&pdev->dev, gpio, GPIOF_DIR_IN,
+					  "bmi160_int1")) {
+			dev_err(&pdev->dev,
+				"Couldn't get GPIO expander port11 GPIO");
+			ret = -ENODEV;
+			goto cleanup;
+		}
+		irq = gpio_to_irq(gpio);
+		if (irq < 0) {
+			dev_err(&pdev->dev,
+				"Couldn't lookup GPIO expander port11 IRQ");
+			return -ENODEV;
+		}
+		mangoh_red_bmi160_platform_data.int1_irq = irq;
+
+		gpio = gpio_expander->base + 12;
+		if (devm_gpio_request_one(&pdev->dev, gpio, GPIOF_DIR_IN,
+					  "bmi160_int2")) {
+			dev_err(&pdev->dev,
+				"Couldn't get GPIO expander port12 GPIO");
+			ret = -ENODEV;
+			goto cleanup;
+		}
+		irq = gpio_to_irq(gpio);
+		if (irq < 0) {
+			dev_err(&pdev->dev,
+				"Couldn't lookup GPIO expander port12 IRQ");
+			return -ENODEV;
+		}
+		mangoh_red_bmi160_platform_data.int2_irq = irq;
+	}
 	mangoh_red_driver_data.accelerometer =
 		i2c_new_device(i2c_adapter_primary, accelerometer_board_info);
 	if (!mangoh_red_driver_data.accelerometer) {
