@@ -1,0 +1,24 @@
+sources:
+{
+    main.c
+}
+
+requires:
+{
+    component:
+    {
+        ${MANGOH_ROOT}/components/libiioComponent
+    }
+    lib:
+    {
+        libiio.so
+        libiio.so.0
+        libiio.so.0.15
+    }
+}
+
+cflags:
+{
+    -I${MANGOH_ROOT}/components/libiioComponent/libiio
+    -std=c99
+}
