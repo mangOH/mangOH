@@ -172,7 +172,8 @@ kernelModules:
 
     $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160
-
+    $CURDIR/linux_kernel_modules/bmm150/bmc150_magn_i2c
+    $CURDIR/linux_kernel_modules/bmm150/bmc150_magn
     $CURDIR/linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
     $CURDIR/linux_kernel_modules/rtc_sync/rtc_sync
     $CURDIR/linux_kernel_modules/bq25601/bq25601

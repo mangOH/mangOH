@@ -16,7 +16,7 @@
  * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
  * more details.
  */
-
+#include <linux/version.h>
 #include <linux/module.h>
 #include <linux/i2c.h>
 #include <linux/interrupt.h>
@@ -103,6 +103,9 @@
 #define BMC150_MAGN_REPXY_TO_REGVAL(rep) (((rep) - 1) / 2)
 #define BMC150_MAGN_REPZ_TO_REGVAL(rep) ((rep) - 1)
 
+
+
+
 enum bmc150_magn_axis {
 	AXIS_X,
 	AXIS_Y,
@@ -150,6 +153,37 @@ struct bmc150_magn_data {
 	int max_odr;
 	int irq;
 };
+#if 0
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
+/**
+ * iio_device_set_drvdata() - Set trigger driver data
+ * @trig: IIO trigger structure
+ * @data: Driver specific data
+ *
+ * Allows to attach an arbitrary pointer to an IIO trigger, which can later be
+ * retrieved by iio_trigger_get_drvdata().
+ */
+
+static inline void iio_trigger_set_drvdata(struct iio_trigger *trig, void *data)
+{
+	dev_set_drvdata(&trig->dev, data);
+}
+
+/**
+ * iio_trigger_get_drvdata() - Get trigger driver data
+ * @trig: IIO trigger structure
+ *
+ * Returns the data previously set with iio_trigger_set_drvdata()
+ */
+
+static inline void *iio_trigger_get_drvdata(struct iio_trigger *trig)
+{
+	return dev_get_drvdata(&trig->dev);
+}
+
+
+#endif
+#endif
 
 static const struct {
 	int freq;
@@ -463,7 +497,8 @@ static int bmc150_magn_read_raw(struct iio_dev *indio_dev,
 				int *val, int *val2, long mask)
 {
 	struct bmc150_magn_data *data = iio_priv(indio_dev);
-	int ret, tmp;
+	//int ret, tmp;
+	int ret;
 	s32 values[AXIS_XYZ_MAX];
 
 	switch (mask) {
@@ -508,6 +543,7 @@ static int bmc150_magn_read_raw(struct iio_dev *indio_dev,
 		if (ret < 0)
 			return ret;
 		return IIO_VAL_INT;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		switch (chan->channel2) {
 		case IIO_MOD_X:
@@ -528,6 +564,7 @@ static int bmc150_magn_read_raw(struct iio_dev *indio_dev,
 		default:
 			return -EINVAL;
 		}
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -548,6 +585,7 @@ static int bmc150_magn_write_raw(struct iio_dev *indio_dev,
 		ret = bmc150_magn_set_odr(data, val);
 		mutex_unlock(&data->mutex);
 		return ret;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		switch (chan->channel2) {
 		case IIO_MOD_X:
@@ -586,6 +624,7 @@ static int bmc150_magn_write_raw(struct iio_dev *indio_dev,
 		default:
 			return -EINVAL;
 		}
+#endif
 	default:
 		return -EINVAL;
 	}
@@ -623,12 +662,12 @@ static const struct attribute_group bmc150_magn_attrs_group = {
 	.attrs = bmc150_magn_attributes,
 };
 
+
 #define BMC150_MAGN_CHANNEL(_axis) {					\
 	.type = IIO_MAGN,						\
 	.modified = 1,							\
 	.channel2 = IIO_MOD_##_axis,					\
-	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW) |			\
-			      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),	\
+	.info_mask_separate = BIT(IIO_CHAN_INFO_RAW),			\
 	.info_mask_shared_by_type = BIT(IIO_CHAN_INFO_SAMP_FREQ) |	\
 				    BIT(IIO_CHAN_INFO_SCALE),		\
 	.scan_index = AXIS_##_axis,					\

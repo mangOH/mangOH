@@ -1,0 +1,26 @@
+cflags:
+{
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGERED_BUFFER
+    -DCONFIG_IIO_TRIGGER	
+    -DCONFIG_IIO_KFIFO_BUF
+    -DCONFIG_IIO_CONSUMERS_PER_TRIGGER=2
+}
+
+sources:
+{
+    bmc150_magn.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+        $CURDIR/../iio/iio-triggered-buffer
+#endif // MANGOH_KERNEL_LACKS_IIO
+    }
+}
+
+
