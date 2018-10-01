@@ -91,6 +91,7 @@ componentSearch:
     ${CURDIR}/apps/RedSensorToCloud
     ${CURDIR}/apps/LocationTriangulation
     ${CURDIR}/apps/MqttClient
+    ${CURDIR}/components
 }
 
 kernelModules:

@@ -50,3 +50,6 @@
 [submodule "linux_kernel_modules/bmi088/BMI08x-Sensor-API"]
 	path = linux_kernel_modules/bmi088/BMI08x-Sensor-API
 	url = https://github.com/BoschSensortec/BMI08x-Sensor-API.git
+[submodule "components/libiioComponent/libiio"]
+	path = components/libiioComponent/libiio
+	url = https://github.com/mangOH/libiio.git

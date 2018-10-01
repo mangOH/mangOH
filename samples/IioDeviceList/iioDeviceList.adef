@@ -1,0 +1,22 @@
+sandboxed: false
+version: 0.1
+start: manual
+
+executables:
+{
+    iioDeviceList = ( iioDeviceListComponent )
+}
+
+processes:
+{
+    run:
+    {
+        ( iioDeviceList )
+    }
+    envVars:
+    {
+        // This is required so that the bundled libraries are visible to the non-sandboxed app
+        LD_LIBRARY_PATH = /legato/systems/current/apps/iioDeviceList/read-only/usr/lib
+    }
+    faultAction: stopApp
+}

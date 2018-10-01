@@ -1,0 +1,21 @@
+externalBuild:
+{
+    "cmake -DWITH_IIOD=OFF -DWITH_USB_BACKEND=OFF -DWITH_SERIAL_BACKEND=OFF -DWITH_NETWORK_BACKEND=OFF -DWITH_TESTS=OFF ${CURDIR}/libiio"
+    "cmake --build ."
+    "mkdir -p ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs"
+    /*
+     * This is a bit gross. We need to bundle the files from a known location, but there's currently
+     * no way to know the name of the directory that we just created the .so files in.
+     */
+    "cp -a libiio.so* ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/"
+}
+
+bundles:
+{
+    file:
+    {
+        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so      /usr/lib/
+        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so.0    /usr/lib/
+        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so.0.15 /usr/lib/
+    }
+}
