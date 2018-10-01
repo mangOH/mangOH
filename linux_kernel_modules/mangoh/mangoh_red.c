@@ -106,10 +106,14 @@ static struct mangoh_red_driver_data {
 	bool mux_initialized;
 	bool iot_slot_registered;
 	bool led_registered;
+	int accelerometer_int1_gpio_requested;
+	int accelerometer_int2_gpio_requested;
 } mangoh_red_driver_data = {
 	.mux_initialized = false,
 	.iot_slot_registered = false,
 	.led_registered = false,
+	.accelerometer_int1_gpio_requested = -1,
+	.accelerometer_int2_gpio_requested = -1,
 };
 
 static struct platform_device mangoh_red_device = {
@@ -380,13 +384,13 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		accelerometer_board_info = &mangoh_red_bmi160_devinfo;
 
 		gpio = gpio_expander->base + 11;
-		if (devm_gpio_request_one(&pdev->dev, gpio, GPIOF_DIR_IN,
-					  "bmi160_int1")) {
+		if (gpio_request_one(gpio, GPIOF_DIR_IN, "bmi160_int1")) {
 			dev_err(&pdev->dev,
 				"Couldn't get GPIO expander port11 GPIO");
 			ret = -ENODEV;
 			goto cleanup;
 		}
+		mangoh_red_driver_data.accelerometer_int1_gpio_requested = gpio;
 		irq = gpio_to_irq(gpio);
 		if (irq < 0) {
 			dev_err(&pdev->dev,
@@ -396,13 +400,13 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		mangoh_red_bmi160_platform_data.int1_irq = irq;
 
 		gpio = gpio_expander->base + 12;
-		if (devm_gpio_request_one(&pdev->dev, gpio, GPIOF_DIR_IN,
-					  "bmi160_int2")) {
+		if (gpio_request_one(gpio, GPIOF_DIR_IN, "bmi160_int2")) {
 			dev_err(&pdev->dev,
 				"Couldn't get GPIO expander port12 GPIO");
 			ret = -ENODEV;
 			goto cleanup;
 		}
+		mangoh_red_driver_data.accelerometer_int2_gpio_requested = gpio;
 		irq = gpio_to_irq(gpio);
 		if (irq < 0) {
 			dev_err(&pdev->dev,
@@ -479,6 +483,10 @@ static int mangoh_red_remove(struct platform_device* pdev)
 	i2c_unregister_device(dd->battery_charger);
 	i2c_unregister_device(dd->pressure);
 	i2c_unregister_device(dd->accelerometer);
+	if (dd->accelerometer_int2_gpio_requested >= 0)
+		gpio_free(dd->accelerometer_int2_gpio_requested);
+	if (dd->accelerometer_int1_gpio_requested >= 0)
+		gpio_free(dd->accelerometer_int1_gpio_requested);
 
 	if (dd->led_registered)
 		platform_device_unregister(&mangoh_red_led);
