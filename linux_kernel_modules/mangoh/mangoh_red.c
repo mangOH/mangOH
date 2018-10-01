@@ -319,7 +319,11 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	}
 	mangoh_red_gpio_expander_platform_data.irq_summary = gpio_to_irq(CF3_GPIO32);
 	/* TODO: Find a better way to assign irq_base */
+#if defined(CONFIG_ARCH_MSM9615)
 	mangoh_red_gpio_expander_platform_data.irq_base = 500;
+#elif defined(CONFIG_ARCH_MDM9607) /* For WP76XX */
+	mangoh_red_gpio_expander_platform_data.irq_base = 160;
+#endif /* CONFIG_ARCH_? */
 	mangoh_red_driver_data.gpio_expander =
 		i2c_new_device(i2c_adapter_gpio_exp, &mangoh_red_gpio_expander_devinfo);
 	if (!mangoh_red_driver_data.gpio_expander) {
