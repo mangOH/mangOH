@@ -1485,10 +1485,6 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 
 static void bmi160_chip_uninit(struct bmi160_data *data)
 {
-	if (data->int2_irq > 0)
-		free_irq(data->int2_irq, data);
-	if (data->int1_irq > 0)
-		free_irq(data->int1_irq, data);
 	/*
 	 * Putting the gyro in suspend and the accelerometer in lower power mode
 	 * still allows the significant motion interrupt to fire while linux is
