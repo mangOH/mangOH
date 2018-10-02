@@ -10,12 +10,6 @@
 buildVars:
 {
     /*
-     * The battery service can't be enabled on 9x15 until the power supply kernel fix lands in an
-     * official release.
-     */
-    MANGOH_BATTERY_SERVICE_SUPPORTED = 0
-
-    /*
      * mt7697 wifi can't be supported on the 9x15 based modules until the mac80211 and cfg80211
      * change lands in an official release.
      */

@@ -43,9 +43,7 @@ apps:
      */
     //$MANGOH_ROOT/apps/LocationTriangulation/locationTriangulation
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
-#if ${MANGOH_BATTERY_SERVICE_SUPPORTED} = 1
     $MANGOH_ROOT/apps/BatteryService/batteryService
-#endif // MANGOH_BATTERY_SERVICE_SUPPORTED
 #elif ${MANGOH_BOARD} = GREEN
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
     $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService

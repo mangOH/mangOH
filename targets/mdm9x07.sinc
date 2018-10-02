@@ -9,8 +9,6 @@
 
 buildVars:
 {
-    MANGOH_BATTERY_SERVICE_SUPPORTED = 1
-
     MANGOH_SUPPORT_MT7697_WIFI = 1
 
     /*
