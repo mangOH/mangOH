@@ -132,16 +132,16 @@ kernelModules:
  */
 /*
     $CURDIR/linux_kernel_modules/can_common/can_iot
-#if ${MANGOH_CAN_9X15} = 1
+#if ${MANGOH_WP_CHIPSET_9X15} = 1
     $CURDIR/linux_kernel_modules/can_9x15/can
     $CURDIR/linux_kernel_modules/can_9x15/can-bcm
     $CURDIR/linux_kernel_modules/can_9x15/can-raw
     $CURDIR/linux_kernel_modules/can_9x15/can-dev
     $CURDIR/linux_kernel_modules/can_9x15/vcan
     $CURDIR/linux_kernel_modules/can_9x15/mcp251x
-#else 
+#elif ${MANGOH_WP_CHIPSET_9X07} = 1
     $CURDIR/linux_kernel_modules/can_9x07/mcp251x
-#endif  // MANGOH_CAN_9X15
+#endif  // MANGOH_WP_CHIPSET_?
 */
 
 #elif ${MANGOH_BOARD} = GREEN

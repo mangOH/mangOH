@@ -20,11 +20,6 @@ buildVars:
     MANGOH_I2C_BUS_BATTERY = 2
 
     /*
-     * CAN IOT card
-     */
-    MANGOH_CAN_9X15 = 1
-
-    /*
      * General purpose chipset definition
      */
     MANGOH_WP_CHIPSET_9X15 = 1
