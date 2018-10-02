@@ -6,7 +6,7 @@
 //--------------------------------------------------------------------------------------------------
 
 #include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
-#include "targets/${LEGATO_TARGET}.sinc"
+#include "sinc/targets/${LEGATO_TARGET}.sinc"
 
 apps:
 {
