@@ -10,12 +10,6 @@
 buildVars:
 {
     /*
-     * mt7697 wifi can't be supported on the 9x15 based modules until the mac80211 and cfg80211
-     * change lands in an official release.
-     */
-    MANGOH_SUPPORT_MT7697_WIFI = 0
-
-    /*
      * The 9x15 kernel doesn't include IIO (Industrial IO) support
      */
     MANGOH_KERNEL_LACKS_IIO = 1

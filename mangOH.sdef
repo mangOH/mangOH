@@ -96,10 +96,7 @@ kernelModules:
 {
 #if ${MANGOH_BOARD} = RED
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red_dv5
-
-#if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
-#endif // MANGOH_SUPPORT_MT7697_WIFI
 
     /*
      * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
@@ -119,10 +116,8 @@ kernelModules:
     $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
     $CURDIR/linux_kernel_modules/iio/iio
 #endif // MANGOH_KERNEL_LACKS_IIO
-#if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
     $CURDIR/linux_kernel_modules/mt7697q/mt7697q
     $CURDIR/linux_kernel_modules/mt7697serial/mt7697serial
-#endif // MANGOH_SUPPORT_MT7697_WIFI
 
 /*
  * CAN Bus
