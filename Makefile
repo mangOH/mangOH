@@ -23,7 +23,9 @@ MKSYS_ARGS_YELLOW = --output-dir=build/update_files/yellow
 export PATH := $(LEGATO_ROOT)/bin:$(PATH)
 
 .PHONY: all
-all: green_wp85 green_wp750x green_wp76xx green_wp77xx red_wp85 red_wp750x red_wp76xx red_wp77xx
+all:  green_wp85  green_wp750x  green_wp76xx  green_wp77xx \
+        red_wp85    red_wp750x    red_wp76xx    red_wp77xx \
+     yellow_wp85 yellow_wp750x yellow_wp76xx yellow_wp77xx
 
 LEGATO ?= 1
 .PHONY: legato_%
