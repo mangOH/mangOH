@@ -9,7 +9,6 @@
 #include <linux/gpio/driver.h>
 #include <linux/platform_data/at24.h>
 
-#include "lsm6ds3_platform_data.h"
 #include "ltc294x-platform-data.h"
 #include "bq24190-platform-data.h"
 
@@ -37,8 +36,6 @@
  *-----------------------------------------------------------------------------
  */
 enum mangoh_red_board_rev {
-	MANGOH_RED_BOARD_REV_DV2,
-	MANGOH_RED_BOARD_REV_DV3,
 	MANGOH_RED_BOARD_REV_DV5,
 };
 
@@ -70,8 +67,6 @@ static int mangoh_red_iot_slot_release_pcm(void);
  *-----------------------------------------------------------------------------
  */
 
-static char *revision_dv2 = "dv2";
-static char *revision_dv3 = "dv3";
 static char *revision_dv5 = "dv5";
 
 static char *revision = "dv5";
@@ -153,14 +148,6 @@ static const struct i2c_board_info mangoh_red_gpio_expander_devinfo = {
 
 static struct i2c_board_info mangoh_red_bmi160_devinfo = {
 	I2C_BOARD_INFO("bmi160", 0x68),
-};
-
-static struct lsm6ds3_platform_data mangoh_red_lsm6ds3_platform_data = {
-	.drdy_int_pin = 1,
-};
-static struct i2c_board_info mangoh_red_lsm6ds3_devinfo = {
-	I2C_BOARD_INFO("lsm6ds3", 0x6A),
-	.platform_data = &mangoh_red_lsm6ds3_platform_data,
 };
 
 static struct i2c_board_info mangoh_red_pressure_devinfo = {
@@ -246,7 +233,6 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	int pcm_mux_gpio;
 #endif /* ENABLE_IOT_SLOT */
 	struct gpio_chip *gpio_expander;
-	struct i2c_board_info *accelerometer_board_info;
 	struct i2c_adapter *i2c_adapter_primary, *i2c_adapter_gpio_exp = NULL,
 			   *i2c_adapter_batt_charger = NULL;
 
@@ -350,11 +336,8 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	 * and INT2 pins respectively. It does not appear that the bmi160 driver
 	 * makes use of these interrupt pins.
 	 */
-	accelerometer_board_info =
-		mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_DV2 ?
-		&mangoh_red_lsm6ds3_devinfo : &mangoh_red_bmi160_devinfo;
 	mangoh_red_driver_data.accelerometer =
-		i2c_new_device(i2c_adapter_primary, accelerometer_board_info);
+		i2c_new_device(i2c_adapter_primary, &mangoh_red_bmi160_devinfo);
 	if (!mangoh_red_driver_data.accelerometer) {
 		dev_err(&pdev->dev, "Accelerometer is missing\n");
 		return -ENODEV;
@@ -378,17 +361,16 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		ret = -ENODEV;
 		goto cleanup;
 	}
-	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3) {
-		/* Map the I2C ltc2942 battery gauge */
-		dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
-		mangoh_red_driver_data.battery_gauge = i2c_new_device(
-			i2c_adapter_batt_charger,
-			&mangoh_red_battery_gauge_devinfo);
-		if (!mangoh_red_driver_data.battery_gauge) {
-			dev_err(&pdev->dev, "battery gauge is missing\n");
-			ret = -ENODEV;
-			goto cleanup;
-		}
+
+	/* Map the I2C ltc2942 battery gauge */
+	dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
+	mangoh_red_driver_data.battery_gauge = i2c_new_device(
+		i2c_adapter_batt_charger,
+		&mangoh_red_battery_gauge_devinfo);
+	if (!mangoh_red_driver_data.battery_gauge) {
+		dev_err(&pdev->dev, "battery gauge is missing\n");
+		ret = -ENODEV;
+		goto cleanup;
 	}
 
 	/*
@@ -415,8 +397,7 @@ static int mangoh_red_remove(struct platform_device* pdev)
 
 	dev_info(&pdev->dev, "Removing mangoh red platform device\n");
 
-	if (mangoh_red_pdata.board_rev != MANGOH_RED_BOARD_REV_DV3)
-		i2c_unregister_device(dd->battery_gauge);
+	i2c_unregister_device(dd->battery_gauge);
 
 	i2c_unregister_device(dd->battery_charger);
 	i2c_unregister_device(dd->pressure);
@@ -503,11 +484,7 @@ static int __init mangoh_red_init(void)
 	platform_driver_register(&mangoh_red_driver);
 	printk(KERN_DEBUG "mangoh: registered platform driver\n");
 
-	if (strcmp(revision, revision_dv2) == 0) {
-		mangoh_red_pdata.board_rev = MANGOH_RED_BOARD_REV_DV2;
-	} else if (strcmp(revision, revision_dv3) == 0) {
-		mangoh_red_pdata.board_rev = MANGOH_RED_BOARD_REV_DV3;
-	} else if (strcmp(revision, revision_dv5) == 0) {
+	if (strcmp(revision, revision_dv5) == 0) {
 		mangoh_red_pdata.board_rev = MANGOH_RED_BOARD_REV_DV5;
 	} else {
 		pr_err("%s: Unsupported mangOH Red board revision (%s)\n",
