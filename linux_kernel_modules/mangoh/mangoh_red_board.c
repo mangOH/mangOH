@@ -8,6 +8,7 @@
 #include <linux/delay.h>
 #include <linux/gpio/driver.h>
 #include <linux/platform_data/at24.h>
+#include <linux/ctype.h>
 
 #include "ltc294x-platform-data.h"
 #include "bq24190-platform-data.h"
@@ -36,7 +37,11 @@
  *-----------------------------------------------------------------------------
  */
 enum mangoh_red_board_rev {
+	MANGOH_RED_BOARD_REV_UNKNOWN = 0,
 	MANGOH_RED_BOARD_REV_DV5,
+	MANGOH_RED_BOARD_REV_DV6,
+
+	MANGOH_RED_BOARD_REV_NUM_OF,
 };
 
 /*
@@ -44,6 +49,7 @@ enum mangoh_red_board_rev {
  * Static Function Declarations
  *-----------------------------------------------------------------------------
  */
+static void eeprom_setup(struct memory_accessor *mem_acc, void *context);
 static void mangoh_red_release(struct device* dev);
 static int mangoh_red_probe(struct platform_device* pdev);
 static int mangoh_red_remove(struct platform_device* pdev);
@@ -66,16 +72,19 @@ static int mangoh_red_iot_slot_release_pcm(void);
  * Variables
  *-----------------------------------------------------------------------------
  */
-
-static char *revision_dv5 = "dv5";
-
-static char *revision = "dv5";
+static char *revision = "unknown";
 module_param(revision, charp, S_IRUGO);
 MODULE_PARM_DESC(revision, "mangOH Red board revision");
 
 static bool allow_eeprom_write = false;
 module_param(allow_eeprom_write, bool, S_IRUGO);
 MODULE_PARM_DESC(allow_eeprom_write, "Should the EEPROM be writeable by root");
+
+static char * const board_rev_strings[MANGOH_RED_BOARD_REV_NUM_OF] = {
+	[MANGOH_RED_BOARD_REV_UNKNOWN] = "unknown",
+	[MANGOH_RED_BOARD_REV_DV5] = "dv5",
+	[MANGOH_RED_BOARD_REV_DV6] = "dv6",
+};
 
 static struct platform_driver mangoh_red_driver = {
 	.probe = mangoh_red_probe,
@@ -218,6 +227,7 @@ static struct at24_platform_data mangoh_red_eeprom_data = {
 	.byte_len = 4096,
 	.page_size = 32,
 	.flags = AT24_FLAG_ADDR16,
+	.setup = eeprom_setup,
 };
 static struct i2c_board_info mangoh_red_eeprom_info = {
 	I2C_BOARD_INFO("at24", 0x51),
@@ -227,6 +237,49 @@ static struct i2c_board_info mangoh_red_eeprom_info = {
 static void mangoh_red_release(struct device* dev)
 {
 	/* Nothing alloc'd, so nothign to free */
+}
+
+static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
+{
+	const char *dv5_string =
+		"mangOH Red DV5.1 PCB Rev 5.0 with SWI MT7697 FW v4.3.0-0 - Manufactured by Talon Communications in Q1 2018";
+	const char *dv6_string =
+		"mangOH Red DV6.0 PCB Rev 6.0 with SWI MT7697 FW v4.3.0-0 - Manufactured by Talon Communications in Q4 2018";
+	enum mangoh_red_board_rev detected_rev = MANGOH_RED_BOARD_REV_UNKNOWN;
+	const size_t eeprom_size = mangoh_red_eeprom_data.byte_len;
+	u8 data[eeprom_size];
+	if (mem_acc->read(mem_acc, data, 0, eeprom_size) != eeprom_size) {
+		pr_err("Error reading from board identification EEPROM.\n");
+		return;
+	}
+
+	if (strcmp(data, dv5_string) == 0)
+		detected_rev = MANGOH_RED_BOARD_REV_DV5;
+	else if (strcmp(data, dv6_string) == 0)
+		detected_rev = MANGOH_RED_BOARD_REV_DV5;
+
+	if (detected_rev != MANGOH_RED_BOARD_REV_UNKNOWN) {
+		pr_info("Detected mangOH Red board revision: %s\n",
+			board_rev_strings[detected_rev]);
+	} else {
+		const char *eeprom_string = "<not printable>";
+		int i;
+		for (i = 0; i < eeprom_size; i++) {
+			if (data[i] == '\0') {
+				eeprom_string = (char *)data;
+				break;
+			}
+			if (!isprint(data[i]))
+				break;
+		}
+		pr_warn("EEPROM contents did not match any known board signature: \"%s\"\"\n",
+			eeprom_string);
+	}
+
+	if (mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_UNKNOWN)
+		mangoh_red_pdata.board_rev = detected_rev;
+	else if (mangoh_red_pdata.board_rev != detected_rev)
+		pr_warn("WARNING: mismatch between supplied board revision and detected board revision\n");
 }
 
 static int mangoh_red_probe(struct platform_device* pdev)
@@ -268,6 +321,16 @@ static int mangoh_red_probe(struct platform_device* pdev)
 			mangoh_red_eeprom_info.type);
 		ret = -ENODEV;
 		goto cleanup;
+	}
+
+	/*
+	 * If the board revision still isn't known after reading the EEPROM,
+	 * then abort.
+	 */
+	if (mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_UNKNOWN) {
+		dev_err(&pdev->dev, "mangOH Red board revision is unknown\n");
+		ret = -EINVAL;
+		goto done;
 	}
 
 	/* Map the I2C switch */
@@ -487,15 +550,23 @@ static int mangoh_red_iot_slot_release_pcm(void)
 
 static int __init mangoh_red_init(void)
 {
+	int i;
+	bool valid_revision_param = false;
 	platform_driver_register(&mangoh_red_driver);
 	printk(KERN_DEBUG "mangoh: registered platform driver\n");
 
-	if (strcmp(revision, revision_dv5) == 0) {
-		mangoh_red_pdata.board_rev = MANGOH_RED_BOARD_REV_DV5;
-	} else {
-		pr_err("%s: Unsupported mangOH Red board revision (%s)\n",
-			__func__, revision);
-		return -ENODEV; /* TODO: better value? */
+	for (i = 0; i < MANGOH_RED_BOARD_REV_NUM_OF; i++) {
+		if (strcmp(revision, board_rev_strings[i]) == 0) {
+			mangoh_red_pdata.board_rev = i;
+			valid_revision_param = true;
+			break;
+		}
+	}
+
+	if (!valid_revision_param) {
+		printk(KERN_DEBUG "%s: Invalid revision parameter value (%s)\n",
+		       __func__, revision);
+		return -EINVAL;
 	}
 
 	if (platform_device_register(&mangoh_red_device)) {

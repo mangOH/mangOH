@@ -9,13 +9,23 @@ cflags:
 
 sources:
 {
-    mangoh_red.c
+    mangoh_red_board.c
     mangoh_red_mux.c
 }
 
 params:
 {
-    revision = "dv5"
+    /*
+     * Add revision parameter to force a specific revision instead of relying on
+     * EEPROM based detection.
+     */
+    // revision = "dv5"
+
+    /*
+     * Do not enable the writeable EEPROM unless necessary. If the EEPROM
+     * contents are overwritten, board revision detection will fail.
+     */
+    // allow_eeprom_write = "1"
 }
 
 requires:

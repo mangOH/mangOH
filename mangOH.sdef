@@ -95,7 +95,7 @@ componentSearch:
 kernelModules:
 {
 #if ${MANGOH_BOARD} = RED
-    $CURDIR/linux_kernel_modules/mangoh/mangoh_red_dv5
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
 
     /*
