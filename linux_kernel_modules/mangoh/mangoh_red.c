@@ -73,6 +73,10 @@ static char *revision = "dv5";
 module_param(revision, charp, S_IRUGO);
 MODULE_PARM_DESC(revision, "mangOH Red board revision");
 
+static bool allow_eeprom_write = false;
+module_param(allow_eeprom_write, bool, S_IRUGO);
+MODULE_PARM_DESC(allow_eeprom_write, "Should the EEPROM be writeable by root");
+
 static struct platform_driver mangoh_red_driver = {
 	.probe = mangoh_red_probe,
 	.remove = mangoh_red_remove,
@@ -213,7 +217,7 @@ static struct platform_device mangoh_red_led = {
 static struct at24_platform_data mangoh_red_eeprom_data = {
 	.byte_len = 4096,
 	.page_size = 32,
-	.flags = (AT24_FLAG_ADDR16 | AT24_FLAG_READONLY),
+	.flags = AT24_FLAG_ADDR16,
 };
 static struct i2c_board_info mangoh_red_eeprom_info = {
 	I2C_BOARD_INFO("at24", 0x51),
@@ -255,6 +259,8 @@ static int mangoh_red_probe(struct platform_device* pdev)
 	platform_set_drvdata(pdev, &mangoh_red_driver_data);
 
 	dev_dbg(&pdev->dev, "mapping eeprom\n");
+	if (!allow_eeprom_write)
+		mangoh_red_eeprom_data.flags |= AT24_FLAG_READONLY;
 	mangoh_red_driver_data.eeprom =
 		i2c_new_device(i2c_adapter_primary, &mangoh_red_eeprom_info);
 	if (!mangoh_red_driver_data.eeprom) {
