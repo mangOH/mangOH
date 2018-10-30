@@ -1,0 +1,22 @@
+preBuilt:
+{
+	$CURDIR/compat/compat.ko
+	$CURDIR/net/wireless/cfg80211.ko
+	$CURDIR/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
+	$CURDIR/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko
+}
+
+bundles:
+{
+    file:
+    {
+	$CURDIR/firmware/bcm943430wlselgs_37_4Mhz_20180611.txt /etc/firmware/brcm/brcmfmac43430-sdio.txt
+	$CURDIR/firmware/brcmfmac43430-sdio.bin /etc/firmware/brcm/brcmfmac43430-sdio.bin
+	$CURDIR/firmware/brcmfmac43430-sdio.clm_blob /etc/firmware/brcm/brcmfmac43430-sdio.clm_blob
+	[x] $CURDIR/scripts/cywifi.sh /etc/init.d/cywifi.sh
+    }
+}
+
+
+load: manual
+

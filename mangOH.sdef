@@ -153,6 +153,7 @@ kernelModules:
     $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/opt300x/opt300x
     $CURDIR/linux_kernel_modules/expander/expander
+    $CURDIR/linux_kernel_modules/cypwifi/cypwifi
 
 #endif // MANGOH_BOARD
 }

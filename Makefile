@@ -95,6 +95,9 @@ red_wp77xx: legato_wp77xx
 
 .PHONY: yellow_wp85
 yellow_wp85: legato_wp85
+	# Until Legato allows external builds in mdefs we will need to build a
+	# subsystem driver like Cypress in the top makefile and with scripts
+	LEGATO_TARGET=wp85 $(MANGOH_ROOT)/linux_kernel_modules/cypwifi/build.sh
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 prefix) \
 	MANGOH_BOARD=YELLOW \
@@ -109,6 +112,11 @@ yellow_wp750x: legato_wp750x
 
 .PHONY: yellow_wp76xx
 yellow_wp76xx: legato_wp76xx
+	# Until Legato allows external builds in mdefs we will need to build a
+	# subsystem driver like Cypress in the top makefile and with scripts
+	# This does not seem to work except on 1 board flakily - will try with
+	# DV2 Yellow
+	LEGATO_TARGET=wp76xx $(MANGOH_ROOT)/linux_kernel_modules/cypwifi/build.sh
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
 	MANGOH_BOARD=YELLOW \
