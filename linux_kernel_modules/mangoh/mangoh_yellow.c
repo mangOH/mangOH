@@ -316,7 +316,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-	/* Map the I2C Battery Charger*/
+	/* Map the I2C Battery Charger */
 	dev_dbg(&pdev->dev, "mapping battery charger\n");
 	mangoh_yellow_driver_data.battery_charger =
 		i2c_new_device(i2c_adapter_port2,
@@ -330,7 +330,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 
 	 /* Map the I2C Battery Gauge */
 	dev_dbg(&pdev->dev, "mapping battery gauge\n");
-	mangoh_yellow_driver_data.battery_charger =
+	mangoh_yellow_driver_data.battery_gauge =
 		i2c_new_device(i2c_adapter_port2,
 			       &mangoh_yellow_battery_gauge_devinfo);
 	if (!mangoh_yellow_driver_data.battery_gauge) {
@@ -339,7 +339,6 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		ret = -ENODEV;
 		goto cleanup;
 	}
-
 
  	/* Map the I2C Light Sensor */
 	dev_dbg(&pdev->dev, "mapping Light Sensor\n");
