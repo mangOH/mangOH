@@ -61,22 +61,35 @@ CREATE_SYSFS_DEFN(tri_led_grn, TRI_LED_GRN);
 CREATE_SYSFS_DEFN(buzzer, BUZZER);
 
 
-static void gpio_initial_status(struct platform_device *pdev,
-				struct device_attribute *attr,
-				int function_number, int function_val,
-				atomic_t *atomic_val)
+static int gpio_initial_status(struct platform_device *pdev,
+			       struct device_attribute *attr,
+			       int function_number, int function_val,
+			       atomic_t *atomic_val)
 {
+	int ret = 0;
 	struct expander_device* exp = dev_get_drvdata(&pdev->dev);
 
-	devm_gpio_request(&pdev->dev, exp->gpio_expander_base + function_number,
-			  dev_name(&pdev->dev));
+	const int gpio_num = exp->gpio_expander_base + function_number;
+	ret = devm_gpio_request_one(&pdev->dev, gpio_num,
+				    (GPIOF_DIR_OUT |
+				     (function_val ? GPIOF_INIT_HIGH :
+				                     GPIOF_INIT_LOW)),
+				    attr->attr.name);
+	if (ret != 0) {
+		dev_err(&pdev->dev, "Couldn't request GPIO %d\n", gpio_num);
+		return ret;
+	}
 
 	atomic_set(atomic_val, function_val);
 
-	gpio_direction_output(exp->gpio_expander_base + function_number,
-			      function_val);
+	ret = device_create_file(&pdev->dev, attr);
+	if (ret != 0) {
+		dev_err(&pdev->dev, "Couldn't create sysfs file for %s\n",
+			attr->attr.name);
+		return ret;
+	}
 
-	device_create_file(&pdev->dev, attr);
+	return ret;
 }
 
 static void gpio_final_status(struct platform_device *pdev,
@@ -114,23 +127,44 @@ static int expander_probe(struct platform_device *pdev)
 
 	dev->pdev = pdev;
  	dev->gpio_expander_base = pdata->gpio_expander_base;
-
-	gpio_initial_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0,
-			    &dev->generic_led_val);
-	gpio_initial_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0,
-			    &dev->pcm_sel_val);
-	gpio_initial_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0,
-			    &dev->sdio_sel_val);
-	gpio_initial_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0,
-			    &dev->tri_led_blu_val);
-	gpio_initial_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0,
-			    &dev->tri_led_red_val);
-	gpio_initial_status(pdev, &dev_attr_tri_led_grn, TRI_LED_GRN, 0,
-			    &dev->tri_led_grn_val);
-	gpio_initial_status(pdev, &dev_attr_buzzer, BUZZER, 0,
-			    &dev->buzzer_val);
-
 	platform_set_drvdata(pdev, dev);
+
+	ret = gpio_initial_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0,
+				  &dev->generic_led_val);
+	if (ret != 0)
+		goto done;
+
+	ret = gpio_initial_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0,
+				  &dev->pcm_sel_val);
+	if (ret != 0)
+		goto done;
+
+	ret = gpio_initial_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0,
+				  &dev->sdio_sel_val);
+	if (ret != 0)
+		goto done;
+
+	ret = gpio_initial_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0,
+				  &dev->tri_led_blu_val);
+	if (ret != 0)
+		goto done;
+
+	ret = gpio_initial_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0,
+				  &dev->tri_led_red_val);
+	if (ret != 0)
+		goto done;
+
+	ret = gpio_initial_status(pdev, &dev_attr_tri_led_grn, TRI_LED_GRN, 0,
+				 &dev->tri_led_grn_val);
+	if (ret != 0)
+		goto done;
+
+	ret = gpio_initial_status(pdev, &dev_attr_buzzer, BUZZER, 0,
+				  &dev->buzzer_val);
+	if (ret != 0)
+		goto done;
+
+
 
 done:
 	return ret;
@@ -140,7 +174,7 @@ static int expander_remove(struct platform_device *pdev)
 {
 	dev_info(&pdev->dev, "%s(): remove\n", __func__);
 
-	/* remove sysfs files & set final state values for gpio expander*/
+	/* remove sysfs files & set final state values for gpio expander */
 	gpio_final_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0);
         gpio_final_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0);
 	gpio_final_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0);
