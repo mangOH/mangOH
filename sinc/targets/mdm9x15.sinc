@@ -1,0 +1,26 @@
+//--------------------------------------------------------------------------------------------------
+// Definitions specific to Sierra Wireless modules that are based on the Qualcomm MDM9x15 chipset
+// family.
+//
+// Copyright (C), Sierra Wireless Inc.
+//--------------------------------------------------------------------------------------------------
+
+#include mdm9xxx.sinc
+
+buildVars:
+{
+    /*
+     * The 9x15 kernel doesn't include IIO (Industrial IO) support
+     */
+    MANGOH_KERNEL_LACKS_IIO = 1
+
+    /*
+     * I2C bus containing the battery charger and battery gauge
+     */
+    MANGOH_I2C_BUS_BATTERY = 2
+
+    /*
+     * General purpose chipset definition
+     */
+    MANGOH_WP_CHIPSET_9X15 = 1
+}

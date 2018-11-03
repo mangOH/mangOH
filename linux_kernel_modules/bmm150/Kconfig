@@ -1,0 +1,21 @@
+config BMC150_MAGN
+	tristate
+	select IIO_BUFFER
+	select IIO_TRIGGERED_BUFFER
+
+config BMC150_MAGN_I2C
+	tristate "Bosch BMC150 I2C Magnetometer Driver"
+	depends on I2C
+	select BMC150_MAGN
+	select REGMAP_I2C
+	help
+	  Say yes here to build support for the BMC150 magnetometer with
+	  I2C interface.
+
+	  This is a combo module with both accelerometer and magnetometer.
+	  This driver is only implementing magnetometer part, which has
+	  its own address and register map.
+
+	  This driver also supports I2C Bosch BMC156 and BMM150 chips.
+	  To compile this driver as a module, choose M here: the module will be
+	  called bmc150_magn_i2c.
