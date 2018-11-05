@@ -1566,6 +1566,7 @@ void bmi160_core_remove(struct device *dev)
 	struct bmi160_data *data = iio_priv(indio_dev);
 
 	iio_triggered_buffer_cleanup(indio_dev);
+	iio_trigger_unregister(data->drdy_trigger);
 	bmi160_chip_uninit(data);
 }
 EXPORT_SYMBOL_GPL(bmi160_core_remove);
