@@ -4,7 +4,7 @@
 #include <linux/device.h>
 #include <linux/of.h>
 #include <linux/power_supply.h>
-
+#include <linux/module.h>
 #include "power_supply_backport.h"
 
 int power_supply_get_battery_info(struct power_supply *psy,
@@ -62,3 +62,4 @@ int power_supply_get_battery_info(struct power_supply *psy,
 	return 0;
 }
 EXPORT_SYMBOL_GPL(power_supply_get_battery_info);
+MODULE_LICENSE("GPL");

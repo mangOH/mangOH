@@ -147,11 +147,13 @@ static int bq27xxx_battery_i2c_bulk_write(struct bq27xxx_device_info *di,
 static int bq27xxx_battery_i2c_probe(struct i2c_client *client,
 				     const struct i2c_device_id *id)
 {
+	dev_info(client->dev, " BQ27xx probe");
+
 	struct bq27xxx_device_info *di;
 	int ret;
 	char *name;
 	int num;
-
+        dev_info(client->dev, " BQ27xx probe");
 	/* Get new ID for the new battery device */
 	mutex_lock(&battery_mutex);
 	num = idr_alloc(&battery_id, client, 0, 0, GFP_KERNEL);

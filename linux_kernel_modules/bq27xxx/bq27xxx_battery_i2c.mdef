@@ -2,6 +2,7 @@ sources:
 {
     bq27xxx_battery_i2c.c
     devres_backport.c
+
 }
 
 requires:
