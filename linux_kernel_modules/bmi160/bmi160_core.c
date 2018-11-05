@@ -1547,7 +1547,7 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 	if (ret < 0)
 		goto uninit;
 
-	ret = iio_device_register(indio_dev);
+	ret = devm_iio_device_register(dev, indio_dev);
 	if (ret < 0)
 		goto buffer_cleanup;
 
@@ -1565,7 +1565,6 @@ void bmi160_core_remove(struct device *dev)
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct bmi160_data *data = iio_priv(indio_dev);
 
-	iio_device_unregister(indio_dev);
 	iio_triggered_buffer_cleanup(indio_dev);
 	bmi160_chip_uninit(data);
 }
