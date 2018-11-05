@@ -9,12 +9,11 @@
 #include  <linux/errno.h>
 #include "mangoh_common.h"
 #include "expander.h"
-//#include "bq25601-platform-data.h"
-//#include "bq27426-platform-data.h"
+#include "bq27xxx_battery.h"
 #include <linux/i2c/pca954x.h>
 #include <linux/i2c/sx150x.h>
-
-
+#include <linux/spi/spi.h>
+#include "bq25601-platform-data.h"
 
 /*
  *-----------------------------------------------------------------------------
@@ -74,7 +73,7 @@ static struct mangoh_yellow_platform_data {
 } mangoh_yellow_pdata;
 
 static struct mangoh_yellow_driver_data {
-        struct i2c_client* eeprom;
+//        struct i2c_client* eeprom;
 	struct i2c_client* i2c_switch;
       	struct i2c_client* imu;
        	struct i2c_client* environmental;
@@ -141,6 +140,7 @@ static struct i2c_board_info mangoh_yellow_rtc_devinfo = {
 static struct i2c_board_info mangoh_yellow_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq25601", 0x6b),
 };
+
 static struct i2c_board_info mangoh_yellow_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("bq27426", 0x55),
 };
@@ -160,21 +160,22 @@ static struct platform_device mangoh_yellow_expander = {
 		.release = mangoh_yellow_expander_release,
 		},
 };
+
 /*
  * The EEPROM is marked as read-only to prevent accidental writes. The mangOH
  * Yellow has the write protect (WP) pin pulled high which has the effect of making
  * the upper 1/4 of the address space of the EEPROM write protected by hardware.
  */
-static struct at24_platform_data mangoh_yellow_eeprom_data = {
+/*static struct at24_platform_data mangoh_yellow_eeprom_data = {
 	.byte_len = 4096,
 	.page_size = 32,
 	.flags = (AT24_FLAG_ADDR16 | AT24_FLAG_READONLY),
-};
-static struct i2c_board_info mangoh_yellow_eeprom_info = {
-	I2C_BOARD_INFO("at24", 0x51),
+};*/
+/*static struct i2c_board_info mangoh_yellow_eeprom_info = {
+	I2C_BOARD_INFO("at24", 0x50),
 	.platform_data = &mangoh_yellow_eeprom_data,
 };
-
+*/
 static void mangoh_yellow_release(struct device* dev)
 {
 	/* Nothing alloc'd, so nothign to free */
@@ -205,7 +206,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	platform_set_drvdata(pdev, &mangoh_yellow_driver_data);
 
        /* map the EEPROM */
-	dev_dbg(&pdev->dev, "mapping eeprom\n");
+/*	dev_info(&pdev->dev, "mapping eeprom\n");
 	mangoh_yellow_driver_data.eeprom =
 		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_eeprom_info);
 	if (!mangoh_yellow_driver_data.eeprom) {
@@ -214,9 +215,9 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		ret = -ENODEV;
 		goto cleanup;
 	}
-
+*/
         /* Map the I2C switch */
-	dev_dbg(&pdev->dev, "mapping i2c switch\n");
+	dev_info(&pdev->dev, "mapping i2c switch\n");
 	mangoh_yellow_driver_data.i2c_switch = 
 		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_pca954x_device_info);
 	if (!mangoh_yellow_driver_data.i2c_switch) {
@@ -237,7 +238,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}
 	
 	/* Map the GPIO expander */
-	dev_dbg(&pdev->dev, "mapping the gpio expander\n");
+	dev_info(&pdev->dev, "mapping the gpio expander\n");
 	mangoh_yellow_driver_data.gpio_expander = 
 		i2c_new_device(i2c_adapter_port3, &mangoh_yellow_gpio_expander_devinfo);
 	
@@ -261,7 +262,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	mangoh_yellow_driver_data.expander_registered = true;
 
         /* Map the I2C BME680 environmental sensor for gas/humidity/temp/pressure sensor */
-	dev_dbg(&pdev->dev, "mapping bme680 gas/temperature/pressure sensor\n");    
+	dev_info(&pdev->dev, "mapping bme680 gas/temperature/pressure sensor\n");    
 	mangoh_yellow_driver_data.environmental =
 		i2c_new_device(i2c_adapter_port1, &mangoh_yellow_environmental_devinfo);
 	if (!mangoh_yellow_driver_data.environmental) {
@@ -272,7 +273,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}      
 
         /* Map the I2C BMI160 IMU for gyro/accel/temp sensor */
-	dev_dbg(&pdev->dev, "mapping bmi160 gyro/accel/temp sensor\n"); 
+	dev_info(&pdev->dev, "mapping bmi160 gyro/accel/temp sensor\n"); 
         mangoh_yellow_driver_data.imu =
 		i2c_new_device(i2c_adapter_port1, &mangoh_yellow_imu_devinfo);
 	if (!mangoh_yellow_driver_data.imu) {
@@ -283,7 +284,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}   
         
 	/* Map the I2C BMM150 magnetometer*/
-	dev_dbg(&pdev->dev, "mapping bmm150 magnetometer sensor\n"); 
+	dev_info(&pdev->dev, "mapping bmm150 magnetometer sensor\n"); 
         mangoh_yellow_driver_data.magnetometer =
 		i2c_new_device(i2c_adapter_port1, &mangoh_yellow_magnetometer_devinfo);
 	if (!mangoh_yellow_driver_data.imu) {
@@ -295,7 +296,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
         
 
         /* Map the I2C RTC */
-	dev_dbg(&pdev->dev, "mapping RTC\n"); 
+	dev_info(&pdev->dev, "mapping RTC\n"); 
         mangoh_yellow_driver_data.rtc =
 		i2c_new_device(i2c_adapter_port3, &mangoh_yellow_rtc_devinfo);
 	if (!mangoh_yellow_driver_data.rtc) {
@@ -306,7 +307,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}
 
 	 /* Map the I2C Battery Charger*/
-	dev_dbg(&pdev->dev, "mapping battery charger\n"); 
+	dev_info(&pdev->dev, "mapping battery charger\n"); 
         mangoh_yellow_driver_data.battery_charger =
 		i2c_new_device(i2c_adapter_port2, &mangoh_yellow_battery_charger_devinfo);
 	if (!mangoh_yellow_driver_data.battery_charger) {
@@ -317,19 +318,19 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}   
 
 	 /* Map the I2C Battery Gauge*/
-	dev_dbg(&pdev->dev, "mapping battery gauge\n"); 
-        mangoh_yellow_driver_data.battery_charger =
+	dev_info(&pdev->dev, "mapping battery gauge\n"); 
+        mangoh_yellow_driver_data.battery_gauge =
 		i2c_new_device(i2c_adapter_port2, &mangoh_yellow_battery_gauge_devinfo);
 	if (!mangoh_yellow_driver_data.battery_gauge) {
 		dev_err(&pdev->dev, "Battery Gauge is missing %s\n",
-			mangoh_yellow_battery_charger_devinfo.type);
+			mangoh_yellow_battery_gauge_devinfo.type);
 		ret = -ENODEV;
                 goto cleanup;
 	}   
 
 
  	/* Map the I2C Light Sensor */
-	dev_dbg(&pdev->dev, "mapping Light Sensor\n"); 
+	dev_info(&pdev->dev, "mapping Light Sensor\n"); 
         mangoh_yellow_light_devinfo.irq = gpio_to_irq(CF3_GPIO36);
 	mangoh_yellow_driver_data.light =
 		i2c_new_device(i2c_adapter_port2, &mangoh_yellow_light_devinfo);
@@ -360,16 +361,16 @@ static int mangoh_yellow_remove(struct platform_device* pdev)
 
         i2c_unregister_device(dd->environmental);
         i2c_unregister_device(dd->imu);
-	i2c_unregister_device(dd->magnetometer);
+        i2c_unregister_device(dd->magnetometer);
         i2c_unregister_device(dd->light);
 	i2c_unregister_device(dd->battery_charger);
 	i2c_unregister_device(dd->battery_gauge);
 	i2c_unregister_device(dd->rtc);
 	if (dd->expander_registered)
-		platform_device_unregister(&mangoh_yellow_expander);
-	i2c_unregister_device(dd->gpio_expander);
+        platform_device_unregister(&mangoh_yellow_expander);
+        i2c_unregister_device(dd->gpio_expander);
 	i2c_unregister_device(dd->i2c_switch);
-	i2c_unregister_device(dd->eeprom);
+//	i2c_unregister_device(dd->eeprom);
 	return 0;
 }
 
