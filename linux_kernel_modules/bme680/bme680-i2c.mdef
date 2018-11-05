@@ -2,16 +2,17 @@ cflags:
 {
     // This driver depends on IIO
     -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGERRED_BUFFER
     -DDEBUG
-    -DSIERRA
-    -I$MANGOH_ROOT/linux_kernel_modules/bme680/BME680_driver
+    -DREGMAP
+    -DREGMAP_I2C
 }
 
 sources:
 {
-    BME680_driver/bme680.c
-    bme680-i2c.c
-    bme680-regmap.c
+    bme680_i2c.c
+    bme680_core.c
 }
 
 requires:

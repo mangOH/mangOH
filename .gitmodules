@@ -44,9 +44,6 @@
 [submodule "apps/LocationTriangulation"]
 	path = apps/LocationTriangulation
 	url = https://github.com/mangOH/LocationTriangulation
-[submodule "linux_kernel_modules/bme680/BME680_driver"]
-	path = linux_kernel_modules/bme680/BME680_driver
-	url = https://github.com/BoschSensortec/BME680_driver.git
 [submodule "linux_kernel_modules/bmi088/BMI08x-Sensor-API"]
 	path = linux_kernel_modules/bmi088/BMI08x-Sensor-API
 	url = https://github.com/BoschSensortec/BMI08x-Sensor-API.git
