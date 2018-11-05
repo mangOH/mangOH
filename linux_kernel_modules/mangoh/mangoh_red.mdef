@@ -1,0 +1,41 @@
+cflags:
+{
+    -DDEBUG 
+    -I${MANGOH_ROOT}/linux_kernel_modules/ltc294x
+    -I${MANGOH_ROOT}/linux_kernel_modules/bq24296
+    -I${MANGOH_ROOT}/linux_kernel_modules/iot_slot
+    -I${MANGOH_ROOT}/linux_kernel_modules/led
+}
+
+sources:
+{
+    mangoh_red_board.c
+    mangoh_red_mux.c
+}
+
+params:
+{
+    /*
+     * Add revision parameter to force a specific revision instead of relying on
+     * EEPROM based detection.
+     */
+    // revision = "dv5"
+
+    /*
+     * Do not enable the writeable EEPROM unless necessary. If the EEPROM
+     * contents are overwritten, board revision detection will fail.
+     */
+    // allow_eeprom_write = "1"
+}
+
+requires:
+{
+    kernelModules:
+    {
+        $CURDIR/../led/led
+        $CURDIR/../bq24296/bq24296
+        $CURDIR/../ltc294x/ltc294x
+        $CURDIR/../bmp280/bmp280-i2c
+        $CURDIR/../bmi160/bmi160-i2c
+    }
+}

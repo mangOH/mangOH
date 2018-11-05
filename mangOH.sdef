@@ -6,7 +6,7 @@
 //--------------------------------------------------------------------------------------------------
 
 #include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
-#include "targets/${LEGATO_TARGET}.sinc"
+#include "sinc/targets/${LEGATO_TARGET}.sinc"
 
 apps:
 {
@@ -47,7 +47,7 @@ apps:
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
     $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
     $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redSensor
-     $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redCloud
+    $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redCloud
 
 #elif ${MANGOH_BOARD} = GREEN
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
@@ -123,11 +123,8 @@ kernelModules:
 {
 
 #if ${MANGOH_BOARD} = RED
-    $CURDIR/linux_kernel_modules/mangoh/mangoh_red_dv5
-
-#if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
-#endif // MANGOH_SUPPORT_MT7697_WIFI
 
     /*
      * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
@@ -147,35 +144,11 @@ kernelModules:
     $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
     $CURDIR/linux_kernel_modules/iio/iio
 #endif // MANGOH_KERNEL_LACKS_IIO
-#if ${MANGOH_SUPPORT_MT7697_WIFI} = 1
     $CURDIR/linux_kernel_modules/mt7697q/mt7697q
     $CURDIR/linux_kernel_modules/mt7697serial/mt7697serial
-#endif // MANGOH_SUPPORT_MT7697_WIFI
 
-/*
- * CAN Bus
- *
- * wp85 kernels don't include any CAN bus in the Kernel config - thus, all the modules are out of
- * tree.
- *
- * wp7xx kernels include the CAN bus in the Kernel config as a built-in module, but not the chip
- * driver. Thus, only the chip driver is out of tree for wp7xx kernels.
- *
- * The CAN Bus is COMMENTED OUT by default, please uncomment to use.
- */
-/*
-    $CURDIR/linux_kernel_modules/can_common/can_iot
-#if ${MANGOH_CAN_9X15} = 1
-    $CURDIR/linux_kernel_modules/can_9x15/can
-    $CURDIR/linux_kernel_modules/can_9x15/can-bcm
-    $CURDIR/linux_kernel_modules/can_9x15/can-raw
-    $CURDIR/linux_kernel_modules/can_9x15/can-dev
-    $CURDIR/linux_kernel_modules/can_9x15/vcan
-    $CURDIR/linux_kernel_modules/can_9x15/mcp251x
-#else
-    $CURDIR/linux_kernel_modules/can_9x07/mcp251x
-#endif  // MANGOH_CAN_9X15
-*/
+    // Uncomment to build for the CAN Bus IoT card on mangOH Red
+    // #include "sinc/mangoh_red_can_iot_card.sinc"
 
 #elif ${MANGOH_BOARD} = GREEN
     $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
@@ -205,6 +178,7 @@ kernelModules:
     $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/opt300x/opt300x
     $CURDIR/linux_kernel_modules/expander/expander
+    $CURDIR/linux_kernel_modules/cypwifi/cypwifi
 //    $CURDIR/linux_kernel_modules/cp2130/cp2130
 
 
