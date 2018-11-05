@@ -43,15 +43,24 @@ apps:
      */
     //$MANGOH_ROOT/apps/LocationTriangulation/locationTriangulation
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
-#if ${MANGOH_BATTERY_SERVICE_SUPPORTED} = 1
-    $MANGOH_ROOT/apps/BatteryService/batteryService
-#endif // MANGOH_BATTERY_SERVICE_SUPPORTED
+    $MANGOH_ROOT/apps/BatteryService/battery
+    $LEGATO_ROOT/apps/sample/dataHub/dataHub
+    $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
+    $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redSensor
+     $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redCloud
+
 #elif ${MANGOH_BOARD} = GREEN
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
     $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
     $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
     $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
+
+#elif ${MANGOH_BOARD} = YELLOW
+   // $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
+    $LEGATO_ROOT/apps/sample/dataHub/dataHub
+    $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
+
 #endif // MANGOH_BOARD
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
@@ -60,8 +69,7 @@ apps:
     $MANGOH_ROOT/apps/SocialService/socialService
     $LEGATO_ROOT/apps/tools/devMode
 
-#if ${MANGOH_BOARD} = YELLOW
-#endif
+
 }
 
 commands:
@@ -71,31 +79,49 @@ commands:
 #endif // MANGOH_BOARD
     dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
+    dhub = dataHub:/bin/dhub
 }
 
 interfaceSearch:
 {
+
 #if ${MANGOH_BOARD} = RED
     $MANGOH_ROOT/apps/BatteryService
+    $MANGOH_ROOT/apps/mangOHRedSensorToCloud
+    $LEGATO_ROOT/apps/sample/dataHub
+
 #elif ${MANGOH_BOARD} = GREEN
     $MANGOH_ROOT/apps/MuxControl
+
+#elif ${MANGOH_BOARD} = YELLOW
+    $LEGATO_ROOT/apps/sample/dataHub
+
 #endif // MANGOH_BOARD
     $MANGOH_ROOT/apps/DataRouter
     $MANGOH_ROOT/apps/MqttClient
     $MANGOH_ROOT/apps/SocialService/interfaces
+
 }
 
 componentSearch:
 {
+ #if ${MANGOH_BOARD} = RED
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
     ${CURDIR}/apps/RedSensorToCloud
     ${CURDIR}/apps/LocationTriangulation
     ${CURDIR}/apps/MqttClient
     ${CURDIR}/components
+    ${CURDIR}/apps/mangOHRedSensorToCloud/interfaces
+ #elif ${MANGOH_BOARD} = YELLOW
+    ${CURDIR}/apps/YellowSensorToCloud/interfaces
+ #endif
+
 }
+
 
 kernelModules:
 {
+
 #if ${MANGOH_BOARD} = RED
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red_dv5
 
@@ -146,7 +172,7 @@ kernelModules:
     $CURDIR/linux_kernel_modules/can_9x15/can-dev
     $CURDIR/linux_kernel_modules/can_9x15/vcan
     $CURDIR/linux_kernel_modules/can_9x15/mcp251x
-#else 
+#else
     $CURDIR/linux_kernel_modules/can_9x07/mcp251x
 #endif  // MANGOH_CAN_9X15
 */
@@ -167,21 +193,20 @@ kernelModules:
     $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
     $CURDIR/linux_kernel_modules/iio/iio
 #endif // MANGOH_KERNEL_LACKS_IIO
-
-    // $CURDIR/linux_kernel_modules/bme680/bme680-i2c
-    // $CURDIR/linux_kernel_modules/bme680/bme680
-
+    $CURDIR/linux_kernel_modules/bme680/bme680-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160
     $CURDIR/linux_kernel_modules/bmm150/bmc150_magn_i2c
     $CURDIR/linux_kernel_modules/bmm150/bmc150_magn
     $CURDIR/linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
     $CURDIR/linux_kernel_modules/rtc_sync/rtc_sync
-    $CURDIR/linux_kernel_modules/bq25601/bq25601
+ //   $CURDIR/linux_kernel_modules/bq25601/bq25601
     $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery_i2c
     $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/opt300x/opt300x
     $CURDIR/linux_kernel_modules/expander/expander
+//    $CURDIR/linux_kernel_modules/cp2130/cp2130
+
 
 #endif // MANGOH_BOARD
 }
