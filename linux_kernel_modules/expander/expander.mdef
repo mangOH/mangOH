@@ -5,7 +5,7 @@ sources:
 
 cflags:
 {
-//    -DDEBUG
+    -DDEBUG
 }
 
 params:
