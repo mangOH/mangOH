@@ -69,9 +69,12 @@ static void gpio_initial_status(struct platform_device *pdev,
 				int function_number, int function_val,
 				atomic_t *atomic_val)
 {
-	devm_gpio_request(&pdev->dev, function_number, dev_name(&pdev->dev));
+	devm_gpio_request_one(
+		&pdev->dev, function_number,
+		(GPIOF_DIR_OUT |
+		 (function_val ? GPIOF_INIT_HIGH : GPIOF_INIT_LOW)),
+		attr->attr.name);
 	atomic_set(atomic_val, function_val);
-	gpio_direction_output(function_number, function_val);
 	device_create_file(&pdev->dev, attr);
 }
 
