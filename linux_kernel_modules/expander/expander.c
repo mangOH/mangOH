@@ -66,24 +66,24 @@ CREATE_SYSFS_DEFN(buzzer, BUZZER);
 
 static void gpio_initial_status(struct platform_device *pdev,
 				struct device_attribute *attr,
-				int function_number, int function_val,
+				int gpio_num, int gpio_output_level,
 				atomic_t *atomic_val)
 {
 	devm_gpio_request_one(
-		&pdev->dev, function_number,
+		&pdev->dev, gpio_num,
 		(GPIOF_DIR_OUT |
-		 (function_val ? GPIOF_INIT_HIGH : GPIOF_INIT_LOW)),
+		 (gpio_output_level ? GPIOF_INIT_HIGH : GPIOF_INIT_LOW)),
 		attr->attr.name);
-	atomic_set(atomic_val, function_val);
+	atomic_set(atomic_val, gpio_output_level);
 	device_create_file(&pdev->dev, attr);
 }
 
 static void gpio_final_status(struct platform_device *pdev,
 			      struct device_attribute *attr,
-			      int function_number, int function_val)
+			      int gpio_num, int gpio_output_level)
 {
 	device_remove_file(&pdev->dev, attr);
-	gpio_set_value_cansleep(function_number, function_val);
+	gpio_set_value_cansleep(gpio_num, gpio_output_level);
 }
 
 static int expander_probe(struct platform_device *pdev)
