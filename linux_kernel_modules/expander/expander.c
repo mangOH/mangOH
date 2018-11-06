@@ -66,9 +66,11 @@ CREATE_SYSFS_DEFN(buzzer, BUZZER);
 
 static void gpio_initial_status(struct platform_device *pdev,
 				struct device_attribute *attr,
-				int gpio_num, int gpio_output_level,
+				int expander_gpio_offset, int gpio_output_level,
 				atomic_t *atomic_val)
 {
+	struct expander_device *exp = dev_get_drvdata(&pdev->dev);
+	const int gpio_num = exp->gpio_expander_base + expander_gpio_offset;
 	devm_gpio_request_one(
 		&pdev->dev, gpio_num,
 		(GPIOF_DIR_OUT |
@@ -80,8 +82,10 @@ static void gpio_initial_status(struct platform_device *pdev,
 
 static void gpio_final_status(struct platform_device *pdev,
 			      struct device_attribute *attr,
-			      int gpio_num, int gpio_output_level)
+			      int expander_gpio_offset, int gpio_output_level)
 {
+	struct expander_device *exp = dev_get_drvdata(&pdev->dev);
+	const int gpio_num = exp->gpio_expander_base + expander_gpio_offset;
 	device_remove_file(&pdev->dev, attr);
 	gpio_set_value_cansleep(gpio_num, gpio_output_level);
 }
@@ -108,29 +112,22 @@ static int expander_probe(struct platform_device *pdev)
 
 	dev->pdev = pdev;
  	dev->gpio_expander_base = pdata->gpio_expander_base;
-	gpio_initial_status(pdev, &dev_attr_generic_led,
-			    dev->gpio_expander_base + GENERIC_LED, 0,
-			    &dev->generic_led_val);
-	gpio_initial_status(pdev, &dev_attr_pcm_sel,
-			    dev->gpio_expander_base + PCM_SEL, 0,
-			    &dev->pcm_sel_val);
-	gpio_initial_status(pdev, &dev_attr_sdio_sel,
-			    dev->gpio_expander_base + SDIO_SEL, 0,
-			    &dev->sdio_sel_val);
-	gpio_initial_status(pdev, &dev_attr_tri_led_blu,
-			    dev->gpio_expander_base + TRI_LED_BLU, 0,
-			    &dev->tri_led_blu_val);
-	gpio_initial_status(pdev, &dev_attr_tri_led_red,
-			    dev->gpio_expander_base + TRI_LED_RED, 0,
-			    &dev->tri_led_red_val);
-	gpio_initial_status(pdev, &dev_attr_tri_led_grn,
-			    dev->gpio_expander_base + TRI_LED_GRN, 0,
-			    &dev->tri_led_grn_val);
-	gpio_initial_status(pdev, &dev_attr_buzzer,
-			    dev->gpio_expander_base + BUZZER, 0,
-			    &dev->buzzer_val);
-
 	platform_set_drvdata(pdev, dev);
+
+	gpio_initial_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0,
+			    &dev->generic_led_val);
+	gpio_initial_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0,
+			    &dev->pcm_sel_val);
+	gpio_initial_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0,
+			    &dev->sdio_sel_val);
+	gpio_initial_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0,
+			    &dev->tri_led_blu_val);
+	gpio_initial_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0,
+			    &dev->tri_led_red_val);
+	gpio_initial_status(pdev, &dev_attr_tri_led_grn, TRI_LED_GRN, 0,
+			    &dev->tri_led_grn_val);
+	gpio_initial_status(pdev, &dev_attr_buzzer, BUZZER, 0,
+			    &dev->buzzer_val);
 
 done:
 	return ret;
@@ -138,23 +135,14 @@ done:
 
 static int expander_remove(struct platform_device *pdev)
 {
-	struct expander_device* dev = dev_get_drvdata(&pdev->dev);
-
 	/* remove sysfs files & set final state values for gpio expander */
-	gpio_final_status(pdev, &dev_attr_generic_led,
-			  dev->gpio_expander_base + GENERIC_LED, 0);
-	gpio_final_status(pdev, &dev_attr_pcm_sel,
-			  dev->gpio_expander_base + PCM_SEL, 0);
-	gpio_final_status(pdev, &dev_attr_sdio_sel,
-			  dev->gpio_expander_base + SDIO_SEL, 0);
-	gpio_final_status(pdev, &dev_attr_tri_led_blu,
-			  dev->gpio_expander_base + TRI_LED_BLU, 0);
-	gpio_final_status(pdev, &dev_attr_tri_led_red,
-			  dev->gpio_expander_base + TRI_LED_RED, 0);
-	gpio_final_status(pdev, &dev_attr_tri_led_grn,
-			  dev->gpio_expander_base + TRI_LED_GRN, 0);
-	gpio_final_status(pdev, &dev_attr_buzzer,
-			  dev->gpio_expander_base + BUZZER, 0);
+	gpio_final_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0);
+	gpio_final_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0);
+	gpio_final_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0);
+	gpio_final_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0);
+	gpio_final_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0);
+	gpio_final_status(pdev, &dev_attr_tri_led_grn, TRI_LED_GRN, 0);
+	gpio_final_status(pdev, &dev_attr_buzzer, BUZZER, 0);
 
 	return 0;
 }
