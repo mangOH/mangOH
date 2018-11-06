@@ -18,8 +18,9 @@
 #include <linux/iio/sysfs.h>
 #include <linux/version.h>
 #include "bme680.h"
-#define  regmap_write_bits regmap_update_bits 
- 
+
+#define regmap_write_bits regmap_update_bits
+
 struct bme680_calib {
 	u16 par_t1;
 	s16 par_t2;
@@ -80,19 +81,18 @@ static const struct iio_chan_spec bme680_channels[] = {
 	},
 	{
 		.type = IIO_PRESSURE,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) 
-	        #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)			     
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+	        #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 				     | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
 	        #endif
 	},
 	{
 		.type = IIO_HUMIDITYRELATIVE,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) 
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
 		#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
 				      | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
                 #endif
 	},
-
 	{
 		.type = IIO_RESISTANCE,
 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED),
@@ -430,7 +430,6 @@ static u32 bme680_compensate_humid(struct bme680_data *data,
  *
  * Returns gas measurement in Ohm. Output value of "82986" represent 82986 ohms.
  */
-#if 1
 static u32 bme680_compensate_gas(struct bme680_data *data, u16 gas_res_adc,
 				 u8 gas_range)
 {
@@ -457,7 +456,7 @@ static u32 bme680_compensate_gas(struct bme680_data *data, u16 gas_res_adc,
 
 	return calc_gas_res;
 }
-#endif
+
 /*
  * Taken from Bosch BME680 API:
  * https://github.com/BoschSensortec/BME680_driver/blob/63bb5336/bme680.c#L1002
@@ -708,7 +707,7 @@ static int bme680_read_humid(struct bme680_data *data,
 	*val2 = 1000;
 	return IIO_VAL_FRACTIONAL;
 }
-#if 1
+
 static int bme680_read_gas(struct bme680_data *data,
 			   int *val)
 {
@@ -767,7 +766,7 @@ static int bme680_read_gas(struct bme680_data *data,
 	*val = bme680_compensate_gas(data, adc_gas_res, gas_range);
 	return IIO_VAL_INT;
 }
-#endif
+
 static int bme680_read_raw(struct iio_dev *indio_dev,
 			   struct iio_chan_spec const *chan,
 			   int *val, int *val2, long mask)
@@ -808,6 +807,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 		return -EINVAL;
 	}
 }
+
 #if 0
 static int bme680_write_oversampling_ratio_temp(struct bme680_data *data,
 						int val)
