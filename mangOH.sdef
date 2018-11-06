@@ -46,8 +46,6 @@ apps:
     $MANGOH_ROOT/apps/BatteryService/battery
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
     $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
-    $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redSensor
-    $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redCloud
 
 #elif ${MANGOH_BOARD} = GREEN
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
