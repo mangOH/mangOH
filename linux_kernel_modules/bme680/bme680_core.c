@@ -21,6 +21,10 @@
 
 #define regmap_write_bits regmap_update_bits
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+#define IIO_SUPPORTS_OVERSAMPLING_RATIO
+#endif
+
 struct bme680_calib {
 	u16 par_t1;
 	s16 par_t2;
@@ -75,23 +79,23 @@ static const struct iio_chan_spec bme680_channels[] = {
 	{
 		.type = IIO_TEMP,
 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
-                #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
-				     | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
-                #endif
+		#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
+				    | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		#endif
 	},
 	{
 		.type = IIO_PRESSURE,
 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
-	        #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
-				     | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
-	        #endif
+		#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
+				    | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		#endif
 	},
 	{
 		.type = IIO_HUMIDITYRELATIVE,
 		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
-		#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
-				      | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
-                #endif
+		#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
+				    | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		#endif
 	},
 	{
 		.type = IIO_RESISTANCE,
@@ -787,7 +791,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 		default:
 			return -EINVAL;
 		}
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		switch (chan->type) {
 		case IIO_TEMP:
@@ -808,7 +812,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 	}
 }
 
-#if 0
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 static int bme680_write_oversampling_ratio_temp(struct bme680_data *data,
 						int val)
 {
@@ -856,14 +860,18 @@ static int bme680_write_oversampling_ratio_humid(struct bme680_data *data,
 
 	return -EINVAL;
 }
+#endif
+
 static int bme680_write_raw(struct iio_dev *indio_dev,
 			    struct iio_chan_spec const *chan,
 			    int val, int val2, long mask)
 {
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	struct bme680_data *data = iio_priv(indio_dev);
+#endif
 
 	switch (mask) {
-	//#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+	#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		switch (chan->type) {
 		case IIO_TEMP:
@@ -875,12 +883,11 @@ static int bme680_write_raw(struct iio_dev *indio_dev,
 		default:
 			return -EINVAL;
 		}
-	//#endif
+	#endif
 	default:
 		return -EINVAL;
 	}
 }
-#endif 
 
 static const char bme680_oversampling_ratio_show[] = "1 2 4 8 16";
 
@@ -898,7 +905,7 @@ static const struct attribute_group bme680_attribute_group = {
 
 static const struct iio_info bme680_info = {
 	.read_raw = &bme680_read_raw,
-	//.write_raw = &bme680_write_raw,
+	.write_raw = &bme680_write_raw,
 	.attrs = &bme680_attribute_group,
 };
 
