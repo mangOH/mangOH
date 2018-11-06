@@ -9,15 +9,21 @@
  * https://ae-bst.resource.bosch.com/media/_tech/media/datasheets/BST-BME680-DS001-00.pdf
  */
 #include <linux/acpi.h>
-#include <linux/bitfield.h>
+#include "bitfield.h"
 #include <linux/device.h>
 #include <linux/module.h>
 #include <linux/log2.h>
 #include <linux/regmap.h>
 #include <linux/iio/iio.h>
 #include <linux/iio/sysfs.h>
-
+#include <linux/version.h>
 #include "bme680.h"
+
+#define regmap_write_bits regmap_update_bits
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 2, 0)
+#define IIO_SUPPORTS_OVERSAMPLING_RATIO
+#endif
 
 struct bme680_calib {
 	u16 par_t1;
@@ -72,18 +78,24 @@ EXPORT_SYMBOL(bme680_regmap_config);
 static const struct iio_chan_spec bme680_channels[] = {
 	{
 		.type = IIO_TEMP,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
+				    | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+#endif
 	},
 	{
 		.type = IIO_PRESSURE,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
+				    | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+#endif
 	},
 	{
 		.type = IIO_HUMIDITYRELATIVE,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				      BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED)
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
+				    | BIT(IIO_CHAN_INFO_OVERSAMPLING_RATIO),
+#endif
 	},
 	{
 		.type = IIO_RESISTANCE,
@@ -771,6 +783,7 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 		default:
 			return -EINVAL;
 		}
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 		switch (chan->type) {
 		case IIO_TEMP:
@@ -785,26 +798,32 @@ static int bme680_read_raw(struct iio_dev *indio_dev,
 		default:
 			return -EINVAL;
 		}
+#endif
 	default:
 		return -EINVAL;
 	}
 }
 
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 static bool bme680_is_valid_oversampling(int rate)
 {
 	return (rate > 0 && rate <= 16 && is_power_of_2(rate));
 }
+#endif
 
 static int bme680_write_raw(struct iio_dev *indio_dev,
 			    struct iio_chan_spec const *chan,
 			    int val, int val2, long mask)
 {
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	struct bme680_data *data = iio_priv(indio_dev);
+#endif
 
 	if (val2 != 0)
 		return -EINVAL;
 
 	switch (mask) {
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	case IIO_CHAN_INFO_OVERSAMPLING_RATIO:
 	{
 		if (!bme680_is_valid_oversampling(val))
@@ -826,18 +845,23 @@ static int bme680_write_raw(struct iio_dev *indio_dev,
 
 		return bme680_chip_config(data);
 	}
+#endif
 	default:
 		return -EINVAL;
 	}
 }
 
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 static const char bme680_oversampling_ratio_show[] = "1 2 4 8 16";
 
 static IIO_CONST_ATTR(oversampling_ratio_available,
 		      bme680_oversampling_ratio_show);
+#endif
 
 static struct attribute *bme680_attributes[] = {
+#ifdef IIO_SUPPORTS_OVERSAMPLING_RATIO
 	&iio_const_attr_oversampling_ratio_available.dev_attr.attr,
+#endif
 	NULL,
 };
 

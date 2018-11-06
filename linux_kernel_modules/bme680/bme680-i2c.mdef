@@ -1,0 +1,26 @@
+cflags:
+{
+    // This driver depends on IIO
+    -DCONFIG_IIO
+    -DCONFIG_IIO_BUFFER
+    -DCONFIG_IIO_TRIGGERRED_BUFFER
+    -DDEBUG
+    -DREGMAP
+    -DREGMAP_I2C
+}
+
+sources:
+{
+    bme680_i2c.c
+    bme680_core.c
+}
+
+requires:
+{
+    kernelModules:
+    {
+#if ${MANGOH_KERNEL_LACKS_IIO} = 1
+        $CURDIR/../iio/iio
+#endif // MANGOH_KERNEL_LACKS_IIO
+    }
+}
