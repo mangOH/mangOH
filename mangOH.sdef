@@ -45,7 +45,6 @@ apps:
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
     $MANGOH_ROOT/apps/BatteryService/battery
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
-    $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
 
 #elif ${MANGOH_BOARD} = GREEN
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
@@ -57,7 +56,6 @@ apps:
 #elif ${MANGOH_BOARD} = YELLOW
    // $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
-    $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
 
 #endif // MANGOH_BOARD
 
