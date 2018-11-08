@@ -105,16 +105,19 @@ interfaceSearch:
 
 componentSearch:
 {
- #if ${MANGOH_BOARD} = RED
+    ${CURDIR}/components
+
+#if ${MANGOH_BOARD} = RED
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
     ${CURDIR}/apps/RedSensorToCloud
     ${CURDIR}/apps/LocationTriangulation
     ${CURDIR}/apps/MqttClient
-    ${CURDIR}/components
     ${CURDIR}/apps/mangOHRedSensorToCloud/interfaces
- #elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = GREEN
+    ${CURDIR}/apps/GpioExpander/gpioExpanderService
+#elif ${MANGOH_BOARD} = YELLOW
     ${CURDIR}/apps/YellowSensorToCloud/interfaces
- #endif
+#endif
 
 }
 
