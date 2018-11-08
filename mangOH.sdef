@@ -76,10 +76,11 @@ commands:
 {
 #if ${MANGOH_BOARD} = GREEN
     mux = muxCtrlTools:/bin/mux
+#else // MANGOH_BOARD
+    dhub = dataHub:/bin/dhub
 #endif // MANGOH_BOARD
     dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
-    dhub = dataHub:/bin/dhub
 }
 
 interfaceSearch:
