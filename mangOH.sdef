@@ -72,10 +72,11 @@ commands:
 {
 #if ${MANGOH_BOARD} = GREEN
     mux = muxCtrlTools:/bin/mux
+#else // MANGOH_BOARD
+    dhub = dataHub:/bin/dhub
 #endif // MANGOH_BOARD
     dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
-    dhub = dataHub:/bin/dhub
 }
 
 interfaceSearch:
@@ -101,16 +102,19 @@ interfaceSearch:
 
 componentSearch:
 {
- #if ${MANGOH_BOARD} = RED
+    ${CURDIR}/components
+
+#if ${MANGOH_BOARD} = RED
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
     ${CURDIR}/apps/RedSensorToCloud
     ${CURDIR}/apps/LocationTriangulation
     ${CURDIR}/apps/MqttClient
-    ${CURDIR}/components
     ${CURDIR}/apps/mangOHRedSensorToCloud/interfaces
- #elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = GREEN
+    ${CURDIR}/apps/GpioExpander/gpioExpanderService
+#elif ${MANGOH_BOARD} = YELLOW
     ${CURDIR}/apps/YellowSensorToCloud/interfaces
- #endif
+#endif
 
 }
 
