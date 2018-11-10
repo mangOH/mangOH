@@ -6,7 +6,6 @@
 # some are even defined the same - would be good to fix
 # If your kernel headers are in a different place than mine - please
 # modify the values appropriately
-set -x
 
 USAGE="Usage: $0 build_target_dir clean|modules"
 
