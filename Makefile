@@ -37,96 +37,108 @@ else
 	$(MAKE) -C $(LEGATO_ROOT) framework_$(LEGATO_TARGET)
 endif
 
+export LEGATO_TARGET := $(subst legato_,,$@)
+
 .PHONY: green_wp85
 green_wp85: legato_wp85
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 prefix) \
-	MANGOH_BOARD=GREEN \
+	MANGOH_BOARD=green \
 	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: green_wp750x
 green_wp750x: legato_wp750x
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x prefix) \
-	MANGOH_BOARD=GREEN \
+	MANGOH_BOARD=green \
 	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: green_wp76xx
 green_wp76xx: legato_wp76xx
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
-	MANGOH_BOARD=GREEN \
+	MANGOH_BOARD=green \
 	mksys -t wp76xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: green_wp77xx
 green_wp77xx: legato_wp77xx
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx prefix) \
-	MANGOH_BOARD=GREEN \
+	MANGOH_BOARD=green \
 	mksys -t wp77xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_GREEN) mangOH.sdef
 
 .PHONY: red_wp85
 red_wp85: legato_wp85
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 prefix) \
-	MANGOH_BOARD=RED \
+	MANGOH_BOARD=red \
 	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: red_wp750x
 red_wp750x: legato_wp750x
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x prefix) \
-	MANGOH_BOARD=RED \
+	MANGOH_BOARD=red \
 	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: red_wp76xx
 red_wp76xx: legato_wp76xx
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
-	MANGOH_BOARD=RED \
+	MANGOH_BOARD=red \
 	mksys -t wp76xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: red_wp77xx
 red_wp77xx: legato_wp77xx
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx prefix) \
-	MANGOH_BOARD=RED \
+	MANGOH_BOARD=red \
 	mksys -t wp77xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
+
+# Until Legato allows external builds in mdefs we will need to build a
+# subsystem driver like Cypress Wifi in the top makefile and with scripts
+# Define a function to build the Cypress driver for different architectures
+
+# $(call cyp_bld,build_dir)
+define cyp_bld
+	if [ ! -d $(MANGOH_ROOT)/build/$1/modules/cypwifi ] ; then \
+		mkdir -p $(MANGOH_ROOT)/build/$1/modules/cypwifi ;\
+		cp -pr $(MANGOH_ROOT)/linux_kernel_modules/cypwifi $(MANGOH_ROOT)/build/$1/modules/ ; \
+		$(MANGOH_ROOT)/build/$1/modules/cypwifi/build.sh $1 clean; \
+	else \
+		$(MANGOH_ROOT)/build/$1/modules/cypwifi/build.sh $1 modules; \
+	fi
+endef
 
 .PHONY: yellow_wp85
 yellow_wp85: legato_wp85
-	# Until Legato allows external builds in mdefs we will need to build a
-	# subsystem driver like Cypress in the top makefile and with scripts
-	LEGATO_TARGET=wp85 $(MANGOH_ROOT)/linux_kernel_modules/cypwifi/build.sh
+	$(call cyp_bld,$@)
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp85 prefix) \
-	MANGOH_BOARD=YELLOW \
+	MANGOH_BOARD=yellow \
 	mksys -t wp85 $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: yellow_wp750x
 yellow_wp750x: legato_wp750x
-	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x dir) \
+	$(call cyp_bld,$@)
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp750x prefix) \
-	MANGOH_BOARD=YELLOW \
+	MANGOH_BOARD=yellow \
 	mksys -t wp750x $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_RED) mangOH.sdef
 
 .PHONY: yellow_wp76xx
 yellow_wp76xx: legato_wp76xx
-	# Until Legato allows external builds in mdefs we will need to build a
-	# subsystem driver like Cypress in the top makefile and with scripts
-	# This does not seem to work except on 1 board flakily - will try with
-	# DV2 Yellow
-	LEGATO_TARGET=wp76xx $(MANGOH_ROOT)/linux_kernel_modules/cypwifi/build.sh
+	$(call cyp_bld,$@)
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp76xx prefix) \
-	MANGOH_BOARD=YELLOW \
+	MANGOH_BOARD=yellow \
 	mksys -t wp76xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_YELLOW) mangOH.sdef
 
 .PHONY: yellow_wp77xx
 yellow_wp77xx: legato_wp77xx
+	$(call cyp_bld,$@)
 	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx dir) \
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain wp77xx prefix) \
-	MANGOH_BOARD=YELLOW \
+	MANGOH_BOARD=yellow \
 	mksys -t wp77xx $(MKSYS_ARGS_COMMON) $(MKSYS_ARGS_YELLOW) mangOH.sdef
 
 .PHONY: clean

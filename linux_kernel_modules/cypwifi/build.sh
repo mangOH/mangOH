@@ -7,8 +7,21 @@
 # If your kernel headers are in a different place than mine - please
 # modify the values appropriately
 set -x
+
+USAGE="Usage: $0 build_target_dir clean|modules"
+
+if [ -z "$1" ] ; then
+	echo $USAGE
+	exit 2
+fi
+
+if [ -z "$2" ] ; then
+	echo $USAGE
+	exit 3
+fi
+
 export PATH=`findtoolchain ${LEGATO_TARGET} dir`:$PATH
-export MY_KERNEL=`findtoolchain wp85 kernelroot`
+export MY_KERNEL=`findtoolchain ${LEGATO_TARGET} kernelroot`
 export KLIB=$MY_KERNEL
 export KLIB_BUILD=$MY_KERNEL
 
@@ -19,9 +32,14 @@ export CROSS_COMPILE=`findtoolchain ${LEGATO_TARGET} prefix`
 
 # Lets do it
 OLDPWD=`pwd`
-cd ${MANGOH_ROOT}/linux_kernel_modules/cypwifi
-make clean ; make defconfig-brcmfmac ; make modules
+cd ${MANGOH_ROOT}/build/${1}/modules/cypwifi
+if [ "$2" == "clean" ] ; then
+	make clean ; make defconfig-brcmfmac
+fi
+make modules
+
 if [ $? -ne 0 ] ; then
+	cd $OLDPWD
 	exit 1
 else
 	cd $OLDPWD
