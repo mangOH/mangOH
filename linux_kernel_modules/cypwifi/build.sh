@@ -33,7 +33,7 @@ export CROSS_COMPILE=`findtoolchain ${LEGATO_TARGET} prefix`
 OLDPWD=`pwd`
 cd ${MANGOH_ROOT}/build/${1}/modules/cypwifi
 if [ "$2" == "clean" ] ; then
-	make clean ; make defconfig-brcmfmac
+	make defconfig-brcmfmac
 fi
 make modules
 
