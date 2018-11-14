@@ -371,6 +371,11 @@ struct bmi160_data {
 	int int1_irq;
 	int int2_irq;
 	struct iio_trigger *drdy_trigger;
+
+	/* For initialization tracking */
+	bool triggered_buffer_setup;
+	bool trigger_registered;
+	bool chip_initialized;
 };
 
 const struct regmap_config bmi160_regmap_config = {
@@ -844,7 +849,7 @@ static irqreturn_t bmi160_trigger_handler(int irq, void *p)
 		goto done;
 	}
 
-	max_data_frames = read_bytes / (1 + data_frame_payload_len); 
+	max_data_frames = read_bytes / (1 + data_frame_payload_len);
 	samples = kmalloc(max_data_frames * indio_dev->scan_bytes, GFP_KERNEL);
 	if (!samples) {
 		goto done;
@@ -1199,11 +1204,6 @@ static int bmi160_register_drdy_trigger(struct bmi160_data *data)
 	struct iio_dev *indio_dev = iio_priv_to_dev(data);
 	struct device *dev = &indio_dev->dev;
 	struct iio_trigger *trig;
-	if (data->int1_irq <= 0) {
-		dev_warn(dev,
-			 "Couldn't create data ready trigger because int1 IRQ was not specified");
-		return -ENODEV;
-	}
 
 	trig = devm_iio_trigger_alloc(
 		dev, "%s-dev%d", indio_dev->name, indio_dev->id);
@@ -1212,17 +1212,6 @@ static int bmi160_register_drdy_trigger(struct bmi160_data *data)
 
 	data->drdy_trigger = trig;
 
-	ret = devm_request_threaded_irq(dev, data->int1_irq, NULL,
-					bmi160_drdy_irq_handler,
-					IRQF_TRIGGER_RISING, "bmi160_drdy",
-					trig);
-	if (ret != 0) {
-		dev_err(dev,
-			"Couldn't request irq %d for data ready interrupt",
-			data->int1_irq);
-		goto err_free_trig;
-	}
-
 	trig->dev.parent = dev->parent;
 	trig->ops = &bmi160_drdy_trig_ops;
 	iio_trigger_set_drvdata(trig, indio_dev);
@@ -1230,16 +1219,12 @@ static int bmi160_register_drdy_trigger(struct bmi160_data *data)
 	indio_dev->trig = iio_trigger_get(trig);
 
 	ret = iio_trigger_register(trig);
-	if (ret != 0)
-	{
+	if (ret != 0) {
 		dev_err(dev, "failed to register data ready trigger");
-		goto err_free_trig;
+		return ret;
 	}
+	data->trigger_registered = true;
 
-	return ret;
-
-err_free_trig:
-	devm_iio_trigger_free(dev, trig);
 	return ret;
 }
 
@@ -1328,10 +1313,24 @@ static int bmi160_setup_interrupts(struct bmi160_data *data)
 	}
 
 	/* Register the interrupt handlers */
-	ret = bmi160_register_drdy_trigger(data);
-	if (ret != 0) {
-		dev_err(dev, "Failed to create data ready trigger");
-		return ret;
+	if (data->int1_irq > 0) {
+		ret = bmi160_register_drdy_trigger(data);
+		if (ret != 0) {
+			dev_err(dev, "Failed to create data ready trigger");
+			return ret;
+		}
+
+		ret = devm_request_threaded_irq(dev, data->int1_irq, NULL,
+						bmi160_drdy_irq_handler,
+						IRQF_TRIGGER_RISING,
+						"bmi160_drdy",
+						data->drdy_trigger);
+		if (ret != 0) {
+			dev_err(dev,
+				"Couldn't request irq %d for data ready interrupt",
+				data->int1_irq);
+			return ret;
+		}
 	}
 
 	if (data->int2_irq > 0) {
@@ -1342,7 +1341,7 @@ static int bmi160_setup_interrupts(struct bmi160_data *data)
 		if (ret != 0) {
 			dev_err(dev,
 				"Couldn't request irq %d for significant motion interrupt",
-				data->int1_irq);
+				data->int2_irq);
 			return ret;
 		}
 	}
@@ -1495,6 +1494,7 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 	ret = bmi160_chip_init(data, use_spi);
 	if (ret < 0)
 		return ret;
+	data->chip_initialized = true;
 
 	mutex_init(&data->mutex);
 
@@ -1507,24 +1507,23 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 
 	ret = bmi160_setup_interrupts(data);
 	if (ret < 0)
-		return ret;
-
+		goto cleanup;
 
 	ret = iio_triggered_buffer_setup(indio_dev, NULL,
 					 bmi160_trigger_handler,
 					 &bmi160_iio_buffer_setup_ops);
 	if (ret < 0)
-		goto uninit;
+		goto cleanup;
+	data->triggered_buffer_setup = true;
 
 	ret = devm_iio_device_register(dev, indio_dev);
 	if (ret < 0)
-		goto buffer_cleanup;
+		goto cleanup;
 
 	return 0;
-buffer_cleanup:
-	iio_triggered_buffer_cleanup(indio_dev);
-uninit:
-	bmi160_chip_uninit(data);
+
+cleanup:
+	bmi160_core_remove(dev);
 	return ret;
 }
 EXPORT_SYMBOL_GPL(bmi160_core_probe);
@@ -1534,9 +1533,14 @@ void bmi160_core_remove(struct device *dev)
 	struct iio_dev *indio_dev = dev_get_drvdata(dev);
 	struct bmi160_data *data = iio_priv(indio_dev);
 
-	iio_triggered_buffer_cleanup(indio_dev);
-	iio_trigger_unregister(data->drdy_trigger);
-	bmi160_chip_uninit(data);
+	if (data->triggered_buffer_setup)
+		iio_triggered_buffer_cleanup(indio_dev);
+
+	if (data->trigger_registered)
+		iio_trigger_unregister(data->drdy_trigger);
+
+	if (data->chip_initialized)
+		bmi160_chip_uninit(data);
 }
 EXPORT_SYMBOL_GPL(bmi160_core_remove);
 
