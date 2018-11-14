@@ -1256,37 +1256,6 @@ static int bmi160_setup_interrupts(struct bmi160_data *data)
 	struct device *dev = data->dev;
 #endif
 
-	/* Disable all interrupts */
-	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_0,
-				 (BMI160_INT_EN_0_FLAT | BMI160_INT_EN_0_ORIENT |
-				  BMI160_INT_EN_0_STAP | BMI160_INT_EN_0_DTAP |
-				  BMI160_INT_EN_0_ANYM_Z |
-				  BMI160_INT_EN_0_ANYM_Y |
-				  BMI160_INT_EN_0_ANYM_X), 0);
-	if (ret != 0) {
-		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_0");
-		return ret;
-	}
-	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_1,
-				 (BMI160_INT_EN_1_FWM | BMI160_INT_EN_1_FFULL |
-				  BMI160_INT_EN_1_DRDY | BMI160_INT_EN_1_LOWG |
-				  BMI160_INT_EN_1_HIGHG_Z |
-				  BMI160_INT_EN_1_HIGHG_Y |
-				  BMI160_INT_EN_1_HIGHG_X), 0);
-	if (ret != 0) {
-		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_1");
-		return ret;
-	}
-	ret = regmap_update_bits(data->regmap, BMI160_REG_INT_EN_2,
-				 (BMI160_INT_EN_2_STEP_DET |
-				  BMI160_INT_EN_2_NOMO_Z |
-				  BMI160_INT_EN_2_NOMO_Y |
-				  BMI160_INT_EN_2_NOMO_X), 0);
-	if (ret != 0) {
-		dev_err(dev, "Couldn't update BMI160_REG_INT_EN_2");
-		return ret;
-	}
-
 	/* Configure both interrupt pins of the BMI160 as outputs */
 	ret = regmap_write(data->regmap, BMI160_REG_INT_OUT_CTRL,
 			   FIELD_PREP(BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN, 1) |
