@@ -376,6 +376,9 @@ struct bmi160_data {
 	bool triggered_buffer_setup;
 	bool trigger_registered;
 	bool chip_initialized;
+
+	u32 known_sensortime;
+	s64 known_linux_time;
 };
 
 const struct regmap_config bmi160_regmap_config = {
@@ -546,6 +549,7 @@ static const struct iio_chan_spec bmi160_channels[] = {
 static int bmi160_buffer_preenable(struct iio_dev *indio_dev)
 {
 	int ret;
+	u8 sensortime[3];
 	struct bmi160_data *data = iio_priv(indio_dev);
 	struct device *dev = &indio_dev->dev;
 	const bool gyroRequired =
@@ -565,6 +569,19 @@ static int bmi160_buffer_preenable(struct iio_dev *indio_dev)
 			"Couldn't write BMI160_REG_CMD with BMI160_CMD_FIFO_FLUSH");
 		goto unlock;
 	}
+
+	ret = regmap_bulk_read(data->regmap, BMI160_REG_SENSOR_TIME_0,
+			       sensortime, sizeof(sensortime));
+	if (ret != 0)
+		goto unlock;
+	data->known_sensortime = ((sensortime[0] << 0) |
+				  (sensortime[1] << 8) |
+				  (sensortime[2] << 16));
+	data->known_linux_time = iio_get_time_ns(
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
+		indio_dev
+#endif
+		);
 
 	ret = regmap_update_bits(data->regmap, BMI160_REG_FIFO_CONFIG_1,
 				 (BMI160_FIFO_CONFIG_1_GYR_EN |
@@ -872,59 +889,47 @@ static irqreturn_t bmi160_trigger_handler(int irq, void *p)
 			if (hdr_parm == BMI160_FIFO_PARM_CONTROL_SKIP) {
 				dev_warn(dev, "Dropped frames (%d)\n", hdr_ext);
 			} else if (hdr_parm == BMI160_FIFO_PARM_CONTROL_SENSORTIME) {
-				u32 now_hw;
-				s64 now;
-				u32 last_sample_hw;
-				s64 last_sample;
+				u32 last_sample_sensortime;
+				s32 first_sample_sensortime;
+				u32 cur_sample_sensortime;
 				int i;
 				/* TODO: make dynamic based on ODR. See datasheet table 11 */
-				s64 sample_period_ns = 10 * NSEC_PER_MSEC;
+				const unsigned int sampling_rate = 100;
+				const unsigned int ticks_per_sample = 25600 / sampling_rate;
 				if (buff_offset + 3 > read_bytes) {
 					dev_err(dev,
 						"Can't process partial sensortime frame\n");
 					goto done;
 				}
-				last_sample_hw = ((read_buffer[buff_offset] << 0) |
-						  (read_buffer[buff_offset + 1] << 8) |
-						  (read_buffer[buff_offset + 2] << 16));
+				last_sample_sensortime = (
+					(read_buffer[buff_offset] << 0) |
+					(read_buffer[buff_offset + 1] << 8) |
+					(read_buffer[buff_offset + 2] << 16));
 				buff_offset += 3;
 
-				/*
-				 * We are done with read_buffer, so re-use it to
-				 * get the current hardware timestamp
-				 */
-				ret = regmap_bulk_read(data->regmap,
-						       BMI160_REG_SENSOR_TIME_0,
-						       read_buffer, 3);
-				if (ret != 0)
-					goto done;
-				now_hw = ((read_buffer[0] << 0) |
-					  (read_buffer[1] << 8) |
-					  (read_buffer[2] << 16));
-				now = iio_get_time_ns(
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 7, 0)
-					indio_dev
-#endif
-					);
-				if (now_hw >= last_sample_hw) {
-					last_sample = now - (
-						(now_hw - last_sample_hw) *
-						BMI160_SENSORTIME_TICK_NS);
-				} else {
-					last_sample = now - (
-						(now_hw +
-						 (GENMASK(23, 0) - last_sample_hw)) *
-						BMI160_SENSORTIME_TICK_NS);
+				first_sample_sensortime = last_sample_sensortime - ((num_samples - 1) * ticks_per_sample);
+				while (first_sample_sensortime < 0) {
+					/* Increment based on 24-bit rollover */
+					first_sample_sensortime += (1 << 24);
 				}
 
+				cur_sample_sensortime = first_sample_sensortime;
 				for (i = 0; i < num_samples; i++) {
 					u8 *sample = &samples[i * indio_dev->scan_bytes];
-					s64 t = last_sample - (num_samples - (i - 1)) * sample_period_ns;
-					ret = iio_push_to_buffers_with_timestamp(indio_dev, sample, t);
+					const u32 delta = (cur_sample_sensortime < data->known_sensortime) ?
+						((1 << 24) - data->known_sensortime) + cur_sample_sensortime :
+						cur_sample_sensortime - data->known_sensortime;
+					data->known_linux_time = data->known_linux_time + (delta * 39125);
+					data->known_sensortime = cur_sample_sensortime;
+
+					ret = iio_push_to_buffers_with_timestamp(indio_dev, sample, data->known_linux_time);
 					if (ret != 0) {
 						dev_err(dev, "Couldn't push data to buffer");
 						goto done;
 					}
+
+					cur_sample_sensortime += ticks_per_sample;
+					cur_sample_sensortime &= 0x00FFFFFF;
 				}
 				break;
 			} else if (hdr_parm == BMI160_FIFO_PARM_CONTROL_INPUT_CONFIG) {
@@ -1482,8 +1487,7 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 #endif
 
 	pdata = dev_get_platdata(dev);
-	if (pdata)
-	{
+	if (pdata) {
 		data->int1_irq = pdata->int1_irq;
 		data->int2_irq = pdata->int2_irq;
 	}
