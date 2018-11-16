@@ -210,7 +210,7 @@ static struct platform_device mangoh_red_iot_slot = {
 };
 #endif /* ENABLE_IOT_SLOT */
 
-static struct led_platform_data mangoh_red_led_pdata = {
+static struct mangohredled_platform_data mangoh_red_led_pdata = {
 	.gpio = -1,
 };
 
