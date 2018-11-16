@@ -1,7 +1,8 @@
 /* SPDX-License-Identifier: GPL-2.0 */
 #ifndef __LINUX_BQ27X00_BATTERY_H__
 #define __LINUX_BQ27X00_BATTERY_H__
-
+#include <linux/power_supply.h>
+#include "bq27426-platform-data.h"
 enum bq27xxx_chip {
 	BQ27000 = 1, /* bq27000, bq27200 */
 	BQ27010, /* bq27010, bq27210 */
@@ -32,6 +33,18 @@ enum bq27xxx_chip {
 };
 
 struct bq27xxx_device_info;
+//struct power_supply_battery_info;
+struct power_supply_battery_info {
+	int energy_full_design_uwh;	    /* microWatt-hours */
+	int charge_full_design_uah;	    /* microAmp-hours */
+	int voltage_min_design_uv;	    /* microVolts */
+	int precharge_current_ua;	    /* microAmps */
+	int charge_term_current_ua;	    /* microAmps */
+	int constant_charge_current_max_ua; /* microAmps */
+	int constant_charge_voltage_max_uv; /* microVolts */
+};
+
+
 struct bq27xxx_access_methods {
 	int (*read)(struct bq27xxx_device_info *di, u8 reg, bool single);
 	int (*write)(struct bq27xxx_device_info *di, u8 reg, int value, bool single);
@@ -66,14 +79,14 @@ struct bq27xxx_device_info {
 	int charge_design_full;
 	unsigned long last_update;
 	struct delayed_work work;
-	struct power_supply *bat;
+	struct power_supply bat;
 	struct list_head list;
 	struct mutex lock;
 	u8 *regs;
 };
 
 void bq27xxx_battery_update(struct bq27xxx_device_info *di);
-int bq27xxx_battery_setup(struct bq27xxx_device_info *di);
+int bq27xxx_battery_setup(struct bq27xxx_device_info *di, struct bq27426_platform_data *platform_data);
 void bq27xxx_battery_teardown(struct bq27xxx_device_info *di);
 
 #endif
