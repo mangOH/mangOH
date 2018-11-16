@@ -40,7 +40,7 @@ static int led_probe(struct platform_device *pdev)
 {
 	struct led_device* dev;
 	int ret = 0;
-	struct led_platform_data *pdata = dev_get_platdata(&pdev->dev);
+	struct mangohredled_platform_data *pdata = dev_get_platdata(&pdev->dev);
 
 	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
