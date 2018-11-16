@@ -73,7 +73,7 @@ static struct mangoh_yellow_platform_data {
 } mangoh_yellow_pdata;
 
 static struct mangoh_yellow_driver_data {
-//        struct i2c_client* eeprom;
+	/* struct i2c_client* eeprom; */
 	struct i2c_client* i2c_switch;
 	struct i2c_client* imu;
 	struct i2c_client* environmental;
@@ -85,7 +85,7 @@ static struct mangoh_yellow_driver_data {
 	struct i2c_client* gpio_expander;
 	bool expander_registered;
 } mangoh_yellow_driver_data = {
-	.expander_registered	= false,
+	.expander_registered = false,
 };
 
 static struct platform_device mangoh_yellow_device = {
@@ -171,19 +171,26 @@ static struct platform_device mangoh_yellow_expander = {
 
 /*
  * The EEPROM is marked as read-only to prevent accidental writes. The mangOH
- * Yellow has the write protect (WP) pin pulled high which has the effect of making
- * the upper 1/4 of the address space of the EEPROM write protected by hardware.
+ * Yellow has the write protect (WP) pin pulled high which has the effect of
+ * making the upper 1/4 of the address space of the EEPROM write protected by
+ * hardware.
  */
-/*static struct at24_platform_data mangoh_yellow_eeprom_data = {
+/*
+ * The EEPROM is commented out because it's not populated on mangOH Yellow DV2
+ * hardware, but it is expected to return in later revisions.
+ */
+/*
+static struct at24_platform_data mangoh_yellow_eeprom_data = {
 	.byte_len = 4096,
 	.page_size = 32,
 	.flags = (AT24_FLAG_ADDR16 | AT24_FLAG_READONLY),
-};*/
-/*static struct i2c_board_info mangoh_yellow_eeprom_info = {
+};
+static struct i2c_board_info mangoh_yellow_eeprom_info = {
 	I2C_BOARD_INFO("at24", 0x50),
 	.platform_data = &mangoh_yellow_eeprom_data,
 };
 */
+
 static void mangoh_yellow_release(struct device* dev)
 {
 	/* Nothing alloc'd, so nothign to free */
@@ -276,11 +283,11 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}
 	mangoh_yellow_driver_data.expander_registered = true;
 
-	/* Map the I2C BME680 environmental sensor for gas/humidity/temp/pressure sensor */
-	dev_info(&pdev->dev, "mapping bme680 gas/temperature/pressure sensor\n");    
-	mangoh_yellow_driver_data.environmental =
-		i2c_new_device(i2c_adapter_port1,
-			       &mangoh_yellow_environmental_devinfo);
+	/* Map the BME680 environmental sensor (gas/humidity/temp/pressure) */
+	dev_info(&pdev->dev,
+		 "mapping bme680 gas/humidity/temperature/pressure sensor\n");
+	mangoh_yellow_driver_data.environmental = i2c_new_device(
+		i2c_adapter_port1, &mangoh_yellow_environmental_devinfo);
 	if (!mangoh_yellow_driver_data.environmental) {
 		dev_err(&pdev->dev,
 			"Failed to register environmental sensor %s\n",
@@ -324,7 +331,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-	/* Map the I2C Battery Charger*/
+	/* Map the I2C Battery Charger */
 	dev_dbg(&pdev->dev, "mapping battery charger\n");
 	mangoh_yellow_driver_data.battery_charger =
 		i2c_new_device(i2c_adapter_port2,
@@ -347,7 +354,6 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		ret = -ENODEV;
 		goto cleanup;
 	}
-
 
  	/* Map the I2C Light Sensor */
 	dev_dbg(&pdev->dev, "mapping Light Sensor\n");
@@ -386,10 +392,10 @@ static int mangoh_yellow_remove(struct platform_device* pdev)
 	i2c_unregister_device(dd->battery_gauge);
 	i2c_unregister_device(dd->rtc);
 	if (dd->expander_registered)
-        platform_device_unregister(&mangoh_yellow_expander);
-        i2c_unregister_device(dd->gpio_expander);
+		platform_device_unregister(&mangoh_yellow_expander);
+	i2c_unregister_device(dd->gpio_expander);
 	i2c_unregister_device(dd->i2c_switch);
-//	i2c_unregister_device(dd->eeprom);
+	/* i2c_unregister_device(dd->eeprom); */
 	return 0;
 }
 
@@ -398,6 +404,7 @@ static void mangoh_yellow_expander_release(struct device *dev)
 {
 	/* do nothing */
 }
+
 static int __init mangoh_yellow_init(void)
 {
 	platform_driver_register(&mangoh_yellow_driver);
@@ -409,7 +416,7 @@ static int __init mangoh_yellow_init(void)
 		mangoh_yellow_pdata.board_rev = MANGOH_YELLOW_BOARD_REV_DEV;
 	} else {
 		pr_err("%s:Unsupported mangoh yellow board revision (%s)\n",
-			__func__, revision);
+		       __func__, revision);
 		return -ENODEV;
 	}
 

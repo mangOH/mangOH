@@ -10,7 +10,7 @@
 
 apps:
 {
-#if ${MANGOH_BOARD} = RED
+#if ${MANGOH_BOARD} = red
     /*
      * There is a conflict between the following software components:
      *  - sx1509 Linux kernel driver
@@ -45,21 +45,17 @@ apps:
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
     $MANGOH_ROOT/apps/BatteryService/battery
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
-    $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
-    $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redSensor
-    $MANGOH_ROOT/apps/mangOHRedSensorToCloud/redCloud
 
-#elif ${MANGOH_BOARD} = GREEN
+#elif ${MANGOH_BOARD} = green
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
     $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
     $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
     $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
 
-#elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = yellow
    // $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
-    $LEGATO_ROOT/apps/sample/datahubGps/gpsSensor
 
 #endif // MANGOH_BOARD
 
@@ -74,26 +70,27 @@ apps:
 
 commands:
 {
-#if ${MANGOH_BOARD} = GREEN
+#if ${MANGOH_BOARD} = green
     mux = muxCtrlTools:/bin/mux
+#else // MANGOH_BOARD
+    dhub = dataHub:/bin/dhub
 #endif // MANGOH_BOARD
     dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
-    dhub = dataHub:/bin/dhub
 }
 
 interfaceSearch:
 {
 
-#if ${MANGOH_BOARD} = RED
+#if ${MANGOH_BOARD} = red
     $MANGOH_ROOT/apps/BatteryService
     $MANGOH_ROOT/apps/mangOHRedSensorToCloud
     $LEGATO_ROOT/apps/sample/dataHub
 
-#elif ${MANGOH_BOARD} = GREEN
+#elif ${MANGOH_BOARD} = green
     $MANGOH_ROOT/apps/MuxControl
 
-#elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = yellow
     $LEGATO_ROOT/apps/sample/dataHub
 
 #endif // MANGOH_BOARD
@@ -105,16 +102,19 @@ interfaceSearch:
 
 componentSearch:
 {
- #if ${MANGOH_BOARD} = RED
+    ${CURDIR}/components
+
+#if ${MANGOH_BOARD} = red
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
     ${CURDIR}/apps/RedSensorToCloud
     ${CURDIR}/apps/LocationTriangulation
     ${CURDIR}/apps/MqttClient
-    ${CURDIR}/components
     ${CURDIR}/apps/mangOHRedSensorToCloud/interfaces
- #elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = green
+    ${CURDIR}/apps/GpioExpander/gpioExpanderService
+#elif ${MANGOH_BOARD} = yellow
     ${CURDIR}/apps/YellowSensorToCloud/interfaces
- #endif
+#endif
 
 }
 
@@ -122,7 +122,7 @@ componentSearch:
 kernelModules:
 {
 
-#if ${MANGOH_BOARD} = RED
+#if ${MANGOH_BOARD} = red
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
 
@@ -150,7 +150,7 @@ kernelModules:
     // Uncomment to build for the CAN Bus IoT card on mangOH Red
     // #include "sinc/mangoh_red_can_iot_card.sinc"
 
-#elif ${MANGOH_BOARD} = GREEN
+#elif ${MANGOH_BOARD} = green
     $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
 
     /*
@@ -159,7 +159,7 @@ kernelModules:
      */
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
-#elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = yellow
     $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
     $CURDIR/linux_kernel_modules/iio/iio-triggered-buffer
