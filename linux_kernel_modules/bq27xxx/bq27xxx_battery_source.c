@@ -58,6 +58,8 @@
 //#include "power_supply_backport.h"
 #include "bq27xxx_battery.h"
 #include "bq27426-platform-data.h"
+#include <linux/version.h>
+
 #define BQ27XXX_MANUFACTURER	"Texas Instruments"
 
 /* BQ27XXX Flags */
@@ -1915,7 +1917,11 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di, struct bq27426_platfor
         di->bat.external_power_changed = bq27xxx_external_power_changed;
         dev_info(di->dev, " in the setup fourth break");
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0)
+	ret = power_supply_register(di->dev, &di->bat);
+#else
 	ret = power_supply_register_no_ws(di->dev, &di->bat);
+#endif
 	if (ret != 0) {
 		dev_err(di->dev, "failed to register battery\n");
 		return ret;

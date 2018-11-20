@@ -1,5 +1,5 @@
 #include <linux/version.h>
-#include <linux/init.h>	
+#include <linux/init.h>
 #include <linux/module.h>
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0)
 
@@ -65,5 +65,3 @@ char *devm_kasprintf(struct device *dev, gfp_t gfp, const char *fmt, ...)
 EXPORT_SYMBOL_GPL(devm_kasprintf);
 #endif /* LINUX_VERSION_CODE < KERNEL_VERSION(3, 17, 0) */
 MODULE_LICENSE("GPL");
-
-
