@@ -12,6 +12,7 @@
 
 #include "ltc294x-platform-data.h"
 #include "bq24190-platform-data.h"
+#include "bq27xxx_battery.h"
 
 #include "mangoh_red_mux.h"
 #include "mangoh_common.h"
@@ -177,8 +178,14 @@ static struct i2c_board_info ltc2942_battery_gauge_devinfo = {
 	.platform_data = &ltc2942_battery_gauge_platform_data,
 };
 
+static struct bq27426_platform_data bq27426_battery_gauge_platform_data = {
+	.energy_full_design_uwh = 1600000,
+	.charge_full_design_uah = 440000,
+	.voltage_min_design_uv =  3300000,
+};
 static struct i2c_board_info bq27426_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("bq27426", 0x55),
+	.platform_data = &bq27426_battery_gauge_platform_data,
 };
 
 static struct i2c_board_info mangoh_red_battery_charger_devinfo = {

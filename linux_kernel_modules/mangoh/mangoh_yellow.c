@@ -140,17 +140,14 @@ static struct i2c_board_info mangoh_yellow_rtc_devinfo = {
 static struct i2c_board_info mangoh_yellow_battery_charger_devinfo = {
 	I2C_BOARD_INFO("bq25601", 0x6b),
 };
-
 static struct bq27426_platform_data mangoh_yellow_battery_gauge_platform_data = {
 	.energy_full_design_uwh = 1600000,
 	.charge_full_design_uah = 440000,
 	.voltage_min_design_uv =  3300000,
 };
-
 static struct i2c_board_info mangoh_yellow_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("bq27426", 0x55),
 	.platform_data = &mangoh_yellow_battery_gauge_platform_data,
-
 };
 static struct i2c_board_info mangoh_yellow_magnetometer_devinfo = {
 	I2C_BOARD_INFO("bmm150", 0x10),
@@ -169,7 +166,7 @@ static struct platform_device mangoh_yellow_expander = {
 	.dev = {
 		.platform_data = &mangoh_yellow_expander_platform_data,
 		.release = mangoh_yellow_expander_release,
-		},
+	},
 };
 
 /*

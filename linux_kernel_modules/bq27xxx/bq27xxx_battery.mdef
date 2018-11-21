@@ -1,10 +1,8 @@
 sources:
 {
-
     bq27xxx_battery_i2c.c
-
     devres_backport.c
-       bq27xxx_battery_source.c
+    bq27xxx_battery_source.c
     power_supply_backport.c
 }
 

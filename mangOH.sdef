@@ -134,6 +134,7 @@ kernelModules:
     $CURDIR/linux_kernel_modules/led/led
     $CURDIR/linux_kernel_modules/bq24296/bq24296
     $CURDIR/linux_kernel_modules/ltc294x/ltc294x
+    $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/cp2130/cp2130
     $CURDIR/linux_kernel_modules/bmp280/bmp280-i2c
     $CURDIR/linux_kernel_modules/bmp280/bmp280

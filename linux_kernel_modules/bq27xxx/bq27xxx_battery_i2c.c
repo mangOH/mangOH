@@ -20,6 +20,7 @@
 #include <asm/unaligned.h>
 #include "bq27xxx_battery.h"
 #include "bq27426-platform-data.h"
+#include "device_backport.h"
 
 static DEFINE_IDR(battery_id);
 static DEFINE_MUTEX(battery_mutex);
