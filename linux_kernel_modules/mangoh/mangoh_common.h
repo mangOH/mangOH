@@ -35,7 +35,7 @@
 #define CF3_GPIO8	(58)
 #define CF3_GPIO2	(38)
 #define CF3_GPIO33	(78)
-#define CF3_GPIO36     SWIMCU_GPIO_TO_SYS(2)
+#define CF3_GPIO36     SWIMCU_GPIO_TO_SYS(0)
 #endif
 
 #endif /* MANGOH_COMMON_H */

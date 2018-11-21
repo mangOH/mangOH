@@ -37,7 +37,7 @@
 #define OPT300x_LOW_LIMIT	0x02
 #define OPT300x_HIGH_LIMIT	0x03
 #define OPT300x_MANUFACTURER_ID	0x7e
-#define OPT300x_DEVICE_ID	0x7f
+#define OPT3001_DEVICE_ID	0x7f
 
 #define MANUFACTURER_ID_TI	0x5449
 
@@ -192,10 +192,6 @@ static const struct opt300x_scale opt3002_scales[] = {
 
 
 
-
-
-
-
 struct opt300x_chip {
 	int device_id;
 	u16 multiplier_numerator;
@@ -205,7 +201,7 @@ struct opt300x_chip {
 };
 
 static const struct opt300x_chip opt3001_chip = {
-	.device_id = 0x3001,
+	.device_id = OPT3001_DEVICE_ID,
 	.multiplier_numerator = 1,
 	.multiplier_denominator = 100,
 	.table = opt3001_scales,
@@ -216,7 +212,7 @@ static const struct opt300x_chip opt3002_chip = {
 	.device_id = -1,
 	.multiplier_numerator = 6,
 	.multiplier_denominator = 5,
-	.table = opt3001_scales,
+	.table = opt3002_scales,
 	.table_num_entries = ARRAY_SIZE(opt3002_scales),
 };
 
@@ -247,17 +243,18 @@ static int opt300x_find_scale(const struct opt300x *opt, int val,
 		int val2, u8 *exponent)
 {
 	int i;
+        int val_tmp = (val * 1000ll +  val2 / 1000);
 
 	for (i = 0; i < opt->chip->table_num_entries; i++) {
 		const struct opt300x_scale *scale = &opt->chip->table[i];
 
+		int scale_tmp = (scale->val * 1000ll + scale->val2 / 1000);
 		/*
 		 * Combine the integer and micro parts for comparison
 		 * purposes. Use milli lux precision to avoid 32-bit integer
 		 * overflows.
 		 */
-		if ((val * 1000 + val2 / 1000) <=
-				(scale->val * 1000 + scale->val2 / 1000)) {
+		if (val_tmp <= scale_tmp) {
 			*exponent = i;
 			return 0;
 		}
@@ -269,12 +266,17 @@ static int opt300x_find_scale(const struct opt300x *opt, int val,
 static void opt300x_to_iio_ret(struct opt300x *opt, u8 exponent,
 		u16 mantissa, int *val, int *val2)
 {
-	int lux;
+	u64 lux;
+	u64 tmp;
         u16  multiplier1 = opt->chip->multiplier_numerator;
         u16  multiplier2 = opt->chip->multiplier_denominator; 
-	lux = (1000000/multiplier2)* (mantissa << exponent)*multiplier1;
-	*val = lux /1000000;
-	*val2 = lux - (1000000*(*val));
+	tmp = 1000000ull;
+	do_div(tmp, multiplier2);
+	lux = tmp * (mantissa << exponent) * multiplier1;
+	tmp = lux;
+	do_div(tmp, 1000000);
+	*val = tmp;
+	*val2 = lux - (1000000ull * (*val));
 }
 
 static void opt300x_set_mode(struct opt300x *opt, u16 *reg, u16 mode)
@@ -581,6 +583,11 @@ static int opt300x_write_event_value(struct iio_dev *iio,
 	u16 reg;
 
 	u8 exponent;
+        u64 tmp;
+
+        u16  multiplier1 = opt->chip->multiplier_numerator;
+        u16  multiplier2 = opt->chip->multiplier_denominator;
+
 
 	if (val < 0)
 		return -EINVAL;
@@ -593,7 +600,10 @@ static int opt300x_write_event_value(struct iio_dev *iio,
 		goto err;
 	}
 
-	mantissa = (((val * 1000) + (val2 / 1000)) / 10) >> exponent;
+        tmp  = ((val * 1000000ull) + val2) * multiplier2;
+        do_div(tmp, multiplier1 * 1000000ull);
+        mantissa = tmp >> exponent;
+
 	value = (exponent << 12) | mantissa;
 
 	switch (dir) {
@@ -706,13 +716,13 @@ static int opt300x_read_id(struct opt300x *opt)
 				manufacturer);
 		return -ENODEV;
 	}
-
+        dev_info(opt->dev, "manufacturer id (%u)\n",manufacturer);
 
 	if (opt->chip->device_id >= 0) {
-		ret = i2c_smbus_read_word_swapped(opt->client, OPT300x_DEVICE_ID);
+		ret = i2c_smbus_read_word_swapped(opt->client, OPT3001_DEVICE_ID);
 		if (ret < 0) {
 			dev_err(opt->dev, "failed to read register %02x\n",
-					OPT300x_DEVICE_ID);
+					OPT3001_DEVICE_ID);
 			return ret;
 		}
 		device_id = ret;
@@ -846,8 +856,9 @@ static int opt300x_probe(struct i2c_client *client,
         struct opt300x_chip *c = (struct opt300x_chip *)id->driver_data;
 	struct iio_dev *iio;
 	struct opt300x *opt;
-	int irq = client->irq;
 	int ret;
+
+	int irq = client->irq;
 
 	iio = devm_iio_device_alloc(dev, sizeof(*opt));
 	if (!iio)
@@ -864,6 +875,7 @@ static int opt300x_probe(struct i2c_client *client,
 	ret = opt300x_read_id(opt);
 	if (ret)
 		return ret;
+
 	dev_info(dev, "Found %s\n", id->name);
 
 	ret = opt300x_configure(opt);
@@ -893,8 +905,9 @@ static int opt300x_probe(struct i2c_client *client,
 			return ret;
 		}
 		opt->use_irq = true;
+		dev_info(opt->dev,"enabling interrupt based operation");
 	} else {
-		dev_dbg(opt->dev, "enabling interrupt-less operation\n");
+		dev_info(opt->dev, "enabling interrupt-less operation\n");
 	}
 
 	return 0;

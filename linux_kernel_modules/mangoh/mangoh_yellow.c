@@ -155,8 +155,11 @@ static struct i2c_board_info mangoh_yellow_battery_gauge_devinfo = {
 static struct i2c_board_info mangoh_yellow_magnetometer_devinfo = {
 	I2C_BOARD_INFO("bmm150", 0x10),
 };
+
+
 static struct i2c_board_info mangoh_yellow_light_devinfo = {
 	I2C_BOARD_INFO("opt3002", 0x44),
+        .irq = 0,
 };
 static struct expander_platform_data mangoh_yellow_expander_platform_data = {
 	.gpio_expander_base = -1,
@@ -357,6 +360,12 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 
  	/* Map the I2C Light Sensor */
 	dev_dbg(&pdev->dev, "mapping Light Sensor\n");
+	if (devm_gpio_request_one(&pdev->dev, CF3_GPIO36, GPIOF_DIR_IN,
+				  "CF3 opt300x gpio interrupt")) {
+		dev_err(&pdev->dev, "Couldn't request CF3 gpio36");
+		ret = -ENODEV;
+		goto cleanup;
+        }
 	mangoh_yellow_light_devinfo.irq = gpio_to_irq(CF3_GPIO36);
 	mangoh_yellow_driver_data.light =
 		i2c_new_device(i2c_adapter_port2, &mangoh_yellow_light_devinfo);
