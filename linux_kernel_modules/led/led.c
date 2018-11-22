@@ -12,14 +12,14 @@ struct led_device {
 };
 
 static ssize_t led_show(struct device *dev, struct device_attribute *attr,
-                        char *buf)
+			char *buf)
 {
 	struct led_device* led = dev_get_drvdata(dev);
 	return sprintf(buf, "%d\n", atomic_read(&led->val));
 }
 
 static int led_store(struct device *dev, struct device_attribute *attr,
-                     const char *buf, size_t count)
+		     const char *buf, size_t count)
 {
 	struct led_device* led = dev_get_drvdata(dev);
 	u8 val;
@@ -42,14 +42,13 @@ static int led_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct mangohredled_platform_data *pdata = dev_get_platdata(&pdev->dev);
 
-	dev_info(&pdev->dev, "%s(): probe\n", __func__);
+	dev_dbg(&pdev->dev, "%s(): probe\n", __func__);
 
 	if (!pdata) {
 		ret = -EINVAL;
 		dev_err(&pdev->dev, "Required platform data not provided\n");
 		goto  done;
 	}
-
 
 	dev = devm_kzalloc(&pdev->dev, sizeof(*dev), GFP_KERNEL);
 	if (!dev) {
@@ -61,15 +60,10 @@ static int led_probe(struct platform_device *pdev)
 	atomic_set(&dev->val, 0);
 	dev->gpio = pdata->gpio;
 
-	ret = devm_gpio_request(&pdev->dev, dev->gpio, dev_name(&pdev->dev));
+	ret = devm_gpio_request_one(&pdev->dev, dev->gpio, GPIOF_OUT_INIT_LOW,
+				    dev_name(&pdev->dev));
 	if (ret) {
-		dev_err(&pdev->dev, "failed to request LED gpio\n");
-		goto done;
-	}
-
-	ret = gpio_direction_output(dev->gpio, atomic_read(&dev->val));
-	if (ret) {
-		dev_err(&pdev->dev, "failed to set LED gpio as output\n");
+		dev_err(&pdev->dev, "failed to setup LED gpio\n");
 		goto done;
 	}
 
@@ -88,7 +82,7 @@ done:
 static int led_remove(struct platform_device *pdev)
 {
 	struct led_device* led = dev_get_drvdata(&pdev->dev);
-	dev_info(&pdev->dev, "%s(): remove\n", __func__);
+	dev_dbg(&pdev->dev, "%s(): remove\n", __func__);
 
 	/* remove sysfs files */
 	device_remove_file(&pdev->dev, &dev_attr_led);
@@ -118,8 +112,7 @@ static struct platform_driver led_driver = {
 
 static int __init led_init(void)
 {
-	platform_driver_register(&led_driver);
-	return 0;
+	return platform_driver_register(&led_driver);
 }
 
 static void __exit led_exit(void)
