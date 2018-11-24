@@ -33,6 +33,15 @@
 #define MANGOH_RED_I2C_BUS_GPIO_EXPANDER	(MANGOH_RED_I2C_SW_BUS_BASE + 2)
 #define MANGOH_RED_I2C_BUS_EXP			(MANGOH_RED_I2C_SW_BUS_BASE + 3)
 
+/*
+ * If BMI160_INT_TO_GPIO_EXPANDER is defined, then it is expected that the
+ * mangOH Red board has been modified to route the bmi160 interrupt pins to the
+ * GPIO expander rather than the WP GPIOs.
+ *
+ * TODO: maybe this should be turned into a module parameter
+ */
+#define BMI160_INT_TO_GPIO_EXPANDER
+
 
 /*
  *-----------------------------------------------------------------------------
@@ -430,7 +439,11 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		unsigned gpio;
 		int irq;
 
+#ifdef BMI160_INT_TO_GPIO_EXPANDER
 		gpio = gpio_expander->base + 11;
+#else /* BMI160_INT_TO_GPIO_EXPANDER */
+		gpio = CF3_GPIO38;
+#endif /* BMI160_INT_TO_GPIO_EXPANDER */
 		if (gpio_request_one(gpio, GPIOF_DIR_IN, "bmi160_int1")) {
 			dev_err(&pdev->dev,
 				"Couldn't get GPIO expander port11 GPIO");
@@ -446,7 +459,11 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		}
 		mangoh_red_bmi160_platform_data.int1_irq = irq;
 
+#ifdef BMI160_INT_TO_GPIO_EXPANDER
 		gpio = gpio_expander->base + 12;
+#else /* BMI160_INT_TO_GPIO_EXPANDER */
+		gpio = CF3_GPIO36;
+#endif /* BMI160_INT_TO_GPIO_EXPANDER */
 		if (gpio_request_one(gpio, GPIOF_DIR_IN, "bmi160_int2")) {
 			dev_err(&pdev->dev,
 				"Couldn't get GPIO expander port12 GPIO");
