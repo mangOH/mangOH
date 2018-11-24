@@ -10,7 +10,7 @@
 
 apps:
 {
-#if ${MANGOH_BOARD} = RED
+#if ${MANGOH_BOARD} = red
     /*
      * There is a conflict between the following software components:
      *  - sx1509 Linux kernel driver
@@ -43,13 +43,20 @@ apps:
      */
     //$MANGOH_ROOT/apps/LocationTriangulation/locationTriangulation
     $MANGOH_ROOT/apps/DataPushTest/dataPushTest
-    $MANGOH_ROOT/apps/BatteryService/batteryService
-#elif ${MANGOH_BOARD} = GREEN
+    $MANGOH_ROOT/apps/BatteryService/battery
+    $LEGATO_ROOT/apps/sample/dataHub/dataHub
+
+#elif ${MANGOH_BOARD} = green
     $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
     $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
     $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
     $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
     $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
+
+#elif ${MANGOH_BOARD} = yellow
+   // $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
+    $LEGATO_ROOT/apps/sample/dataHub/dataHub
+
 #endif // MANGOH_BOARD
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
@@ -58,14 +65,15 @@ apps:
     $MANGOH_ROOT/apps/SocialService/socialService
     $LEGATO_ROOT/apps/tools/devMode
 
-#if ${MANGOH_BOARD} = YELLOW
-#endif
+
 }
 
 commands:
 {
-#if ${MANGOH_BOARD} = GREEN
+#if ${MANGOH_BOARD} = green
     mux = muxCtrlTools:/bin/mux
+#else // MANGOH_BOARD
+    dhub = dataHub:/bin/dhub
 #endif // MANGOH_BOARD
     dr = drTool:/bin/dr
     twitter = socialService:/bin/twitter
@@ -73,28 +81,48 @@ commands:
 
 interfaceSearch:
 {
-#if ${MANGOH_BOARD} = RED
+
+#if ${MANGOH_BOARD} = red
     $MANGOH_ROOT/apps/BatteryService
-#elif ${MANGOH_BOARD} = GREEN
+    $MANGOH_ROOT/apps/mangOHRedSensorToCloud
+    $LEGATO_ROOT/apps/sample/dataHub
+
+#elif ${MANGOH_BOARD} = green
     $MANGOH_ROOT/apps/MuxControl
+
+#elif ${MANGOH_BOARD} = yellow
+    $LEGATO_ROOT/apps/sample/dataHub
+
 #endif // MANGOH_BOARD
     $MANGOH_ROOT/apps/DataRouter
     $MANGOH_ROOT/apps/MqttClient
     $MANGOH_ROOT/apps/SocialService/interfaces
+
 }
 
 componentSearch:
 {
+    ${CURDIR}/components
+
+#if ${MANGOH_BOARD} = red
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
     ${CURDIR}/apps/RedSensorToCloud
     ${CURDIR}/apps/LocationTriangulation
     ${CURDIR}/apps/MqttClient
-    ${CURDIR}/components
+    ${CURDIR}/apps/mangOHRedSensorToCloud/interfaces
+#elif ${MANGOH_BOARD} = green
+    ${CURDIR}/apps/GpioExpander/gpioExpanderService
+#elif ${MANGOH_BOARD} = yellow
+    ${CURDIR}/apps/YellowSensorToCloud/interfaces
+#endif
+
 }
+
 
 kernelModules:
 {
-#if ${MANGOH_BOARD} = RED
+
+#if ${MANGOH_BOARD} = red
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
 
@@ -106,6 +134,7 @@ kernelModules:
     $CURDIR/linux_kernel_modules/led/led
     $CURDIR/linux_kernel_modules/bq24296/bq24296
     $CURDIR/linux_kernel_modules/ltc294x/ltc294x
+    $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/cp2130/cp2130
     $CURDIR/linux_kernel_modules/bmp280/bmp280-i2c
     $CURDIR/linux_kernel_modules/bmp280/bmp280
@@ -122,7 +151,7 @@ kernelModules:
     // Uncomment to build for the CAN Bus IoT card on mangOH Red
     // #include "sinc/mangoh_red_can_iot_card.sinc"
 
-#elif ${MANGOH_BOARD} = GREEN
+#elif ${MANGOH_BOARD} = green
     $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
 
     /*
@@ -131,17 +160,14 @@ kernelModules:
      */
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
-#elif ${MANGOH_BOARD} = YELLOW
+#elif ${MANGOH_BOARD} = yellow
     $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
     $CURDIR/linux_kernel_modules/iio/iio-triggered-buffer
     $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
     $CURDIR/linux_kernel_modules/iio/iio
 #endif // MANGOH_KERNEL_LACKS_IIO
-
-    // $CURDIR/linux_kernel_modules/bme680/bme680-i2c
-    // $CURDIR/linux_kernel_modules/bme680/bme680
-
+    $CURDIR/linux_kernel_modules/bme680/bme680-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160
     $CURDIR/linux_kernel_modules/bmm150/bmc150_magn_i2c
@@ -149,11 +175,12 @@ kernelModules:
     $CURDIR/linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
     $CURDIR/linux_kernel_modules/rtc_sync/rtc_sync
     $CURDIR/linux_kernel_modules/bq25601/bq25601
-    $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery_i2c
     $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/opt300x/opt300x
     $CURDIR/linux_kernel_modules/expander/expander
     $CURDIR/linux_kernel_modules/cypwifi/cypwifi
+//    $CURDIR/linux_kernel_modules/cp2130/cp2130
+
 
 #endif // MANGOH_BOARD
 }

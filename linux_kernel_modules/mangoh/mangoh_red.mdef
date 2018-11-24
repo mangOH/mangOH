@@ -2,6 +2,7 @@ cflags:
 {
     -DDEBUG 
     -I${MANGOH_ROOT}/linux_kernel_modules/ltc294x
+    -I${MANGOH_ROOT}/linux_kernel_modules/bq27xxx
     -I${MANGOH_ROOT}/linux_kernel_modules/bq24296
     -I${MANGOH_ROOT}/linux_kernel_modules/iot_slot
     -I${MANGOH_ROOT}/linux_kernel_modules/led
@@ -36,6 +37,7 @@ requires:
         $CURDIR/../led/led
         $CURDIR/../bq24296/bq24296
         $CURDIR/../ltc294x/ltc294x
+        $CURDIR/../bq27xxx/bq27xxx_battery
         $CURDIR/../bmp280/bmp280-i2c
         $CURDIR/../bmi160/bmi160-i2c
     }

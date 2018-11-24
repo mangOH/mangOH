@@ -1,7 +1,11 @@
 cflags:
 {
+    -DDEBUG
     -I${MANGOH_ROOT}/linux_kernel_modules/expander
     -I${MANGOH_ROOT}/linux_kernel_modules/opt300x
+    -I${MANGOH_ROOT}/linux_kernel_modules/bq27xxx
+    -I${MANGOH_ROOT}/linux_kernel_modules/bq25601
+
 }
 
 sources:
@@ -21,11 +25,11 @@ requires:
     {
 
         $CURDIR/../bmi160/bmi160-i2c
-        // $CURDIR/../bme680/bme680-i2c
+        $CURDIR/../bme680/bme680-i2c
         $CURDIR/../rtc-pcf85063/rtc-pcf85063
         $CURDIR/../bq25601/bq25601
-        // $CURDIR/../bq27426/bq27426-i2c
-        // $CURDIR/../bmm150/bmm150-i2c
+        $CURDIR/../bq27xxx/bq27xxx_battery
+        $CURDIR/../bmm150/bmc150_magn_i2c
         $CURDIR/../opt300x/opt300x
         $CURDIR/../expander/expander
     }

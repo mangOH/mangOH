@@ -27,8 +27,9 @@ struct expander_device {
 };
 
 
+
 #define CREATE_SYSFS_DEFN(_var, _offset)                                       \
-static ssize_t _var##_show(struct device *dev, struct device_attribute *attr,  \
+static ssize_t _var##_show(struct device *dev,  struct device_attribute *attr, \
 			   char *buf)                                          \
 {                                                                              \
 	struct expander_device* exp = dev_get_drvdata(dev);                    \
@@ -39,17 +40,19 @@ static int _var##_store(struct device *dev, struct device_attribute *attr,     \
 {                                                                              \
 	struct expander_device* exp = dev_get_drvdata(dev);                    \
 	u8 val;                                                                \
-	int ret;							       \
-									       \
-	ret = kstrtou8(buf, 10, &val);					       \
-	if (ret || val > 1)						       \
-		return -EINVAL;						       \
-									       \
+	int ret;                                                               \
+                                                                               \
+	ret = kstrtou8(buf, 10, &val);                                         \
+	if (ret || val > 1)                                                    \
+		return -EINVAL;                                                \
+                                                                               \
 	gpio_set_value_cansleep(exp->gpio_expander_base + _offset, val);       \
-	atomic_set(&exp->_var##_val, val);				       \
-									       \
-	return count;							       \
-}									       \
+	atomic_set(&exp->_var##_val, val);                                     \
+	dev_info(dev, "Setting GPIO %d to %d\n",                               \
+		 exp->gpio_expander_base + _offset, val);                      \
+                                                                               \
+	return count;                                                          \
+}                                                                              \
 static DEVICE_ATTR_RW(_var)
 
 CREATE_SYSFS_DEFN(generic_led, GENERIC_LED);
@@ -63,24 +66,22 @@ CREATE_SYSFS_DEFN(buzzer, BUZZER);
 
 static int gpio_initial_status(struct platform_device *pdev,
 			       struct device_attribute *attr,
-			       int function_number, int function_val,
+			       int expander_gpio_offset, int gpio_output_level,
 			       atomic_t *atomic_val)
 {
-	int ret = 0;
-	struct expander_device* exp = dev_get_drvdata(&pdev->dev);
-
-	const int gpio_num = exp->gpio_expander_base + function_number;
-	ret = devm_gpio_request_one(&pdev->dev, gpio_num,
-				    (GPIOF_DIR_OUT |
-				     (function_val ? GPIOF_INIT_HIGH :
-				                     GPIOF_INIT_LOW)),
-				    attr->attr.name);
+	struct expander_device *exp = dev_get_drvdata(&pdev->dev);
+	const int gpio_num = exp->gpio_expander_base + expander_gpio_offset;
+	int ret = devm_gpio_request_one(
+		&pdev->dev, gpio_num,
+		(GPIOF_DIR_OUT |
+		 (gpio_output_level ? GPIOF_INIT_HIGH : GPIOF_INIT_LOW)),
+		attr->attr.name);
 	if (ret != 0) {
 		dev_err(&pdev->dev, "Couldn't request GPIO %d\n", gpio_num);
 		return ret;
 	}
 
-	atomic_set(atomic_val, function_val);
+	atomic_set(atomic_val, gpio_output_level);
 
 	ret = device_create_file(&pdev->dev, attr);
 	if (ret != 0) {
@@ -94,15 +95,12 @@ static int gpio_initial_status(struct platform_device *pdev,
 
 static void gpio_final_status(struct platform_device *pdev,
 			      struct device_attribute *attr,
-			      int function_number, int function_val)
+			      int expander_gpio_offset, int gpio_output_level)
 {
-
-	struct expander_device* exp = dev_get_drvdata(&pdev->dev);
-
+	struct expander_device *exp = dev_get_drvdata(&pdev->dev);
+	const int gpio_num = exp->gpio_expander_base + expander_gpio_offset;
 	device_remove_file(&pdev->dev, attr);
-
-	gpio_set_value_cansleep(exp->gpio_expander_base + function_number,
-				function_val);
+	gpio_set_value_cansleep(gpio_num, gpio_output_level);
 }
 
 static int expander_probe(struct platform_device *pdev)
@@ -111,7 +109,7 @@ static int expander_probe(struct platform_device *pdev)
 	int ret = 0;
 	struct expander_platform_data *pdata = dev_get_platdata(&pdev->dev);
 
-	dev_info(&pdev->dev, "%s(): probe\n", __func__);
+	dev_dbg(&pdev->dev, "%s(): probe\n", __func__);
 
 	if (!pdata) {
 		ret = -EINVAL;
@@ -130,41 +128,33 @@ static int expander_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, dev);
 
 	ret = gpio_initial_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0,
-				  &dev->generic_led_val);
-	if (ret != 0)
+			    &dev->generic_led_val);
+	if (ret)
 		goto done;
-
 	ret = gpio_initial_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0,
-				  &dev->pcm_sel_val);
-	if (ret != 0)
+			    &dev->pcm_sel_val);
+	if (ret)
 		goto done;
-
 	ret = gpio_initial_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0,
-				  &dev->sdio_sel_val);
-	if (ret != 0)
+			    &dev->sdio_sel_val);
+	if (ret)
 		goto done;
-
 	ret = gpio_initial_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0,
-				  &dev->tri_led_blu_val);
-	if (ret != 0)
+			    &dev->tri_led_blu_val);
+	if (ret)
 		goto done;
-
 	ret = gpio_initial_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0,
-				  &dev->tri_led_red_val);
-	if (ret != 0)
+			    &dev->tri_led_red_val);
+	if (ret)
 		goto done;
-
 	ret = gpio_initial_status(pdev, &dev_attr_tri_led_grn, TRI_LED_GRN, 0,
-				 &dev->tri_led_grn_val);
-	if (ret != 0)
+			    &dev->tri_led_grn_val);
+	if (ret)
 		goto done;
-
 	ret = gpio_initial_status(pdev, &dev_attr_buzzer, BUZZER, 0,
-				  &dev->buzzer_val);
-	if (ret != 0)
+			    &dev->buzzer_val);
+	if (ret)
 		goto done;
-
-
 
 done:
 	return ret;
@@ -172,11 +162,9 @@ done:
 
 static int expander_remove(struct platform_device *pdev)
 {
-	dev_info(&pdev->dev, "%s(): remove\n", __func__);
-
 	/* remove sysfs files & set final state values for gpio expander */
 	gpio_final_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0);
-        gpio_final_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0);
+	gpio_final_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0);
 	gpio_final_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0);
 	gpio_final_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0);
 	gpio_final_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0);
@@ -220,5 +208,5 @@ module_exit(expander_exit);
 MODULE_ALIAS("platform:expander");
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Sierra Wireless");
-MODULE_DESCRIPTION("Expander driver");
+MODULE_DESCRIPTION("EXPANDER driver");
 MODULE_VERSION("0.1");

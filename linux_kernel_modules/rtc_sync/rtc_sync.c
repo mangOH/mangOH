@@ -121,8 +121,16 @@ static int time_check(void *data)
 		long long delta_ns;
 
 		ktime_get_real_ts(&before);
-		while (timeout > 0)
+		while (timeout > 0) {
+			/* schedule_timeout requires the task state to be set
+			 * to either TASK_INTERRUPTIBLE or TASK_UNINTERRUPTIBLE,
+			 * otherwise the kernel will not put the task on the sleep list.
+			 * If you have any critical processing you need done in rtc
+			 * then just change this to TASK_UNINTERRUPTIBLE - i.e no signals.
+			 */
+			set_current_state(TASK_INTERRUPTIBLE);
 			timeout = schedule_timeout(timeout);
+		}
 		ktime_get_real_ts(&after);
 
 		delta_ns = timespec_to_ns(&after) - timespec_to_ns(&before);

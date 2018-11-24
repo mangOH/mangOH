@@ -18,8 +18,9 @@
 #include <linux/interrupt.h>
 #include <linux/module.h>
 #include <asm/unaligned.h>
-
 #include "bq27xxx_battery.h"
+#include "bq27426-platform-data.h"
+#include "device_backport.h"
 
 static DEFINE_IDR(battery_id);
 static DEFINE_MUTEX(battery_mutex);
@@ -147,15 +148,21 @@ static int bq27xxx_battery_i2c_bulk_write(struct bq27xxx_device_info *di,
 static int bq27xxx_battery_i2c_probe(struct i2c_client *client,
 				     const struct i2c_device_id *id)
 {
+
 	struct bq27xxx_device_info *di;
 	int ret;
 	char *name;
 	int num;
+        struct bq27426_platform_data *platform_data;
+        platform_data = client->dev.platform_data;
+        dev_info(&client->dev, " BQ27xx probe");
 
 	/* Get new ID for the new battery device */
 	mutex_lock(&battery_mutex);
 	num = idr_alloc(&battery_id, client, 0, 0, GFP_KERNEL);
 	mutex_unlock(&battery_mutex);
+        dev_info(&client->dev, " BQ27xx probe battery id");
+
 	if (num < 0)
 		return num;
 
@@ -171,13 +178,13 @@ static int bq27xxx_battery_i2c_probe(struct i2c_client *client,
 	di->dev = &client->dev;
 	di->chip = id->driver_data;
 	di->name = name;
-
 	di->bus.read = bq27xxx_battery_i2c_read;
 	di->bus.write = bq27xxx_battery_i2c_write;
 	di->bus.read_bulk = bq27xxx_battery_i2c_bulk_read;
 	di->bus.write_bulk = bq27xxx_battery_i2c_bulk_write;
+        dev_info(&client->dev, " BQ27xx probe  battery setup");
 
-	ret = bq27xxx_battery_setup(di);
+	ret = bq27xxx_battery_setup(di, platform_data);
 	if (ret)
 		goto err_failed;
 
@@ -256,7 +263,7 @@ static const struct i2c_device_id bq27xxx_i2c_id_table[] = {
 };
 MODULE_DEVICE_TABLE(i2c, bq27xxx_i2c_id_table);
 
-#ifdef CONFIG_OF
+//#ifdef CONFIG_OF
 static const struct of_device_id bq27xxx_battery_i2c_of_match_table[] = {
 	{ .compatible = "ti,bq27200" },
 	{ .compatible = "ti,bq27210" },
@@ -287,7 +294,7 @@ static const struct of_device_id bq27xxx_battery_i2c_of_match_table[] = {
 	{},
 };
 MODULE_DEVICE_TABLE(of, bq27xxx_battery_i2c_of_match_table);
-#endif
+//#endif
 
 static struct i2c_driver bq27xxx_battery_i2c_driver = {
 	.driver = {

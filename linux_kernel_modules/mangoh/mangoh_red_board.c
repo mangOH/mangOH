@@ -15,6 +15,7 @@
 #include "ltc294x-platform-data.h"
 #include "bq24190-platform-data.h"
 #include "bmi160_pdata.h"
+#include "bq27xxx_battery.h"
 
 #include "mangoh_red_mux.h"
 #include "mangoh_common.h"
@@ -188,14 +189,24 @@ static struct i2c_board_info mangoh_red_pressure_devinfo = {
 	I2C_BOARD_INFO("bmp280", 0x76),
 };
 
-static struct ltc294x_platform_data mangoh_red_battery_gauge_platform_data = {
+static struct ltc294x_platform_data ltc2942_battery_gauge_platform_data = {
 	.r_sense = 18,
 	.prescaler_exp = 32,
 	.name = "LTC2942",
 };
-static struct i2c_board_info mangoh_red_battery_gauge_devinfo = {
+static struct i2c_board_info ltc2942_battery_gauge_devinfo = {
 	I2C_BOARD_INFO("ltc2942", 0x64),
-	.platform_data = &mangoh_red_battery_gauge_platform_data,
+	.platform_data = &ltc2942_battery_gauge_platform_data,
+};
+
+static struct bq27426_platform_data bq27426_battery_gauge_platform_data = {
+	.energy_full_design_uwh = 1600000,
+	.charge_full_design_uah = 440000,
+	.voltage_min_design_uv =  3300000,
+};
+static struct i2c_board_info bq27426_battery_gauge_devinfo = {
+	I2C_BOARD_INFO("bq27426", 0x55),
+	.platform_data = &bq27426_battery_gauge_platform_data,
 };
 
 static struct i2c_board_info mangoh_red_battery_charger_devinfo = {
@@ -227,7 +238,7 @@ static struct platform_device mangoh_red_iot_slot = {
 };
 #endif /* ENABLE_IOT_SLOT */
 
-static struct led_platform_data mangoh_red_led_pdata = {
+static struct mangohredled_platform_data mangoh_red_led_pdata = {
 	.gpio = -1,
 };
 
@@ -506,15 +517,21 @@ static int mangoh_red_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-	/* Map the I2C ltc2942 battery gauge */
-	dev_dbg(&pdev->dev, "mapping ltc2942 battery gauge\n");
-	mangoh_red_driver_data.battery_gauge = i2c_new_device(
-		i2c_adapter_batt_charger,
-		&mangoh_red_battery_gauge_devinfo);
-	if (!mangoh_red_driver_data.battery_gauge) {
-		dev_err(&pdev->dev, "battery gauge is missing\n");
-		ret = -ENODEV;
-		goto cleanup;
+	/* Map the I2C battery gauge */
+	{
+		struct i2c_board_info *battery_gauge_info =
+			(mangoh_red_pdata.board_rev == MANGOH_RED_BOARD_REV_DV5) ?
+			&ltc2942_battery_gauge_devinfo :
+			&bq27426_battery_gauge_devinfo;
+		dev_dbg(&pdev->dev, "mapping %s battery gauge\n",
+			battery_gauge_info->type);
+		mangoh_red_driver_data.battery_gauge = i2c_new_device(
+			i2c_adapter_batt_charger, battery_gauge_info);
+		if (!mangoh_red_driver_data.battery_gauge) {
+			dev_err(&pdev->dev, "battery gauge is missing\n");
+			ret = -ENODEV;
+			goto cleanup;
+		}
 	}
 
 	/*

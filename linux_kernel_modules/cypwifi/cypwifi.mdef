@@ -1,9 +1,9 @@
 preBuilt:
 {
-	$CURDIR/compat/compat.ko
-	$CURDIR/net/wireless/cfg80211.ko
-	$CURDIR/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
-	$CURDIR/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko
+	$MANGOH_ROOT/build/${MANGOH_BOARD}_${LEGATO_TARGET}/modules/cypwifi/compat/compat.ko
+	$MANGOH_ROOT/build/${MANGOH_BOARD}_${LEGATO_TARGET}/modules/cypwifi/net/wireless/cfg80211.ko
+	$MANGOH_ROOT/build/${MANGOH_BOARD}_${LEGATO_TARGET}/modules/cypwifi/drivers/net/wireless/broadcom/brcm80211/brcmfmac/brcmfmac.ko
+	$MANGOH_ROOT/build/${MANGOH_BOARD}_${LEGATO_TARGET}/modules/cypwifi/drivers/net/wireless/broadcom/brcm80211/brcmutil/brcmutil.ko
 }
 
 bundles:
@@ -14,8 +14,16 @@ bundles:
 	$CURDIR/firmware/brcmfmac43430-sdio.bin /etc/firmware/brcm/brcmfmac43430-sdio.bin
 	$CURDIR/firmware/brcmfmac43430-sdio.clm_blob /etc/firmware/brcm/brcmfmac43430-sdio.clm_blob
 	[x] $CURDIR/scripts/cywifi.sh /etc/init.d/cywifi.sh
+	//[x] $CURDIR/scripts/cywifi_start.sh /etc/init.d/cywifi_start.sh
+	//[x] $CURDIR/scripts/cywifi_stop.sh /etc/init.d/cywifi_stop.sh
     }
 }
+
+//scripts:
+//{
+    //install:  $CURDIR/scripts/cywifi_start.sh
+    //remove:   $CURDIR/scripts/cywifi_stop.sh
+//}
 
 
 load: manual

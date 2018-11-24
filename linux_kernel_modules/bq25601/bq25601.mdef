@@ -1,4 +1,4 @@
 sources:
 {
-    bq2560x_charger.c
+    bq25601.c
 }

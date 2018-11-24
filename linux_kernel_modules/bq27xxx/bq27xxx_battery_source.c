@@ -55,8 +55,10 @@
 #include <linux/power_supply.h>
 #include <linux/slab.h>
 #include <linux/of.h>
-
+//#include "power_supply_backport.h"
 #include "bq27xxx_battery.h"
+#include "bq27426-platform-data.h"
+#include <linux/version.h>
 
 #define BQ27XXX_MANUFACTURER	"Texas Instruments"
 
@@ -84,7 +86,7 @@
 #define BQ27XXX_SOFT_RESET		0x42
 #define BQ27XXX_RESET			0x41
 
-#define BQ27XXX_RS			(20) /* Resistor sense mOhm */
+#define BQ27XXX_RS			(10) /* Resistor sense mOhm */
 #define BQ27XXX_POWER_CONSTANT		(29200) /* 29.2 µV^2 * 1000 */
 #define BQ27XXX_CURRENT_CONSTANT	(3570) /* 3.57 µV * 1000 */
 
@@ -661,7 +663,7 @@ static enum power_supply_property bq27421_props[] = {
 	POWER_SUPPLY_PROP_TECHNOLOGY,
 	POWER_SUPPLY_PROP_CHARGE_FULL,
 	POWER_SUPPLY_PROP_CHARGE_NOW,
-	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	//POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
 	POWER_SUPPLY_PROP_MANUFACTURER,
 };
 #define bq27425_props bq27421_props
@@ -741,6 +743,7 @@ static struct bq27xxx_dm_reg bq27426_dm_regs[] = {
 	[BQ27XXX_DM_DESIGN_ENERGY]     = { 82,  8, 2,    0, 32767 },
 	[BQ27XXX_DM_TERMINATE_VOLTAGE] = { 82, 10, 2, 2500,  3700 },
 };
+
 
 #if 0 /* not yet tested */
 #define bq27441_dm_regs bq27421_dm_regs
@@ -1265,18 +1268,34 @@ static void bq27xxx_battery_set_config(struct bq27xxx_device_info *di,
 	/* assume bq27xxx_battery_update() is called hereafter */
 }
 
-static void bq27xxx_battery_settings(struct bq27xxx_device_info *di)
+static void bq27xxx_battery_settings(struct bq27xxx_device_info *di, struct bq27426_platform_data *platform_data )
 {
-	struct power_supply_battery_info info = {};
+/*	struct power_supply_battery_info info = {
+		.energy_full_design_uwh = 16280000,
+		.charge_full_design_uah = 4400000,
+		.voltage_min_design_uv = 3300000,
+		.precharge_current_ua = -EINVAL,
+		.charge_term_current_ua = -EINVAL,
+		.constant_charge_current_max_ua = -EINVAL,
+		.constant_charge_voltage_max_uv = -EINVAL,
+	};*/
 	unsigned int min, max;
 
-	if (power_supply_get_battery_info(di->bat, &info) < 0)
-		return;
+        struct power_supply_battery_info info;
+        info.energy_full_design_uwh = platform_data->energy_full_design_uwh;
+        info.charge_full_design_uah = platform_data->charge_full_design_uah;
+        info.voltage_min_design_uv  = platform_data->voltage_min_design_uv;	
+       // struct bq27xxx_platform_data *platform_data;
+	dev_info(di->dev, " in the setting first break");
+
+	//if (power_supply_get_battery_info(&di->bat, &info) < 0)
+	//	return;
 
 	if (!di->dm_regs) {
 		dev_warn(di->dev, "data memory update not supported for chip\n");
 		return;
 	}
+	dev_info(di->dev, " in the setting third break");
 
 	if (info.energy_full_design_uwh != info.charge_full_design_uah) {
 		if (info.energy_full_design_uwh == -EINVAL)
@@ -1407,8 +1426,13 @@ static int bq27xxx_battery_read_dcap(struct bq27xxx_device_info *di)
 		dcap = (dcap << 8) * BQ27XXX_CURRENT_CONSTANT / BQ27XXX_RS;
 	else
 		dcap *= 1000;
-
-	return dcap;
+                dev_info(di->dev, " value of dcap is %d", dcap); 
+	        dev_info(di->dev, " value of dcap is %d", dcap); 
+               dev_info(di->dev, " value of dcap is %d", dcap); 
+               dev_info(di->dev, " value of dcap is %d", dcap); 
+               dev_info(di->dev, " value of dcap is %d", dcap); 
+               dev_info(di->dev, " value of dcap is %d", dcap); 
+return dcap;
 }
 
 /*
@@ -1583,7 +1607,7 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 	if (cache.flags >= 0) {
 		cache.temperature = bq27xxx_battery_read_temperature(di);
 		if (has_ci_flag && (cache.flags & BQ27000_FLAG_CI)) {
-			dev_info_once(di->dev, "battery is not calibrated! ignoring capacity values\n");
+			dev_info(di->dev, "battery is not calibrated! ignoring capacity values\n");
 			cache.capacity = -ENODATA;
 			cache.energy = -ENODATA;
 			cache.time_to_empty = -ENODATA;
@@ -1615,7 +1639,7 @@ void bq27xxx_battery_update(struct bq27xxx_device_info *di)
 	}
 
 	if (di->cache.capacity != cache.capacity)
-		power_supply_changed(di->bat);
+		power_supply_changed(&di->bat);
 
 	if (memcmp(&di->cache, &cache, sizeof(cache)) != 0)
 		di->cache = cache;
@@ -1679,7 +1703,7 @@ static int bq27xxx_battery_status(struct bq27xxx_device_info *di,
 			status = POWER_SUPPLY_STATUS_FULL;
 		else if (di->cache.flags & BQ27000_FLAG_CHGS)
 			status = POWER_SUPPLY_STATUS_CHARGING;
-		else if (power_supply_am_i_supplied(di->bat) > 0)
+		else if (power_supply_am_i_supplied(&di->bat) > 0)
 			status = POWER_SUPPLY_STATUS_NOT_CHARGING;
 		else
 			status = POWER_SUPPLY_STATUS_DISCHARGING;
@@ -1763,8 +1787,9 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 					union power_supply_propval *val)
 {
 	int ret = 0;
-	struct bq27xxx_device_info *di = power_supply_get_drvdata(psy);
-
+	//struct bq27xxx_device_info *di = power_supply_get_drvdata(psy);
+        
+	struct bq27xxx_device_info *di = container_of(psy, struct bq27xxx_device_info, bat);
 	mutex_lock(&di->lock);
 	if (time_is_before_jiffies(di->last_update + 5 * HZ)) {
 		cancel_delayed_work_sync(&di->work);
@@ -1851,20 +1876,18 @@ static int bq27xxx_battery_get_property(struct power_supply *psy,
 
 static void bq27xxx_external_power_changed(struct power_supply *psy)
 {
-	struct bq27xxx_device_info *di = power_supply_get_drvdata(psy);
+//	struct bq27xxx_device_info *di = power_supply_get_drvdata(psy);
+	struct bq27xxx_device_info *di = container_of(psy, struct bq27xxx_device_info, bat);
 
 	cancel_delayed_work_sync(&di->work);
 	schedule_delayed_work(&di->work, 0);
 }
 
-int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
+int bq27xxx_battery_setup(struct bq27xxx_device_info *di, struct bq27426_platform_data *platform_data)
 {
-	struct power_supply_desc *psy_desc;
-	struct power_supply_config psy_cfg = {
-		.of_node = di->dev->of_node,
-		.drv_data = di,
-	};
-
+//	struct power_supply *psy_desc;
+	int ret = 0;
+        dev_info(di->dev, " in the setup");
 	INIT_DELAYED_WORK(&di->work, bq27xxx_battery_poll);
 	mutex_init(&di->lock);
 
@@ -1872,32 +1895,51 @@ int bq27xxx_battery_setup(struct bq27xxx_device_info *di)
 	di->unseal_key = bq27xxx_chip_data[di->chip].unseal_key;
 	di->dm_regs    = bq27xxx_chip_data[di->chip].dm_regs;
 	di->opts       = bq27xxx_chip_data[di->chip].opts;
+        dev_info(di->dev, " in the setup second break");
 
-	psy_desc = devm_kzalloc(di->dev, sizeof(*psy_desc), GFP_KERNEL);
-	if (!psy_desc)
-		return -ENOMEM;
-
+	/*&di->bat = devm_kzalloc(di->dev, sizeof(struct power_supply), GFP_KERNEL);
+	if (!di->bat)
+		return -ENOMEM;*/
+/*
 	psy_desc->name = di->name;
 	psy_desc->type = POWER_SUPPLY_TYPE_BATTERY;
 	psy_desc->properties = bq27xxx_chip_data[di->chip].props;
 	psy_desc->num_properties = bq27xxx_chip_data[di->chip].props_size;
 	psy_desc->get_property = bq27xxx_battery_get_property;
 	psy_desc->external_power_changed = bq27xxx_external_power_changed;
+*/
+        dev_info(di->dev, " in the setup third break");
+        di->bat.name = "BQ27246";
+        di->bat.type = POWER_SUPPLY_TYPE_BATTERY;
+        di->bat.properties = bq27xxx_chip_data[di->chip].props;
+	di->bat.num_properties = bq27xxx_chip_data[di->chip].props_size;
+        di->bat.get_property = bq27xxx_battery_get_property;
+        di->bat.external_power_changed = bq27xxx_external_power_changed;
+        dev_info(di->dev, " in the setup fourth break");
 
-	di->bat = power_supply_register_no_ws(di->dev, psy_desc, &psy_cfg);
-	if (IS_ERR(di->bat)) {
+#if LINUX_VERSION_CODE < KERNEL_VERSION(3, 15, 0)
+	ret = power_supply_register(di->dev, &di->bat);
+#else
+	ret = power_supply_register_no_ws(di->dev, &di->bat);
+#endif
+	if (ret != 0) {
 		dev_err(di->dev, "failed to register battery\n");
-		return PTR_ERR(di->bat);
+		return ret;
 	}
+        dev_info(di->dev, " in the setup fifth break");
 
-	bq27xxx_battery_settings(di);
+	bq27xxx_battery_settings(di, platform_data);
+        dev_info(di->dev, " in the setup sixth break");
+
 	bq27xxx_battery_update(di);
+        dev_info(di->dev, " in the setup seventh break");
 
 	mutex_lock(&bq27xxx_list_lock);
 	list_add(&di->list, &bq27xxx_battery_devices);
 	mutex_unlock(&bq27xxx_list_lock);
+        dev_info(di->dev, " in the setup eigth break");
 
-	return 0;
+	return ret;
 }
 EXPORT_SYMBOL_GPL(bq27xxx_battery_setup);
 
@@ -1913,7 +1955,7 @@ void bq27xxx_battery_teardown(struct bq27xxx_device_info *di)
 
 	cancel_delayed_work_sync(&di->work);
 
-	power_supply_unregister(di->bat);
+	power_supply_unregister(&di->bat);
 
 	mutex_lock(&bq27xxx_list_lock);
 	list_del(&di->list);
