@@ -160,6 +160,9 @@ kernelModules:
      */
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
+	
+	// Uncomment to build for the CAN Bus IoT card on mangOH Red
+    // #include "sinc/mangoh_green_can_iot_card.sinc"
 #elif ${MANGOH_BOARD} = yellow
     $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
