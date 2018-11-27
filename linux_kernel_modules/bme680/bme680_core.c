@@ -25,6 +25,10 @@
 #define IIO_SUPPORTS_OVERSAMPLING_RATIO
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(3, 16, 0)
+#define REGMAP_SUPPORTS_GET_DEVICE
+#endif
+
 struct bme680_calib {
 	u16 par_t1;
 	s16 par_t2;
@@ -67,6 +71,10 @@ struct bme680_data {
 	 * and humidity compensation calculations.
 	 */
 	s32 t_fine;
+
+#ifndef REGMAP_SUPPORTS_GET_DEVICE
+	struct device *dev;
+#endif /* REGMAP_SUPPORTS_GET_DEVICE */
 };
 
 const struct regmap_config bme680_regmap_config = {
@@ -106,7 +114,11 @@ static const struct iio_chan_spec bme680_channels[] = {
 static int bme680_read_calib(struct bme680_data *data,
 			     struct bme680_calib *calib)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	unsigned int tmp, tmp_msb, tmp_lsb;
 	int ret;
 	__le16 buf;
@@ -493,7 +505,11 @@ static u8 bme680_calc_heater_dur(u16 dur)
 
 static int bme680_set_mode(struct bme680_data *data, bool mode)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 
 	if (mode) {
@@ -520,7 +536,11 @@ static u8 bme680_oversampling_to_reg(u8 val)
 
 static int bme680_chip_config(struct bme680_data *data)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 	u8 osrs;
 
@@ -562,7 +582,11 @@ static int bme680_chip_config(struct bme680_data *data)
 
 static int bme680_gas_config(struct bme680_data *data)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 	u8 heatr_res, heatr_dur;
 
@@ -598,7 +622,11 @@ static int bme680_gas_config(struct bme680_data *data)
 static int bme680_read_temp(struct bme680_data *data,
 			    int *val, int *val2)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 	__be32 tmp = 0;
 	s32 adc_temp;
@@ -641,7 +669,11 @@ static int bme680_read_temp(struct bme680_data *data,
 static int bme680_read_press(struct bme680_data *data,
 			     int *val, int *val2)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 	__be32 tmp = 0;
 	s32 adc_press;
@@ -673,7 +705,11 @@ static int bme680_read_press(struct bme680_data *data,
 static int bme680_read_humid(struct bme680_data *data,
 			     int *val, int *val2)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 	__be16 tmp = 0;
 	s32 adc_humidity;
@@ -707,7 +743,11 @@ static int bme680_read_humid(struct bme680_data *data,
 static int bme680_read_gas(struct bme680_data *data,
 			   int *val)
 {
+#ifdef REGMAP_SUPPORTS_GET_DEVICE
 	struct device *dev = regmap_get_device(data->regmap);
+#else
+	struct device *dev = data->dev;
+#endif
 	int ret;
 	__be16 tmp = 0;
 	unsigned int check;
@@ -903,6 +943,9 @@ int bme680_core_probe(struct device *dev, struct regmap *regmap,
 	data = iio_priv(indio_dev);
 	dev_set_drvdata(dev, indio_dev);
 	data->regmap = regmap;
+#ifndef REGMAP_SUPPORTS_GET_DEVICE
+	data->dev = dev;
+#endif
 	indio_dev->dev.parent = dev;
 	indio_dev->name = name;
 	indio_dev->channels = bme680_channels;
