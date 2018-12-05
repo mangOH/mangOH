@@ -987,10 +987,10 @@ int brcmf_bus_started(struct device *dev)
 	/* add primary networking interface */
 	/* SWI - we cannot pick the lowest numbered i/f as that's
 	 * usually 0 (i.e. wlan0) and the existing codebase has a
-	 * a different driver using wlan0 and another using wlan1.
-	 * Thus, let's hard-code to wlan2. TODO Fix to wlan%d.
+	 * a different driver using wlan0. Thus, let's hard-code to wlan1.
+	 * TODO Fix to wlan%d and have enumeration being done by the hotplug daemon
 	 */
-	ifp = brcmf_add_if(drvr, 0, 0, false, "wlan2", NULL);
+	ifp = brcmf_add_if(drvr, 0, 0, false, "wlan1", NULL);
 	if (IS_ERR(ifp))
 		return PTR_ERR(ifp);
 

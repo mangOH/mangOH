@@ -15,9 +15,9 @@
 	modified the top-level Makefile to build the driver before building the target.
   * We have had to make a few changes to the backport code to deal with incorrect
 	semantic patching for the different kernels on the WP85 & WP76.
-  * We have selected wlan2 for the Cypress chip. We cannot use the lowest numbered interface
-	as the system reference code has assumed the TI on Wifi on the IOT card is wlan0
-	and the Mediatek (MangOH Red) code assumes wlan1. Thus, we picked the next interface.
+  * We have selected wlan1 for the Cypress chip. We cannot use the lowest numbered interface
+	as the system reference code has assumed the TI Wifi on the IOT card is wlan0
+	Thus, we picked the next interface.
 
 * Currently, the Cypress chip cannot operate in low-power mode on the WP85. It seems
     to be some sort of SDIO timing issue that Cypress will be looking at on the
@@ -43,7 +43,7 @@
 
 * Testing was done simply with the following commands:
   * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
-  * wpa_supplicant -B -Dnl80211 -iwlan2 -c /etc/wpa_supplicant.conf
-  * /sbin/udhcpc -R -b -i wlan2
+  * wpa_supplicant -B -Dnl80211 -iwlan1 -c /etc/wpa_supplicant.conf
+  * /sbin/udhcpc -R -b -i wlan1
   * ping www.google.com
 

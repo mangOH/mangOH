@@ -44,13 +44,15 @@ cy_wifi_start() {
 	fi
 
 	# Let's make sure the Cypress chip got attached by the Kernel's MMC framework
-	# Bug here if dmesg has overflowed
-	sleep 3
-	dmesg | grep "new high speed SDIO card"
-	if [ $? -ne 0 ] ; then
-		echo "Cypress chip not recognized across MMC/SDIO bus"
-		exit 2
-	fi
+	# Bug here if dmesg has overflowed - for now we are removing the code below
+	# as we will assume MMC enumeration happened. Need a better way to error check
+	# as the driver on the WP76 continuously polls CIS tuples ad-infintum and messes up the log
+	#sleep 3
+	#dmesg | grep "new high speed SDIO card"
+	#if [ $? -ne 0 ] ; then
+		#echo "Cypress chip not recognized across MMC/SDIO bus"
+		#exit 2
+	#fi
 
 	# We need to get this into the reference software or the product branch ASAP
 	# and remove this temp. workaround, should be /lib/firmware - TODO
@@ -79,13 +81,13 @@ cy_wifi_start() {
 	# firmware loads and reboots the Cypress device
 	sleep 5
 
-	ifconfig -a | grep wlan2 >/dev/null
+	ifconfig -a | grep wlan1 >/dev/null
 	if [ $? -ne 0 ] ; then
-		echo "wlan2 interface was not created by Cypress drivers"; exit 127
+		echo "wlan1 interface was not created by Cypress drivers"; exit 127
 	fi
-	ifconfig wlan2 up >/dev/null
+	ifconfig wlan1 up >/dev/null
 	if [ $? -ne 0 ] ; then
-		echo "wlan2 interface UP not working; exit 127"
+		echo "wlan1 interface UP not working; exit 127"
 	fi
 	# In case you have access to the Broadcom wl tool
 	#./wlarmv7a mpc 0
@@ -93,9 +95,9 @@ cy_wifi_start() {
 }
 
 cy_wifi_stop() {
-	ifconfig | grep wlan2 >/dev/null
+	ifconfig | grep wlan1 >/dev/null
 	if [ $? -eq 0 ]; then
-	   ifconfig wlan2 down
+	   ifconfig wlan1 down
 	fi
 	rmmod `find /legato/systems/current/modules/ -name "*brcmfmac.ko"` || exit 127
 	rmmod `find /legato/systems/current/modules/ -name "*brcmutil.ko"` || exit 127
