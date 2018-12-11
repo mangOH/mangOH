@@ -78,4 +78,3 @@
   * wpa_supplicant -B -Dnl80211 -iwlan1 -c /etc/wpa_supplicant.conf
   * /sbin/udhcpc -R -b -i wlan1
   * ping www.google.com
-8
