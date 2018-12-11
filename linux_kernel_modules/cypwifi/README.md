@@ -5,7 +5,8 @@
 * Cypress tar-ball based on: https://community.cypress.com/docs/DOC-15932
 
 * The version of the chip used on the MangOH Yellow is from USI which incorporates
-	both Bluetooth & Wifi in a SIP package.
+	both Bluetooth & Wifi in a SIP package. The Cypress/USI chip is only available
+	on MangOH Yellow.
 
 * Porting details
   * We have kept this as a sub-system driver and not integrated with the Legato Kernel
@@ -17,7 +18,8 @@
 	semantic patching for the different kernels on the WP85 & WP76.
   * We have selected wlan1 for the Cypress chip. We cannot use the lowest numbered interface
 	as the system reference code has assumed the TI Wifi on the IOT card is wlan0
-	Thus, we picked the next interface.
+	Thus, we picked the next interface. This is not ideal as a tie-in to mdev and
+	device naming should exist.
 
 * Currently, the Cypress chip cannot operate in low-power mode on the WP85. It seems
     to be some sort of SDIO timing issue that Cypress will be looking at on the
@@ -38,12 +40,42 @@
     have the standard firmware search path used. If you have other firmware that needs
     to load afterward please beware.
 
-* We have not integrated fully with the Legato Wifi architecture. TODO: need to work on
-    the glue code with Legato Patches.
-
-* Testing was done simply with the following commands:
-  * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
-  * wpa_supplicant -B -Dnl80211 -iwlan1 -c /etc/wpa_supplicant.conf
+* It seems that to test with Legato one needs to setup a fake acces point such that
+    one can set the interface to wlan1. Note that MangOH Red has wlan1 used
+    by the MT7697 Wifi chip which is not present on the MangOH Yellow. AP_REF refers
+    to the AP reference found from scan. These are the steps:
+  * Please apply the Legato Patches as mentioned under:
+     https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
+  * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
+  * wifi client create mangOH
+  * wifi client setinterface 0x10000001 wlan1
+  * wifi client start
+  * wifi client setdriver 0x10000001 wnl80211
+  * wifi client scan
+  * wifi client setsecurityproto AP_REF 3
+  * wifi client setpassphrase AP_REF
+  * wifi client connect AP_REF
   * /sbin/udhcpc -R -b -i wlan1
   * ping www.google.com
 
+* For DCS (Data Connection Service) testing please do the following steps:
+  * Please apply the Legato Patches as mentioned under:
+     https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
+  * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
+  * config set dataConnectionService:/wifi/SSID "SSID of your WiFi" string
+  * config set dataConnectionService:/wifi/passphrase "password" string
+  * config set dataConnectionService:/wifi/interface wlan1 string
+  * config set dataConnectionService:/wifi/wpaSupplicantDriver wext string
+  * config set dataConnectionService:/wifi/secProtocol 3 int
+  * Follow Legato instructions on starting up and configuring DCS.
+  * ping www.google.com
+
+* Testing outside of Legato was done simply with the following commands (no
+   Legato Patches are needed):
+  * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
+  * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
+  * wpa_passphrase YOUR_SSID >> /etc/wpa_supplicant.conf (this will ask you for a password).
+  * wpa_supplicant -B -Dnl80211 -iwlan1 -c /etc/wpa_supplicant.conf
+  * /sbin/udhcpc -R -b -i wlan1
+  * ping www.google.com
+8

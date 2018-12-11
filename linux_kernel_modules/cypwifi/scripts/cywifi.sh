@@ -5,13 +5,16 @@ export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin
 
 # The Broadcom/Cypress uses the WL_REG_ON gpio to bring out of reset, but
 # needs 2 sleep cycles after VBAT & VDDIO is applied before it is
-# turned on. Both the WP76 & 85 are setup to connect GPIO 8 to WL_REG_ON,
-# though its configurable on the command-line
-if  [ -z "$2" ] ; then
-	WL_REG_ON_GPIO=8
-else
-	WL_REG_ON_GPIO=$2
-fi
+# turned on. Both the WP76 & 85 are setup to connect GPIO 33 to WL_REG_ON,
+# though its configurable on the command-line. It seems with the current
+# way that the GPIO expander is being initialized this is not needed, nor
+# does the routing need to be setup for SDIO going to the Cypress chip
+# rather than the SD card. The SD card was supposed to be the default.
+#if  [ -z "$2" ] ; then
+	#WL_REG_ON_GPIO=8
+#else
+	#WL_REG_ON_GPIO=$2
+#fi
 
 # The WP76 series has an SDHCI-MSM driver that has been setup to run in polled
 # mode. Whereas, the WP85 has an MSM-SDCC driver that has been setup to run in
@@ -32,11 +35,19 @@ if [ -z "${CF3}" ] ; then
 	exit 1
 fi
 
+# Need the the init separately as the default cfg80211 from the Reference code 
+# (kernel, yocto) loads a different cfg80211 than the Broadcom/Cypress cfg80211
+# Thus, with Legato it causes the default one to load and the FMAC driver load
+# fails.
+cy_wifi_init () {
+	insmod /legato/systems/current/modules/compat.ko
+	insmod  /legato/systems/current/modules/cfg80211.ko
+}
 cy_wifi_start() {
-	# Let's bring the Cypress chip out of reset
-	echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
-	echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
-	echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+	# Let's bring the Cypress chip out of reset - see Note above not needing now
+	#echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
+	#echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
+	#echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
 
 	if [ "${CF3}" = "mdm9x15" ] ; then
 		rmmod msm_sdcc
@@ -46,13 +57,13 @@ cy_wifi_start() {
 	# Let's make sure the Cypress chip got attached by the Kernel's MMC framework
 	# Bug here if dmesg has overflowed - for now we are removing the code below
 	# as we will assume MMC enumeration happened. Need a better way to error check
-	# as the driver on the WP76 continuously polls CIS tuples ad-infintum and messes up the log
+	# as the driver on the WP76 continuously polls CIS tuples ad-infinitum and messes up the log
 	#sleep 3
-	#dmesg | grep "new high speed SDIO card"
-	#if [ $? -ne 0 ] ; then
-		#echo "Cypress chip not recognized across MMC/SDIO bus"
+	dmesg | grep "new high speed SDIO card" > /dev/null 2>&1
+	if [ $? -ne 0 ] ; then
+		echo "Cypress chip MMC recognition may have been overwritten"
 		#exit 2
-	#fi
+	fi
 
 	# We need to get this into the reference software or the product branch ASAP
 	# and remove this temp. workaround, should be /lib/firmware - TODO
@@ -68,11 +79,9 @@ cy_wifi_start() {
 	#echo 8 > /proc/sys/kernel/printk
 
 	# load the drivers
-	insmod `find /legato/systems/current/modules/ -name "*compat.ko"`
-	insmod  `find /legato/systems/current/modules/ -name "*cfg80211.ko"`
-	insmod `find /legato/systems/current/modules/ -name "*brcmutil.ko"`
+	insmod /legato/systems/current/modules/brcmutil.ko
+	insmod /legato/systems/current/modules/brcmfmac.ko
 
-	insmod `find /legato/systems/current/modules/ -name "*brcmfmac.ko"`
 	# The following bit vector tells the FMAC chip controller debug options
 	#insmod ${load_module:-brcmfmac.ko} debug=0x100000
 	#insmod ${load_module:-brcmfmac.ko} debug=0x105404
@@ -99,15 +108,18 @@ cy_wifi_stop() {
 	if [ $? -eq 0 ]; then
 	   ifconfig wlan1 down
 	fi
-	rmmod `find /legato/systems/current/modules/ -name "*brcmfmac.ko"` || exit 127
-	rmmod `find /legato/systems/current/modules/ -name "*brcmutil.ko"` || exit 127
-	rmmod `find /legato/systems/current/modules/ -name "*cfg80211.ko"` || exit 127
-	rmmod `find /legato/systems/current/modules/ -name "*compat.ko"` || exit 127
+	rmmod /legato/systems/current/modules/brcmfmac.ko || exit 127
+	rmmod /legato/systems/current/modules/brcmutil.ko || exit 127
+	rmmod /legato/systems/current/modules/cfg80211.ko || exit 127
+	rmmod /legato/systems/current/modules/compat.ko || exit 127
 	# Turn off the Cypress chip
-	echo 0  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+	#echo 0  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
 }
 
 case "$1" in
+	init)
+		cy_wifi_init
+		;;
 	start)
 		cy_wifi_start
 		;;
@@ -116,6 +128,7 @@ case "$1" in
 		;;
 	restart)
 		cy_wifi_stop
+		cy_wifi_init
 		cy_wifi_start
 		;;
 	*)
