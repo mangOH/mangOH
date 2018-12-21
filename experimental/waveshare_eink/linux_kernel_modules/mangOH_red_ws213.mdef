@@ -1,0 +1,16 @@
+sources:
+{
+    mangOH_red_ws213.c
+}
+
+cflags:
+{
+    -DCONFIG_FBWS
+    -DCONFIG_RPIFB
+}
+
+params:
+{
+}
+
+load: manual
