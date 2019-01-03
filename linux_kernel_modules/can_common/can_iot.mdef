@@ -1,5 +1,39 @@
+load: manual
+
 sources:
 {
     can_iot.c
 }
 
+params:
+{
+#if ${MANGOH_WP_CHIPSET_9X15} = 1
+
+#if ${MANGOH_CAN_IOT_SLOT} = 0
+    interrupt_gpio = "80" // CF3_GPIO42
+#elif ${MANGOH_CAN_IOT_SLOT} = 1
+    interrupt_gpio = "73" // CF3_GPIO25
+#endif // MANGOH_CAN_IOT_SLOT
+
+#elif ${MANGOH_WP_CHIPSET_9X07} = 1
+
+#if ${MANGOH_CAN_IOT_SLOT} = 0
+    interrupt_gpio = "79" // CF3_GPIO42
+#elif ${MANGOH_CAN_IOT_SLOT} = 1
+    interrupt_gpio = "51" // CF3_GPIO25
+#endif // MANGOH_CAN_IOT_SLOT
+
+#endif // MANGOH_WP_CHIPSET_?
+}
+
+requires:
+{
+    kernelModules:
+    {
+#if ${MANGOH_WP_CHIPSET_9X15} = 1
+        $CURDIR/../can_9x15/mcp251x
+#elif ${MANGOH_WP_CHIPSET_9X07} = 1
+        $CURDIR/../can_9x07/mcp251x
+#endif  // MANGOH_WP_CHIPSET_?
+    }
+}

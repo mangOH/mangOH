@@ -7,7 +7,6 @@ requires:
 {
     kernelModules:
     {
-        $CURDIR/../can_common/can_iot
 	$CURDIR/can-dev
     }
 }

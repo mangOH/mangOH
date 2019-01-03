@@ -121,7 +121,6 @@ componentSearch:
 
 kernelModules:
 {
-
 #if ${MANGOH_BOARD} = red
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
@@ -148,9 +147,6 @@ kernelModules:
     $CURDIR/linux_kernel_modules/mt7697q/mt7697q
     $CURDIR/linux_kernel_modules/mt7697serial/mt7697serial
 
-    // Uncomment to build for the CAN Bus IoT card on mangOH Red
-    // #include "sinc/mangoh_red_can_iot_card.sinc"
-
 #elif ${MANGOH_BOARD} = green
     $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
 
@@ -160,6 +156,7 @@ kernelModules:
      */
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
     $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
+	
 #elif ${MANGOH_BOARD} = yellow
     $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
@@ -181,6 +178,8 @@ kernelModules:
     $CURDIR/linux_kernel_modules/cypwifi/cypwifi
 //    $CURDIR/linux_kernel_modules/cp2130/cp2130
 
-
 #endif // MANGOH_BOARD
 }
+
+// Uncomment to include support for the CAN IoT card
+// #include "sinc/can_iot_card.sinc"
