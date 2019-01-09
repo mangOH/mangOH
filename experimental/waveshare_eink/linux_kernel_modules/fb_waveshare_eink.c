@@ -274,22 +274,28 @@ static int display_frame(struct ws_eink_fb_par *par)
 static int ws_eink_init_display(struct ws_eink_fb_par *par)
 {
 	int ret;
+	struct device *dev = &par->spi->dev;
+	
+	ret = devm_gpio_request_one(&par->spi->dev, par->rst,
+				    GPIOF_OUT_INIT_LOW, "ws_eink_rst");
+	if (ret) {
+		dev_err(dev, "Couldn't request reset GPIO\n");
+		return ret;
+	}
 
-	gpio_request(par->rst, "ws_eink_rst");
-	gpio_request(par->dc, "ws_eink_dc");
-	gpio_request(par->busy, "ws_eink_busy");
+	ret = devm_gpio_request_one(&par->spi->dev, par->dc,
+				    GPIOF_OUT_INIT_LOW, "ws_eink_dc");
+	if (ret) {
+		dev_err(dev, "Couldn't request data/command GPIO\n");
+		return ret;
+	}
 
-	gpio_direction_output(par->dc, true);
-	gpio_set_value(par->dc, 0);
-	gpio_export(par->dc, true);
-
-	gpio_direction_output(par->rst, true);
-	gpio_set_value(par->rst, 0);
-	gpio_export(par->rst, true);
-
-	gpio_direction_input(par->busy);
-	gpio_set_value(par->busy, 0);
-	gpio_export(par->busy, true);
+	ret = devm_gpio_request_one(&par->spi->dev, par->busy,
+				    GPIOF_IN, "ws_eink_busy");
+	if (ret) {
+		dev_err(dev, "Couldn't request busy GPIO\n");
+		return ret;
+	}
 
 	ret = int_lut(par, lut_full_update, ARRAY_SIZE(lut_full_update));
 	if (ret)
