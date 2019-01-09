@@ -452,7 +452,7 @@ static void ws_eink_deferred_io(struct fb_info *info,
 }
 
 static struct fb_deferred_io ws_eink_defio = {
-	.delay		= HZ / 30,
+	.delay		= HZ,
 	.deferred_io	= ws_eink_deferred_io,
 };
 
