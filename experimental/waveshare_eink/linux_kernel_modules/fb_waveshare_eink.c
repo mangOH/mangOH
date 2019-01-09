@@ -318,16 +318,12 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
-
-#ifdef __LITTLE_ENDIAN
 	u8 *ssbuf = par->ssbuf;
 	memcpy(&ssbuf, &vmem, sizeof(vmem));
 	ret = set_frame_memory(par, ssbuf);
 	if (ret)
 		return ret;
-
 	ret = display_frame(par);
-#endif
 
 	return ret;
 }
@@ -534,13 +530,6 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	par->rst	= pdata->rst_gpio;
 	par->dc		= pdata->dc_gpio;
 	par->busy	= pdata->busy_gpio;
-
-#ifdef __LITTLE_ENDIAN
-	vmem = vzalloc(vmem_size);
-	if (!vmem)
-		return retval;
-	par->ssbuf = vmem;
-#endif
 
 	retval = register_framebuffer(info);
 	if (retval < 0) {
