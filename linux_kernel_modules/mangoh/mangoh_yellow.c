@@ -313,7 +313,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	mangoh_yellow_driver_data.magnetometer =
 		i2c_new_device(i2c_adapter_port1,
 			       &mangoh_yellow_magnetometer_devinfo);
-	if (!mangoh_yellow_driver_data.imu) {
+	if (!mangoh_yellow_driver_data.magnetometer) {
 		dev_err(&pdev->dev, "BMM150 sensor is missing %s\n",
 			mangoh_yellow_magnetometer_devinfo.type);
 		ret = -ENODEV;
