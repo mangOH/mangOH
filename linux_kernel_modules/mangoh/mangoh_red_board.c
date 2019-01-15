@@ -254,6 +254,13 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 {
 	const char *dv5_string =
 		"mangOH Red DV5.1 PCB Rev 5.0 with SWI MT7697 FW v4.3.0-0 - Manufactured by Talon Communications in Q1 2018";
+	/*
+	 * Some early mangOH Red DV5 boards had their EEPROMs programmed with
+	 * the below string indicating that they are a DV4. These boards are
+	 * still legitimate DV5 boards even though their EEPROM is misleading.
+	 */
+	const char *dv5_alt_string =
+		"mangOH Red DV4 PCB Rev 5 - Manufactured by Talon Communications";
 	const char *dv6_string =
 		"mangOH Red DV6.0 PCB Rev 6.0 with SWI MT7697 FW v4.3.0-0 - Manufactured by Talon Communications in Q4 2018";
 	enum mangoh_red_board_rev detected_rev = MANGOH_RED_BOARD_REV_UNKNOWN;
@@ -266,8 +273,10 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 
 	if (strcmp(data, dv5_string) == 0)
 		detected_rev = MANGOH_RED_BOARD_REV_DV5;
-	else if (strcmp(data, dv6_string) == 0)
+	else if (strcmp(data, dv5_alt_string) == 0)
 		detected_rev = MANGOH_RED_BOARD_REV_DV5;
+	else if (strcmp(data, dv6_string) == 0)
+		detected_rev = MANGOH_RED_BOARD_REV_DV6;
 
 	if (detected_rev != MANGOH_RED_BOARD_REV_UNKNOWN) {
 		pr_info("Detected mangOH Red board revision: %s\n",
@@ -283,7 +292,7 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 			if (!isprint(data[i]))
 				break;
 		}
-		pr_warn("EEPROM contents did not match any known board signature: \"%s\"\"\n",
+		pr_warn("EEPROM contents did not match any known board signature: \"%s\"\n",
 			eeprom_string);
 	}
 
