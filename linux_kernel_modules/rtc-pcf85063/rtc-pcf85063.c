@@ -7,6 +7,14 @@
  *
  * based on the other drivers in this same directory.
  *
+ * Sierra Wireless Inc. - Added on functionality to allow
+ * control of the square-wave clkout frequencies via sysfs entries.
+ * Note, this was developed in the context of the MangOH Yellow board
+ * which has the square-wave clkout pin connected to a buzzer. Thus,
+ * one can drive the buzzer for the allowable frequencies, note
+ * humans can only recognize 20 - 20KHz (some of us, like your author
+ * even less).
+ *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
  * published by the Free Software Foundation.
@@ -29,6 +37,7 @@
 #define PCF85063_REG_CTRL1		0x00 /* status */
 #define PCF85063_REG_CTRL1_STOP		BIT(5)
 #define PCF85063_REG_CTRL2		0x01
+#define CLKOUT_FREQ_MASK		0x0007
 
 #define PCF85063_REG_SC			0x04 /* datetime */
 #define PCF85063_REG_SC_OS		0x80
@@ -39,7 +48,78 @@
 #define PCF85063_REG_MO			0x09
 #define PCF85063_REG_YR			0x0A
 
+/* Lookup for square-wave clkout frequencies */
+#define NUM_FREQUENCIES			7
+static const int clkout_freq_table[NUM_FREQUENCIES][2] = {
+	{32768, 0}, {16384, 1}, {8192, 2}, {4096, 3},
+	{2048, 4}, {1024, 5}, {1, 6}
+};
+
 static struct i2c_driver pcf85063_driver;
+
+/*
+ * We need to define a mutex here because the rtc_sync module in MangOH
+ * can call into rtc_set_time while sysfs is changing the square-wave
+ * output frequencies. Ditto for rtc_read_time from rtc_sync.
+ * We wouldn't need the mutex if a workQ handler was defined for this device
+ * but then the rtc_sync module would not be generic. Just be aware that
+ * any rtc chip that allows rtc_sync to call into it needs a mutex if any
+ * other threaded access will concurrently exist.
+ */
+static DEFINE_MUTEX(pcf85063_rtc_mutex);
+
+static int pcf85063_get_clkout_freq(struct device *dev, s32 *freq)
+{
+        struct i2c_client *client = to_i2c_client(dev);
+        int i;
+
+	mutex_lock(&pcf85063_rtc_mutex);
+        *freq = i2c_smbus_read_byte_data(client, PCF85063_REG_CTRL2);
+	mutex_unlock(&pcf85063_rtc_mutex);
+
+        if (*freq < 0) {
+                dev_err(&client->dev, "Failed to read PCF85063_REG_CTRL2\n");
+                return -EIO;
+        }
+
+	*freq &= CLKOUT_FREQ_MASK;
+
+	for(i = 0 ; i < NUM_FREQUENCIES &&
+		clkout_freq_table[i][1] != *freq ; i++)
+		;
+        if (i == NUM_FREQUENCIES)
+                return -EINVAL;
+        *freq = clkout_freq_table[i][0];
+
+        return 0;
+}
+
+static int pcf85063_set_clkout_freq(struct device *dev, int freq)
+{
+        struct i2c_client *client = to_i2c_client(dev);
+	int i, ret;
+
+        for(i = 0 ; i < NUM_FREQUENCIES &&
+                clkout_freq_table[i][0] != freq ; i++)
+                ;
+
+        if (i == NUM_FREQUENCIES)
+                return -EINVAL;
+
+        freq = clkout_freq_table[i][1];
+	freq &= CLKOUT_FREQ_MASK;
+
+	mutex_lock(&pcf85063_rtc_mutex);
+        ret = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) freq);
+	mutex_unlock(&pcf85063_rtc_mutex);
+
+        if (ret) {
+                dev_err(&client->dev, "Failed to write register PCF85063_REG_CTRL2\n");
+        	return ret;
+        }
+
+        return 0;
+}
 
 static int pcf85063_stop_clock(struct i2c_client *client, u8 *ctrl1)
 {
@@ -85,8 +165,10 @@ static int pcf85063_rtc_read_time(struct device *dev, struct rtc_time *tm)
 {
 	struct i2c_client *client = to_i2c_client(dev);
 	int rc;
+	int ret = 0;
 	u8 regs[7];
 
+	mutex_lock(&pcf85063_rtc_mutex);
 	/*
 	 * while reading, the time/date registers are blocked and not updated
 	 * anymore until the access is finished. To not lose a second
@@ -97,13 +179,15 @@ static int pcf85063_rtc_read_time(struct device *dev, struct rtc_time *tm)
 					   sizeof(regs), regs);
 	if (rc != sizeof(regs)) {
 		dev_err(&client->dev, "date/time register read error\n");
-		return -EIO;
+		ret = -EIO;
+		goto exit;
 	}
 
 	/* if the clock has lost its power it makes no sense to use its time */
 	if (regs[0] & PCF85063_REG_SC_OS) {
 		dev_warn(&client->dev, "Power loss detected, invalid time\n");
-		return -EINVAL;
+		ret = -EINVAL;
+		goto exit;
 	}
 
 	tm->tm_sec = bcd2bin(regs[0] & 0x7F);
@@ -115,18 +199,23 @@ static int pcf85063_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	tm->tm_year = bcd2bin(regs[6]);
 	tm->tm_year += 100;
 
-	return 0;
+exit:
+	mutex_unlock(&pcf85063_rtc_mutex);
+	return ret;
 }
 
 static int pcf85063_rtc_set_time(struct device *dev, struct rtc_time *tm)
 {
 	struct i2c_client *client = to_i2c_client(dev);
-	int rc;
+	int rc = 0;
 	u8 regs[7];
 	u8 ctrl1;
 
-	if ((tm->tm_year < 100) || (tm->tm_year > 199))
-		return -EINVAL;
+	mutex_lock(&pcf85063_rtc_mutex);
+	if ((tm->tm_year < 100) || (tm->tm_year > 199)) {
+		rc = -EINVAL;
+		goto exit;
+	}
 
 	/*
 	 * to accurately set the time, reset the divider chain and keep it in
@@ -134,7 +223,7 @@ static int pcf85063_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	 */
 	rc = pcf85063_stop_clock(client, &ctrl1);
 	if (rc != 0)
-		return rc;
+		goto exit;
 
 	/* hours, minutes and seconds */
 	regs[0] = bin2bcd(tm->tm_sec) & 0x7F; /* clear OS flag */
@@ -159,7 +248,7 @@ static int pcf85063_rtc_set_time(struct device *dev, struct rtc_time *tm)
 					    sizeof(regs), regs);
 	if (rc < 0) {
 		dev_err(&client->dev, "date/time register write error\n");
-		return rc;
+		goto exit;
 	}
 
 	/*
@@ -168,16 +257,57 @@ static int pcf85063_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	 * PCF85063A devices.  The rollover point can not be used.
 	 */
 	rc = pcf85063_start_clock(client, ctrl1);
-	if (rc != 0)
-		return rc;
-
-	return 0;
+exit:
+	mutex_unlock(&pcf85063_rtc_mutex);
+	return rc;
 }
 
 static const struct rtc_class_ops pcf85063_rtc_ops = {
 	.read_time	= pcf85063_rtc_read_time,
 	.set_time	= pcf85063_rtc_set_time
 };
+
+static ssize_t pcf85063_sysfs_show_clkout_freq(struct device *dev,
+                                              struct device_attribute *attr,
+                                              char *buf)
+{
+        int err;
+	s32 freq;
+
+        err = pcf85063_get_clkout_freq(dev, &freq);
+        if (err)
+                return err;
+
+        return sprintf(buf, "%d\n", (int) freq);
+}
+
+static ssize_t pcf85063_sysfs_store_clkout_freq(struct device *dev,
+                                               struct device_attribute *attr,
+                                               const char *buf, size_t count)
+{
+        int freq, err;
+
+        if (sscanf(buf, "%i", &freq) != 1)
+                return -EINVAL;
+
+        err = pcf85063_set_clkout_freq(dev, freq);
+
+        return err ? err : count;
+}
+
+static DEVICE_ATTR(clkout_freq, S_IRUGO | S_IWUSR,
+                   pcf85063_sysfs_show_clkout_freq,
+                   pcf85063_sysfs_store_clkout_freq);
+
+static int pcf85063_sysfs_register(struct device *dev)
+{
+        return device_create_file(dev, &dev_attr_clkout_freq);
+}
+
+static void pcf85063_sysfs_unregister(struct device *dev)
+{
+        device_remove_file(dev, &dev_attr_clkout_freq);
+}
 
 static int pcf85063_probe(struct i2c_client *client,
 				const struct i2c_device_id *id)
@@ -199,8 +329,25 @@ static int pcf85063_probe(struct i2c_client *client,
 	rtc = devm_rtc_device_register(&client->dev,
 				       pcf85063_driver.driver.name,
 				       &pcf85063_rtc_ops, THIS_MODULE);
+        if (IS_ERR(rtc)) {
+                err = PTR_ERR(rtc);
+                goto exit;
+        }
 
-	return PTR_ERR_OR_ZERO(rtc);
+        err = pcf85063_sysfs_register(&client->dev);
+        if (err)
+                goto exit;
+
+        return 0;
+
+exit:
+        return err;
+}
+
+static int pcf85063_remove(struct i2c_client *client)
+{
+        pcf85063_sysfs_unregister(&client->dev);
+        return 0;
 }
 
 static const struct i2c_device_id pcf85063_id[] = {
@@ -223,6 +370,7 @@ static struct i2c_driver pcf85063_driver = {
 		.of_match_table = of_match_ptr(pcf85063_of_match),
 	},
 	.probe		= pcf85063_probe,
+	.remove         = pcf85063_remove,
 	.id_table	= pcf85063_id,
 };
 
