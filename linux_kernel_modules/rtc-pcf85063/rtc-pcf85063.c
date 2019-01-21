@@ -68,55 +68,53 @@ static DEFINE_MUTEX(pcf85063_rtc_mutex);
 
 static int pcf85063_get_clkout_freq(struct device *dev, s32 *freq)
 {
-        struct i2c_client *client = to_i2c_client(dev);
-        int i;
+	struct i2c_client *client = to_i2c_client(dev);
+	int i;
 
 	mutex_lock(&pcf85063_rtc_mutex);
-        *freq = i2c_smbus_read_byte_data(client, PCF85063_REG_CTRL2);
+	*freq = i2c_smbus_read_byte_data(client, PCF85063_REG_CTRL2);
 	mutex_unlock(&pcf85063_rtc_mutex);
 
-        if (*freq < 0) {
-                dev_err(&client->dev, "Failed to read PCF85063_REG_CTRL2\n");
-                return -EIO;
-        }
+	if (*freq < 0) {
+		dev_err(&client->dev, "Failed to read PCF85063_REG_CTRL2\n");
+		return -EIO;
+	}
 
 	*freq &= CLKOUT_FREQ_MASK;
 
-	for(i = 0 ; i < NUM_FREQUENCIES &&
-		clkout_freq_table[i][1] != *freq ; i++)
+	for(i = 0; i < NUM_FREQUENCIES && clkout_freq_table[i][1] != *freq; i++)
 		;
-        if (i == NUM_FREQUENCIES)
-                return -EINVAL;
-        *freq = clkout_freq_table[i][0];
+	if (i == NUM_FREQUENCIES)
+		return -EINVAL;
+	*freq = clkout_freq_table[i][0];
 
-        return 0;
+	return 0;
 }
 
 static int pcf85063_set_clkout_freq(struct device *dev, int freq)
 {
-        struct i2c_client *client = to_i2c_client(dev);
+	struct i2c_client *client = to_i2c_client(dev);
 	int i, ret;
 
-        for(i = 0 ; i < NUM_FREQUENCIES &&
-                clkout_freq_table[i][0] != freq ; i++)
-                ;
+	for(i = 0; i < NUM_FREQUENCIES && clkout_freq_table[i][0] != freq; i++)
+		;
+	if (i == NUM_FREQUENCIES)
+		return -EINVAL;
 
-        if (i == NUM_FREQUENCIES)
-                return -EINVAL;
-
-        freq = clkout_freq_table[i][1];
+	freq = clkout_freq_table[i][1];
 	freq &= CLKOUT_FREQ_MASK;
 
 	mutex_lock(&pcf85063_rtc_mutex);
-        ret = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) freq);
+	ret = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) freq);
 	mutex_unlock(&pcf85063_rtc_mutex);
 
-        if (ret) {
-                dev_err(&client->dev, "Failed to write register PCF85063_REG_CTRL2\n");
-        	return ret;
-        }
+	if (ret) {
+		dev_err(&client->dev,
+			"Failed to write register PCF85063_REG_CTRL2\n");
+		return ret;
+	}
 
-        return 0;
+	return 0;
 }
 
 static int pcf85063_stop_clock(struct i2c_client *client, u8 *ctrl1)
@@ -266,49 +264,49 @@ static const struct rtc_class_ops pcf85063_rtc_ops = {
 };
 
 static ssize_t pcf85063_sysfs_show_clkout_freq(struct device *dev,
-                                              struct device_attribute *attr,
-                                              char *buf)
+					       struct device_attribute *attr,
+					       char *buf)
 {
-        int err;
+	int err;
 	s32 freq;
 
-        err = pcf85063_get_clkout_freq(dev, &freq);
-        if (err)
-                return err;
+	err = pcf85063_get_clkout_freq(dev, &freq);
+	if (err)
+		return err;
 
-        return sprintf(buf, "%d\n", (int) freq);
+	return sprintf(buf, "%d\n", (int) freq);
 }
 
 static ssize_t pcf85063_sysfs_store_clkout_freq(struct device *dev,
-                                               struct device_attribute *attr,
-                                               const char *buf, size_t count)
+						struct device_attribute *attr,
+						const char *buf, size_t count)
 {
-        int freq, err;
+	int freq, err;
 
-        if (sscanf(buf, "%i", &freq) != 1)
-                return -EINVAL;
+	if (sscanf(buf, "%i", &freq) != 1)
+		return -EINVAL;
 
-        err = pcf85063_set_clkout_freq(dev, freq);
+	err = pcf85063_set_clkout_freq(dev, freq);
 
-        return err ? err : count;
+	return err ? err : count;
 }
 
 static DEVICE_ATTR(clkout_freq, S_IRUGO | S_IWUSR,
-                   pcf85063_sysfs_show_clkout_freq,
-                   pcf85063_sysfs_store_clkout_freq);
+		   pcf85063_sysfs_show_clkout_freq,
+		   pcf85063_sysfs_store_clkout_freq);
 
 static int pcf85063_sysfs_register(struct device *dev)
 {
-        return device_create_file(dev, &dev_attr_clkout_freq);
+	return device_create_file(dev, &dev_attr_clkout_freq);
 }
 
 static void pcf85063_sysfs_unregister(struct device *dev)
 {
-        device_remove_file(dev, &dev_attr_clkout_freq);
+	device_remove_file(dev, &dev_attr_clkout_freq);
 }
 
 static int pcf85063_probe(struct i2c_client *client,
-				const struct i2c_device_id *id)
+			  const struct i2c_device_id *id)
 {
 	struct rtc_device *rtc;
 	int err;
@@ -327,34 +325,36 @@ static int pcf85063_probe(struct i2c_client *client,
 	rtc = devm_rtc_device_register(&client->dev,
 				       pcf85063_driver.driver.name,
 				       &pcf85063_rtc_ops, THIS_MODULE);
-        if (IS_ERR(rtc)) {
-                err = PTR_ERR(rtc);
-                goto exit;
-        }
+	if (IS_ERR(rtc)) {
+		err = PTR_ERR(rtc);
+		goto exit;
+	}
 
-	/* By default this chip output's square waves at 32768 Hz - let's
-	 * set to off or COF[2:0] == 7
+	/*
+	 * By default this chip output's square waves at 32768 Hz - let's set to
+	 * off or COF[2:0] == 7
 	 */
-        err = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) 0x7);
-        if (err) {
-                dev_err(&client->dev, "Failed to write register PCF85063_REG_CTRL2\n");
-                goto exit;
-        }
+	err = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) 0x7);
+	if (err) {
+		dev_err(&client->dev,
+			"Failed to write register PCF85063_REG_CTRL2\n");
+		goto exit;
+	}
 
-        err = pcf85063_sysfs_register(&client->dev);
-        if (err)
-                goto exit;
+	err = pcf85063_sysfs_register(&client->dev);
+	if (err)
+		goto exit;
 
-        return 0;
+	return 0;
 
 exit:
-        return err;
+	return err;
 }
 
 static int pcf85063_remove(struct i2c_client *client)
 {
-        pcf85063_sysfs_unregister(&client->dev);
-        return 0;
+	pcf85063_sysfs_unregister(&client->dev);
+	return 0;
 }
 
 static const struct i2c_device_id pcf85063_id[] = {
@@ -377,7 +377,7 @@ static struct i2c_driver pcf85063_driver = {
 		.of_match_table = of_match_ptr(pcf85063_of_match),
 	},
 	.probe		= pcf85063_probe,
-	.remove         = pcf85063_remove,
+	.remove		= pcf85063_remove,
 	.id_table	= pcf85063_id,
 };
 
