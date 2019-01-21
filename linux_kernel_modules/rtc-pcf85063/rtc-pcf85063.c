@@ -9,7 +9,7 @@
  *
  * Sierra Wireless Inc. - Added on functionality to allow control of the
  * square-wave clkout frequencies via sysfs entries. Note, this was developed in
- * the context of the MangOH Yellow board which has the square-wave clkout pin
+ * the context of the mangOH Yellow board which has the square-wave clkout pin
  * connected to a buzzer. Thus, one can drive the buzzer for the allowable
  * frequencies, note humans can only recognize 20 - 20KHz (some of us, like your
  * author even less).
@@ -57,7 +57,7 @@ static const int clkout_freq_table[NUM_FREQUENCIES][2] = {
 static struct i2c_driver pcf85063_driver;
 
 /*
- * We need to define a mutex here because the rtc_sync module in MangOH can call
+ * We need to define a mutex here because the rtc_sync module in mangOH can call
  * into rtc_set_time while sysfs is changing the square-wave output frequencies.
  * Ditto for rtc_read_time from rtc_sync. We wouldn't need the mutex if a workQ
  * handler was defined for this device but then the rtc_sync module would not be
