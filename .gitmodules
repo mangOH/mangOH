@@ -50,3 +50,6 @@
 [submodule "components/libiioComponent/libiio"]
 	path = components/libiioComponent/libiio
 	url = https://github.com/mangOH/libiio.git
+[submodule "apps/yellow/DataHub-Buzzer"]
+	path = apps/yellow/DataHub-Buzzer
+	url = https://github.com/mangOH/DataHub-Buzzer.git
