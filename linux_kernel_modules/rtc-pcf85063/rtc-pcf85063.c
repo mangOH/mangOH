@@ -49,10 +49,10 @@
 #define PCF85063_REG_YR			0x0A
 
 /* Lookup for square-wave clkout frequencies */
-#define NUM_FREQUENCIES			7
+#define NUM_FREQUENCIES			8
 static const int clkout_freq_table[NUM_FREQUENCIES][2] = {
 	{32768, 0}, {16384, 1}, {8192, 2}, {4096, 3},
-	{2048, 4}, {1024, 5}, {1, 6}
+	{2048, 4}, {1024, 5}, {1, 6}, {0, 7}
 };
 
 static struct i2c_driver pcf85063_driver;
@@ -331,6 +331,15 @@ static int pcf85063_probe(struct i2c_client *client,
 				       &pcf85063_rtc_ops, THIS_MODULE);
         if (IS_ERR(rtc)) {
                 err = PTR_ERR(rtc);
+                goto exit;
+        }
+
+	/* By default this chip output's square waves at 32768 Hz - let's
+	 * set to off or COF[2:0] == 7
+	 */
+        err = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) 0x7);
+        if (err) {
+                dev_err(&client->dev, "Failed to write register PCF85063_REG_CTRL2\n");
                 goto exit;
         }
 
