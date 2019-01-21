@@ -340,16 +340,10 @@ static int pcf85063_probe(struct i2c_client *client,
 		goto exit;
 	}
 
-	/*
-	 * By default this chip output's square waves at 32768 Hz - let's set to
-	 * off or COF[2:0] == 7
-	 */
-	err = i2c_smbus_write_byte_data(client, PCF85063_REG_CTRL2, (u8) 0x7);
-	if (err) {
-		dev_err(&client->dev,
-			"Failed to write register PCF85063_REG_CTRL2\n");
+	/* Initialize output frequency to 0 Hz (disabled) */
+	err = pcf85063_set_clkout_freq(&client->dev, 0);
+	if (err)
 		goto exit;
-	}
 
 	err = pcf85063_sysfs_register(&client->dev);
 	if (err)
