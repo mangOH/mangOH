@@ -38,6 +38,8 @@
 #define WS_SET_DUMMY_LINE_PERIOD		0x3A
 #define WS_SET_GATE_TIME			0x3B
 
+#define MSB2LSB(b) (((b)&1?128:0)|((b)&2?64:0)|((b)&4?32:0)|((b)&8?16:0)|((b)&16?8:0)|((b)&32?4:0)|((b)&64?2:0)|((b)&128?1:0))
+
 static unsigned width = 0;
 static unsigned height = 0;
 static unsigned bpp = 0;
@@ -318,9 +320,20 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
-	u8 *ssbuf = par->ssbuf;
-	memcpy(&ssbuf, &vmem, sizeof(vmem));
-	ret = set_frame_memory(par, ssbuf);
+	
+#ifdef __LITTLE_ENDIAN
+	int i;
+
+	for (i=0; i<width*height*bpp/8; i++)
+	{
+		vmem[i] = MSB2LSB(vmem[i]);
+	}
+
+	ret = set_frame_memory(par, vmem);
+#else
+	ret = set_frame_memory(par, vmem);
+#endif
+
 	if (ret)
 		return ret;
 	ret = display_frame(par);
