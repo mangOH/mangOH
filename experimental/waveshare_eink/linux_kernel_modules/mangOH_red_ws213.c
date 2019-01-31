@@ -4,7 +4,11 @@
 
 #define SPI_BUS		32766
 #define SPI_BUS_CS1	1
-#define SPI_BUS_SPEED	12000000
+/*
+ * The minimum clock cycle duration supported by the waveshare 2.13 Inch display
+ * is 250ns which translates to 4MHz bus speed
+ */
+#define SPI_BUS_SPEED	4000000
 
 const char eink_device_name[] = "waveshare_213";
 static struct spi_device *eink_device;

@@ -1,14 +1,9 @@
 # Waveshare E-Ink Driver TODO
 
 ## Questions
-What is the purpose of the `#ifdef __LITTLE_ENDIAN` sections in the driver? Add code comments to
-clarify.
 
 
 ## Fixes Requested
-* I think `eink_device->max_speed_hz` is still being initialized incorrectly. It should be
-  initialized with the max speed supported by the device, not the max speed supported by the SPI
-  master.
 
 
 ## Enhancements Requested
