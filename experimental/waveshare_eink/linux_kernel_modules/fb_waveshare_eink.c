@@ -274,22 +274,28 @@ static int display_frame(struct ws_eink_fb_par *par)
 static int ws_eink_init_display(struct ws_eink_fb_par *par)
 {
 	int ret;
+	struct device *dev = &par->spi->dev;
+	
+	ret = devm_gpio_request_one(&par->spi->dev, par->rst,
+				    GPIOF_OUT_INIT_LOW, "ws_eink_rst");
+	if (ret) {
+		dev_err(dev, "Couldn't request reset GPIO\n");
+		return ret;
+	}
 
-	gpio_request(par->rst, "ws_eink_rst");
-	gpio_request(par->dc, "ws_eink_dc");
-	gpio_request(par->busy, "ws_eink_busy");
+	ret = devm_gpio_request_one(&par->spi->dev, par->dc,
+				    GPIOF_OUT_INIT_LOW, "ws_eink_dc");
+	if (ret) {
+		dev_err(dev, "Couldn't request data/command GPIO\n");
+		return ret;
+	}
 
-	gpio_direction_output(par->dc, true);
-	gpio_set_value(par->dc, 0);
-	gpio_export(par->dc, true);
-
-	gpio_direction_output(par->rst, true);
-	gpio_set_value(par->rst, 0);
-	gpio_export(par->rst, true);
-
-	gpio_direction_input(par->busy);
-	gpio_set_value(par->busy, 0);
-	gpio_export(par->busy, true);
+	ret = devm_gpio_request_one(&par->spi->dev, par->busy,
+				    GPIOF_IN, "ws_eink_busy");
+	if (ret) {
+		dev_err(dev, "Couldn't request busy GPIO\n");
+		return ret;
+	}
 
 	ret = int_lut(par, lut_full_update, ARRAY_SIZE(lut_full_update));
 	if (ret)
@@ -312,16 +318,12 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
-
-#ifdef __LITTLE_ENDIAN
 	u8 *ssbuf = par->ssbuf;
 	memcpy(&ssbuf, &vmem, sizeof(vmem));
 	ret = set_frame_memory(par, ssbuf);
 	if (ret)
 		return ret;
-
 	ret = display_frame(par);
-#endif
 
 	return ret;
 }
@@ -450,7 +452,7 @@ static void ws_eink_deferred_io(struct fb_info *info,
 }
 
 static struct fb_deferred_io ws_eink_defio = {
-	.delay		= HZ / 30,
+	.delay		= HZ,
 	.deferred_io	= ws_eink_deferred_io,
 };
 
@@ -528,13 +530,6 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	par->rst	= pdata->rst_gpio;
 	par->dc		= pdata->dc_gpio;
 	par->busy	= pdata->busy_gpio;
-
-#ifdef __LITTLE_ENDIAN
-	vmem = vzalloc(vmem_size);
-	if (!vmem)
-		return retval;
-	par->ssbuf = vmem;
-#endif
 
 	retval = register_framebuffer(info);
 	if (retval < 0) {
