@@ -161,8 +161,8 @@ static int int_lut(struct ws_eink_fb_par *par, const u8 *lut, size_t lut_size)
 	return set_lut(par, lut, lut_size);
 }
 
-static int set_memory_area(struct ws_eink_fb_par *par, int x_start,
-			    int y_start, int x_end, int y_end)
+static int set_memory_area(struct ws_eink_fb_par *par, int x_start, int y_start,
+			   int x_end, int y_end)
 {
 	int ret;
 	const u8 x_start_end[] = { (x_start >> 3) & 0xFF, (x_end >> 3) & 0xFF };
@@ -275,7 +275,7 @@ static int ws_eink_init_display(struct ws_eink_fb_par *par)
 {
 	int ret;
 	struct device *dev = &par->spi->dev;
-	
+
 	ret = devm_gpio_request_one(&par->spi->dev, par->rst,
 				    GPIOF_OUT_INIT_LOW, "ws_eink_rst");
 	if (ret) {
@@ -283,15 +283,15 @@ static int ws_eink_init_display(struct ws_eink_fb_par *par)
 		return ret;
 	}
 
-	ret = devm_gpio_request_one(&par->spi->dev, par->dc,
-				    GPIOF_OUT_INIT_LOW, "ws_eink_dc");
+	ret = devm_gpio_request_one(&par->spi->dev, par->dc, GPIOF_OUT_INIT_LOW,
+				    "ws_eink_dc");
 	if (ret) {
 		dev_err(dev, "Couldn't request data/command GPIO\n");
 		return ret;
 	}
 
-	ret = devm_gpio_request_one(&par->spi->dev, par->busy,
-				    GPIOF_IN, "ws_eink_busy");
+	ret = devm_gpio_request_one(&par->spi->dev, par->busy, GPIOF_IN,
+				    "ws_eink_busy");
 	if (ret) {
 		dev_err(dev, "Couldn't request busy GPIO\n");
 		return ret;
@@ -335,8 +335,7 @@ void ws_eink_fb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
 	sys_fillrect(info, rect);
 	ret = ws_eink_update_display(par);
 	if (ret)
-		dev_err(info->device,
-			"%s: failed to update display", __func__);
+		dev_err(info->device, "%s: failed to update display", __func__);
 }
 
 void ws_eink_fb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
@@ -346,8 +345,7 @@ void ws_eink_fb_copyarea(struct fb_info *info, const struct fb_copyarea *area)
 	sys_copyarea(info, area);
 	ret = ws_eink_update_display(par);
 	if (ret)
-		dev_err(info->device,
-			"%s: failed to update display", __func__);
+		dev_err(info->device, "%s: failed to update display", __func__);
 }
 
 void ws_eink_fb_imageblit(struct fb_info *info, const struct fb_image *image)
@@ -357,12 +355,11 @@ void ws_eink_fb_imageblit(struct fb_info *info, const struct fb_image *image)
 	sys_imageblit(info, image);
 	ret = ws_eink_update_display(par);
 	if (ret)
-		dev_err(info->device,
-			"%s: failed to update display", __func__);
+		dev_err(info->device, "%s: failed to update display", __func__);
 }
 
 static ssize_t ws_eink_fb_write(struct fb_info *info, const char __user *buf,
-			     size_t count, loff_t *ppos)
+				size_t count, loff_t *ppos)
 {
 	unsigned long p = *ppos;
 	void *dst;
@@ -394,7 +391,7 @@ static ssize_t ws_eink_fb_write(struct fb_info *info, const char __user *buf,
 	if (copy_from_user(dst, buf, count))
 		err = -EFAULT;
 
-	if  (!err)
+	if (!err)
 		*ppos += count;
 
 	return (err) ? err : count;
@@ -447,8 +444,7 @@ static void ws_eink_deferred_io(struct fb_info *info,
 {
 	int ret = ws_eink_update_display(info->par);
 	if (ret)
-		dev_err(info->device,
-			"%s: failed to update display", __func__);
+		dev_err(info->device, "%s: failed to update display", __func__);
 }
 
 static struct fb_deferred_io ws_eink_defio = {
@@ -524,7 +520,7 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	info->fbdefio = &ws_eink_defio;
 	fb_deferred_io_init(info);
 
-	par = info->par;
+	par		= info->par;
 	par->info	= info;
 	par->spi	= spi;
 	par->rst	= pdata->rst_gpio;

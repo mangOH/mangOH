@@ -33,7 +33,7 @@ static int __init add_ws213fb_device_to_bus(void)
 	spi_master = spi_busnum_to_master(SPI_BUS);
 	if (!spi_master) {
 		printk(KERN_ALERT "spi_busnum_to_master(%d) returned NULL\n",
-			SPI_BUS);
+		       SPI_BUS);
 		return -1;
 	}
 
