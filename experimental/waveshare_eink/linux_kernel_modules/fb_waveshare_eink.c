@@ -415,28 +415,16 @@ static struct fb_ops ws_eink_ops = {
 
 enum waveshare_devices {
 	DEV_WS_213,
-	DEV_WS_27,
-	DEV_WS_29,
-	DEV_WS_42,
-	DEV_WS_75,
 };
 
 static struct waveshare_eink_device_properties devices[] =
 {
 	[DEV_WS_213] = {.width = 128, .height = 250, .bpp = 1},
-	[DEV_WS_27]  = {.width = 176, .height = 264, .bpp = 1},
-	[DEV_WS_29]  = {.width = 128, .height = 296, .bpp = 1},
-	[DEV_WS_42]  = {.width = 300, .height = 400, .bpp = 1},
-	[DEV_WS_75]  = {.width = 384, .height = 640, .bpp = 1},
 };
 
 static struct spi_device_id waveshare_eink_tbl[] = {
-	{ "waveshare_213", (kernel_ulong_t)&devices[DEV_WS_213] },
-	{ "waveshare_27",  (kernel_ulong_t)&devices[DEV_WS_27] },
-	{ "waveshare_29",  (kernel_ulong_t)&devices[DEV_WS_29] },
-	{ "waveshare_42",  (kernel_ulong_t)&devices[DEV_WS_42] },
-	{ "waveshare_75",  (kernel_ulong_t)&devices[DEV_WS_75] },
-	{ },
+	{"waveshare_213", (kernel_ulong_t)&devices[DEV_WS_213]},
+	{},
 };
 MODULE_DEVICE_TABLE(spi, waveshare_eink_tbl);
 
