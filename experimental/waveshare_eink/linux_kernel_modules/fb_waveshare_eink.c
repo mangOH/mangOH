@@ -39,9 +39,11 @@
 #define WS_SET_RAM_Y_ADDRESS_COUNTER		0x4F
 #define WS_TERMINATE_FRAME_READ_WRITE		0xFF
 
-static unsigned width = 0;
-static unsigned height = 0;
-static unsigned bpp = 0;
+struct waveshare_eink_device_properties {
+	unsigned int width;
+	unsigned int height;
+	unsigned int bpp;
+};
 
 struct ws_eink_fb_par {
 	struct spi_device *spi;
@@ -50,6 +52,7 @@ struct ws_eink_fb_par {
 	int rst;
 	int dc;
 	int busy;
+	const struct waveshare_eink_device_properties *props;
 };
 
 const u8 lut_full_update[] = {
@@ -115,7 +118,8 @@ static int int_lut(struct ws_eink_fb_par *par, const u8 *lut, size_t lut_size)
 {
 	int ret;
 	const u8 data_driver_output_control[] = {
-		(height - 1) & 0xFF, ((height - 1) >> 8) & 0xFF, 0x00 };
+		(par->props->height - 1) & 0xFF,
+		((par->props->height - 1) >> 8) & 0xFF, 0x00 };
 	const u8 data_booster_soft_start_control[] = { 0xD7, 0xD6, 0x9D };
 	const u8 data_write_vcom_register[] = { 0xA8 };
 	const u8 data_set_dummy_line_period[] = { 0x1A };
@@ -208,12 +212,13 @@ static int clear_frame_memory(struct ws_eink_fb_par *par, u8 color)
 {
 	int ret;
 	int row;
-	u8 solid_line[width / 8];
+	u8 solid_line[par->props->width / 8];
 	memset(solid_line, color, ARRAY_SIZE(solid_line));
-	ret = set_memory_area(par, 0, 0, width - 1, height - 1);
+	ret = set_memory_area(par, 0, 0, par->props->width - 1,
+			      par->props->height - 1);
 	if (ret)
 		return ret;
-	for (row = 0; row < height; row++) {
+	for (row = 0; row < par->props->height; row++) {
 		ret = set_memory_pointer(par, 0, row);
 		if (ret)
 			return ret;
@@ -230,12 +235,13 @@ static int set_frame_memory(struct ws_eink_fb_par *par, u8 *image_buffer)
 {
 	int ret;
 	int row;
-	ret = set_memory_area(par, 0, 0, width - 1, height - 1);
+	ret = set_memory_area(par, 0, 0, par->props->width - 1,
+			      par->props->height - 1);
 	if (ret)
 		return ret;
 
-	for (row = 0; row < height; row++) {
-		const size_t row_bytes = width / 8;
+	for (row = 0; row < par->props->height; row++) {
+		const size_t row_bytes = par->props->width / 8;
 		ret = set_memory_pointer(par, 0, row);
 		if (ret)
 			return ret;
@@ -415,12 +421,6 @@ enum waveshare_devices {
 	DEV_WS_75,
 };
 
-struct waveshare_eink_device_properties {
-	unsigned int width;
-	unsigned int height;
-	unsigned int bpp;
-};
-
 static struct waveshare_eink_device_properties devices[] =
 {
 	[DEV_WS_213] = {.width = 128, .height = 250, .bpp = 1},
@@ -482,11 +482,8 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 		dev_err(&spi->dev, "device definition lacks driver_data\n");
 		return -EINVAL;
 	}
-	width = dev_props->width;
-	height = dev_props->height;
-	bpp = dev_props->bpp;
 
-	vmem_size = width * height * bpp / 8;
+	vmem_size = dev_props->width * dev_props->height * dev_props->bpp / 8;
 	vmem = vzalloc(vmem_size);
 	if (!vmem)
 		return -ENOMEM;
@@ -508,13 +505,13 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	info->fix.xpanstep	= 0;
 	info->fix.ypanstep	= 0;
 	info->fix.ywrapstep	= 0;
-	info->fix.line_length	= width * bpp / 8;
+	info->fix.line_length	= dev_props->width * dev_props->bpp / 8;
 
-	info->var.xres			= width;
-	info->var.yres			= height;
-	info->var.xres_virtual		= width;
-	info->var.yres_virtual		= height;
-	info->var.bits_per_pixel	= bpp;
+	info->var.xres			= dev_props->width;
+	info->var.yres			= dev_props->height;
+	info->var.xres_virtual		= dev_props->width;
+	info->var.yres_virtual		= dev_props->height;
+	info->var.bits_per_pixel	= dev_props->bpp;
 
 	info->flags = FBINFO_FLAG_DEFAULT | FBINFO_VIRTFB;
 
@@ -524,6 +521,7 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	par		= info->par;
 	par->info	= info;
 	par->spi	= spi;
+	par->props	= dev_props;
 	par->rst	= pdata->rst_gpio;
 	par->dc		= pdata->dc_gpio;
 	par->busy	= pdata->busy_gpio;
