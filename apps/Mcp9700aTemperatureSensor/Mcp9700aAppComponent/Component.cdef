@@ -1,0 +1,29 @@
+sources:
+{
+    mcp9700aOnWp.c
+}
+
+cflags:
+{
+    -std=c99
+}
+
+requires:
+{
+    api:
+    {
+        modemServices/le_adc.api
+    }
+    component:
+    {
+        ${CURDIR}/../Mcp970xComponent
+    }
+}
+
+provides:
+{
+    api:
+    {
+        mangOH_ambientTemperature.api
+    }
+}

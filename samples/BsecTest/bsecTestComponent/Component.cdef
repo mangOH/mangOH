@@ -1,0 +1,17 @@
+sources:
+{
+    component.c
+}
+
+cflags:
+{
+    -std=c99
+}
+
+requires:
+{
+    api:
+    {
+        mangOH_bme680.api
+    }
+}

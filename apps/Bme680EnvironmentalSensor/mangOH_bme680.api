@@ -1,0 +1,77 @@
+ENUM SamplingRate
+{
+    SAMPLING_RATE_DISABLED,
+    SAMPLING_RATE_LP, // every 3 seconds
+    SAMPLING_RATE_ULP, // every 300 seconds (5 minutes)
+};
+
+FUNCTION le_result_t Configure
+(
+    SamplingRate samplingRate IN,
+    bool enableIaq IN,
+    bool enableCo2Equivalent IN,
+    bool enableBreathVoc IN,
+    bool enablePressure IN,
+    bool enableTemperature IN,
+    bool enableHumidity IN
+);
+
+STRUCT ReadingIaq
+{
+    bool valid;
+    double value;
+    uint8 accuracy;
+};
+
+STRUCT ReadingCo2Equivalent
+{
+    bool valid;
+    double value;
+    uint8 accuracy;
+};
+
+STRUCT ReadingBreathVoc
+{
+    bool valid;
+    double value;
+    uint8 accuracy;
+};
+
+STRUCT ReadingPressure
+{
+    bool valid;
+    double value;
+};
+
+STRUCT ReadingTemperature
+{
+    bool valid;
+    double value;
+};
+
+STRUCT ReadingHumidity
+{
+    bool valid;
+    double value;
+};
+
+STRUCT Reading
+{
+    int64 timestamp;
+    ReadingIaq iaq;
+    ReadingCo2Equivalent co2Equivalent;
+    ReadingBreathVoc breathVoc;
+    ReadingPressure pressure;
+    ReadingTemperature temperature;
+    ReadingHumidity humidity;
+};
+
+HANDLER SensorReadingHandler
+(
+    Reading reading
+);
+
+EVENT SensorReading
+(
+    SensorReadingHandler handler
+);

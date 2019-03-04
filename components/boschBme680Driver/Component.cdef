@@ -1,0 +1,20 @@
+sources:
+{
+    bme680_linux_i2c.c
+    Bosch_BME680_Driver/bme680.c
+}
+
+cflags:
+{
+    -I${CURDIR}/Bosch_BME680_Driver
+    -fvisibility=default
+}
+
+provides:
+{
+    headerDir:
+    {
+        ${CURDIR}
+        ${CURDIR}/Bosch_BME680_Driver
+    }
+}
