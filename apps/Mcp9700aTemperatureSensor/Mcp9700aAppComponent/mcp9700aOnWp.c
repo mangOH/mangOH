@@ -4,7 +4,16 @@
 
 static int WpAdcFunction(int32_t *valueUv)
 {
-    return le_adc_ReadValue("EXT_ADC0", valueUv);
+    int32_t valueMv;
+    le_result_t res = le_adc_ReadValue("EXT_ADC0", &valueMv);
+    if (res == LE_OK)
+    {
+        *valueUv = valueMv * 1000;
+    }
+
+    LE_DEBUG("Read %d uV from the ADC during ambient temperature measurement", *valueUv);
+
+    return res;
 }
 
 le_result_t mangOH_ambientTemperature_Read(double *temperature)
@@ -17,6 +26,7 @@ le_result_t mangOH_ambientTemperature_Read(double *temperature)
     }
 
     *temperature = tempInt / 1000.0;
+    LE_DEBUG("Read ambient temperature %f C", *temperature);
     return LE_OK;
 }
 
