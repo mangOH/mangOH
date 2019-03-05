@@ -316,7 +316,6 @@ static void TimerHandler(le_timer_Ref_t t)
     bsec_bme_settings_t sensorSettings;
     int64_t timestamp = GetTimestampNs();
     bsec_sensor_control(timestamp, &sensorSettings);
-    LE_INFO("timestamp at start of TimerHandler is %lld and sensorSettings.next_call is %lld", timestamp, sensorSettings.next_call);
 
     TriggerMeasurement(&_s.bme680->dev, &sensorSettings);
 
