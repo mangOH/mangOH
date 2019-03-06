@@ -62,10 +62,12 @@
   * Please apply the Legato Patches as mentioned under:
      https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
   * Add the following lines to /etc/init.d/startlegato.sh on the target filesystem:
-	if [ -e "/legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh" ]
+	```
+        if [ -e "/legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh" ]
         then
             /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
         fi
+	```
     between "mount -o bind $LEGATO_MNT /legato" and "test -x $LEGATO_START && $LEGATO_START"
 
   * config set dataConnectionService:/wifi/SSID "SSID of your WiFi" string
