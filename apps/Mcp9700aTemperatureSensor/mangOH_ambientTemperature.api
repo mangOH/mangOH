@@ -1,0 +1,4 @@
+FUNCTION le_result_t Read
+(
+    double temperature OUT
+);

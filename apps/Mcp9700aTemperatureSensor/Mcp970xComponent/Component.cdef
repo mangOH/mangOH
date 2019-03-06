@@ -1,0 +1,19 @@
+sources:
+{
+    component.c
+    mcp970x/mcp970x.c
+}
+
+cflags:
+{
+    -std=c99
+    -fvisibility=default
+}
+
+provides:
+{
+    headerDir:
+    {
+        ${CURDIR}/mcp970x
+    }
+}

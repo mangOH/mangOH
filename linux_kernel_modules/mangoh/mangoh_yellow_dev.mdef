@@ -25,7 +25,6 @@ requires:
     {
 
         $CURDIR/../bmi160/bmi160-i2c
-        $CURDIR/../bme680/bme680-i2c
         $CURDIR/../rtc-pcf85063/rtc-pcf85063
         $CURDIR/../bq25601/bq25601
         $CURDIR/../bq27xxx/bq27xxx_battery

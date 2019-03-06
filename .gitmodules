@@ -53,3 +53,6 @@
 [submodule "apps/yellow/DataHub-Buzzer"]
 	path = apps/yellow/DataHub-Buzzer
 	url = https://github.com/mangOH/DataHub-Buzzer.git
+[submodule "components/boschBme680Driver/Bosch_BME680_Driver"]
+	path = components/boschBme680Driver/Bosch_BME680_Driver
+	url = https://github.com/mangOH/Bosch_BME680_Driver.git
