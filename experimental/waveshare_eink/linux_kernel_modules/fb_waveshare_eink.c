@@ -39,6 +39,9 @@
 #define WS_SET_RAM_Y_ADDRESS_COUNTER		0x4F
 #define WS_TERMINATE_FRAME_READ_WRITE		0xFF
 
+ #define WS_FB_SET_SCREEN_DEEP_SLEEP		_IOW('M', 1, int8_t)
+ #define WS_FB_SET_SCREEN_WAKEUP		_IOW('M', 2, int8_t)
+
 struct waveshare_eink_device_properties {
 	unsigned int width;
 	unsigned int height;
@@ -107,6 +110,18 @@ static void ws_eink_reset(struct ws_eink_fb_par *par)
 	mdelay(200);
 	gpio_set_value(par->rst, 1);
 	mdelay(200);
+}
+
+static int ws_eink_sleep(struct ws_eink_fb_par *par)
+{
+	int ret;
+	ret = ws_eink_send_cmd(par, WS_DEEP_SLEEP_MODE, NULL, 0);
+	if (ret)
+		return ret;
+
+	wait_until_idle(par);
+
+	return 0;
 }
 
 static int set_lut(struct ws_eink_fb_par *par, const u8 *lut, size_t lut_size)
@@ -326,11 +341,21 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
 	u8 *ssbuf = par->ssbuf;
+
+	ret = int_lut(par, lut_partial_update, ARRAY_SIZE(lut_partial_update));
+	if (ret)
+		return ret;
+
 	memcpy(&ssbuf, &vmem, sizeof(vmem));
 	ret = set_frame_memory(par, ssbuf);
 	if (ret)
 		return ret;
+
 	ret = display_frame(par);
+	if (ret)
+		return ret;
+
+	ret = ws_eink_sleep(par);
 
 	return ret;
 }
@@ -404,6 +429,24 @@ static ssize_t ws_eink_fb_write(struct fb_info *info, const char __user *buf,
 	return (err) ? err : count;
 }
 
+static int ws_eink_fb_ioctl(struct fb_info *info, unsigned int cmd, unsigned long arg)
+{
+	struct ws_eink_fb_par *par = info->par;
+
+	switch (cmd) {
+		case WS_FB_SET_SCREEN_DEEP_SLEEP:
+			ws_eink_sleep(par);
+			break;
+		case WS_FB_SET_SCREEN_WAKEUP:
+			ws_eink_reset(par);
+			break;
+		default:
+			return EINVAL;
+	}
+
+	return 0;
+}
+
 static struct fb_ops ws_eink_ops = {
 	.owner		= THIS_MODULE,
 	.fb_read	= fb_sys_read,
@@ -411,6 +454,7 @@ static struct fb_ops ws_eink_ops = {
 	.fb_fillrect	= ws_eink_fb_fillrect,
 	.fb_copyarea	= ws_eink_fb_copyarea,
 	.fb_imageblit	= ws_eink_fb_imageblit,
+	.fb_ioctl 	= ws_eink_fb_ioctl,
 };
 
 enum waveshare_devices {
