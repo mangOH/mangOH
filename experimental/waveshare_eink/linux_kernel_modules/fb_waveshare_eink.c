@@ -341,12 +341,25 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 	int ret = 0;
 	u8 *vmem = par->info->screen_base;
 	u8 *ssbuf = par->ssbuf;
+	const u8 *lut;
+	size_t lut_size;
+	static int update_count = 0;
 
-	ret = int_lut(par, lut_partial_update, ARRAY_SIZE(lut_partial_update));
+	if(++update_count == 10) {
+		update_count = 0;
+		lut = lut_full_update;
+		lut_size = ARRAY_SIZE(lut_full_update);
+	} else {
+		lut = lut_partial_update;
+		lut_size = ARRAY_SIZE(lut_partial_update);
+	}
+
+	ret = int_lut(par, lut, lut_size);
 	if (ret)
 		return ret;
 
 	memcpy(&ssbuf, &vmem, sizeof(vmem));
+
 	ret = set_frame_memory(par, ssbuf);
 	if (ret)
 		return ret;
