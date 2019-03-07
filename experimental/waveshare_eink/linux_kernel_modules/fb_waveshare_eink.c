@@ -339,6 +339,7 @@ static int ws_eink_init_display(struct ws_eink_fb_par *par)
 static int ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	int ret = 0;
+	static int update_time = 0; 
 	u8 *vmem = par->info->screen_base;
 	u8 *ssbuf = par->ssbuf;
 
@@ -354,6 +355,26 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 	ret = display_frame(par);
 	if (ret)
 		return ret;
+
+	if (update_time == 10) {
+
+		ret = int_lut(par, lut_full_update, 
+			      ARRAY_SIZE(lut_full_update));
+		if (ret)
+			return ret;
+
+		ret = clear_frame_memory(par, 0xFF);
+		if (ret)
+			return ret;
+
+		ret = display_frame(par);
+		if (ret)
+			return ret;
+
+		update_time = 0;
+	}
+
+	update_time += 1;
 
 	ret = ws_eink_sleep(par);
 
