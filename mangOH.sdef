@@ -60,6 +60,9 @@ apps:
     $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
     $MANGOH_ROOT/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
     $MANGOH_ROOT/samples/BsecTest/bsecTest
+    $MANGOH_ROOT/apps/DataHub-Buzzer/buzzer   
+    $MANGOH_ROOT/apps/YellowOnBoardActuators/actuator
+    $MANGOH_ROOT/apps/BatteryService/battery 
 
 #endif // MANGOH_BOARD
 
@@ -97,6 +100,7 @@ interfaceSearch:
     $LEGATO_ROOT/apps/sample/dataHub
     $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor
     $MANGOH_ROOT/apps/Bme680EnvironmentalSensor
+    
 
 #endif // MANGOH_BOARD
     $MANGOH_ROOT/apps/DataRouter
