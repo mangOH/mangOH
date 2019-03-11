@@ -35,5 +35,6 @@ requires:
 
 bindings:
 {
-    bme680EnvironmentalSensor.bsecIntegrationComponent.ambient -> mcp9700aTemperatureSensor.mangOH_ambientTemperature
+    // bme680EnvironmentalSensor.bsecIntegrationComponent.ambient -> mcp9700aTemperatureSensor.mangOH_ambientTemperature
+    bme680EnvironmentalSensor.bsecIntegrationComponent.ambient -> openWeatherMapAmbientTemperature.mangOH_ambientTemperature
 }

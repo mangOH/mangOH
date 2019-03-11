@@ -60,6 +60,7 @@ apps:
     $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
     $MANGOH_ROOT/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
     $MANGOH_ROOT/samples/BsecTest/bsecTest
+    $MANGOH_ROOT/apps/OpenWeatherMapAmbientTemperature/openWeatherMapAmbientTemperature
 
 #endif // MANGOH_BOARD
 
@@ -84,6 +85,7 @@ commands:
 
 interfaceSearch:
 {
+    $MANGOH_ROOT/interfaces
 
 #if ${MANGOH_BOARD} = red
     $MANGOH_ROOT/apps/BatteryService
@@ -95,7 +97,6 @@ interfaceSearch:
 
 #elif ${MANGOH_BOARD} = yellow
     $LEGATO_ROOT/apps/sample/dataHub
-    $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor
     $MANGOH_ROOT/apps/Bme680EnvironmentalSensor
 
 #endif // MANGOH_BOARD

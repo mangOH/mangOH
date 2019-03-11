@@ -21,6 +21,7 @@ struct Bme680State
     bool enableHumidity;
     le_mem_PoolRef_t HandlerPool;
     le_ref_MapRef_t HandlerRefMap;
+    double temperatureOffset;
 };
 
 #endif // _BSEC_INTEGRATION_H_
