@@ -56,6 +56,10 @@ le_result_t mangOH_bme680_Configure(
             .sample_rate = enablePressure ? sr : BSEC_SAMPLE_RATE_DISABLED,
         },
         {
+            .sensor_id = BSEC_OUTPUT_RAW_TEMPERATURE,
+            .sample_rate = sr,
+        },
+        {
             .sensor_id = BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE,
             .sample_rate = enableTemperature ? sr : BSEC_SAMPLE_RATE_DISABLED,
         },

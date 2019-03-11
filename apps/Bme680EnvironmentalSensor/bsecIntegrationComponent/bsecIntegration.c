@@ -9,9 +9,6 @@
 #define SAMPLES_BETWEEN_SAVES 200
 #define BME680_I2C_ADDR 0x76
 
-// TODO: Find a better way to manage this
-static float Bme680TemperatureOffset = 9.0;
-
 struct Bme680State _s;
 
 int64_t GetTimestampNs(void)
@@ -218,10 +215,13 @@ static void ReadData(
                 inputs[*numBsecInputs].time_stamp = timestampTrigger;
                 (*numBsecInputs)++;
 
-                /* Also add optional heatsource input which will be subtracted from the temperature reading to
-                 * compensate for device-specific self-heating (supported in BSEC IAQ solution)*/
+                /*
+                 * Also add optional heatsource input which will be subtracted from the temperature
+                 * reading to compensate for device-specific self-heating (supported in BSEC IAQ
+                 * solution)
+                 */
                 inputs[*numBsecInputs].sensor_id = BSEC_INPUT_HEATSOURCE;
-                inputs[*numBsecInputs].signal = Bme680TemperatureOffset;
+                inputs[*numBsecInputs].signal = _s.temperatureOffset;
                 inputs[*numBsecInputs].time_stamp = timestampTrigger;
                 (*numBsecInputs)++;
             }
@@ -282,6 +282,23 @@ static void ProcessData(bsec_input_t *bsecInputs, size_t numBsecInputs, int64_t 
                 reading.breathVoc.valid = true;
                 reading.breathVoc.value = bsecOutputs[i].signal;
                 reading.breathVoc.accuracy = bsecOutputs[i].accuracy;
+                break;
+            case BSEC_OUTPUT_RAW_TEMPERATURE:
+                /*
+                 * Update the temperature offset based upon the raw temperature from the BME680 and
+                 * the ambient temperature given by the ambient temperature API. It is assumed that
+                 * the value from the ambient temperature is the true ambient temperature.
+                 */
+                {
+                    double ambientTemperature;
+                    le_result_t ambientRes = ambient_Read(&ambientTemperature);
+                    if (ambientRes == LE_OK)
+                    {
+                        double delta = bsecOutputs[i].signal - ambientTemperature;
+                        _s.temperatureOffset = (delta * 0.25) + (_s.temperatureOffset * 0.75);
+                        LE_INFO("Temperature offset is now %f", _s.temperatureOffset);
+                    }
+                }
                 break;
             case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
                 reading.temperature.valid = true;
@@ -369,6 +386,22 @@ static void ClientSessionClosedHandler
     }
 }
 
+int8_t ReadAmbientTemperature(void)
+{
+    int8_t ambientInt = 20;
+    double ambientTemperature;
+    le_result_t ambientRes = ambient_Read(&ambientTemperature);
+    if (ambientRes == LE_OK)
+    {
+        ambientInt = (int8_t)round(ambientTemperature);
+    }
+    else
+    {
+        LE_ERROR("Retrieval of ambient temperture failed");
+    }
+
+    return ambientInt;
+}
 
 COMPONENT_INIT
 {
@@ -389,10 +422,7 @@ COMPONENT_INIT
 
     LoadState();
 
-    double ambientTemperature;
-    le_result_t ambientRes = ambient_Read(&ambientTemperature);
-    LE_FATAL_IF(ambientRes != LE_OK, "Failed to read ambient temperature: %s", LE_RESULT_TXT(ambientRes));
-    _s.bme680 = bme680_linux_i2c_create(BME680_I2C_BUS, BME680_I2C_ADDR, (int8_t)ambientTemperature);
+    _s.bme680 = bme680_linux_i2c_create(BME680_I2C_BUS, BME680_I2C_ADDR, ReadAmbientTemperature);
     LE_FATAL_IF(!_s.bme680, "Couldn't create bme680 device");
     if (!_s.bme680) {
         fprintf(stderr, "Failed to create device\n");

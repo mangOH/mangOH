@@ -1,0 +1,57 @@
+sources:
+{
+    openWeatherMap.c
+}
+
+cflags:
+{
+    -I$LEGATO_BUILD/framework/libjansson/include
+}
+
+ldflags:
+{
+    -ljansson
+}
+
+provides:
+{
+    headerDir:
+    {
+        $LEGATO_BUILD/framework/libjansson/include
+        ${CURDIR}
+    }
+}
+
+requires:
+{
+    lib:
+    {
+        curl
+    }
+    component:
+    {
+        ${LEGATO_ROOT}/components/3rdParty/curl
+    }
+    file:
+    {
+        /legato/systems/current/lib/libjansson.so /usr/lib/
+        /*
+         * The below list of required files was copied from the Combain app. Are all of these really
+         * necessary? Definitely some of them are, but perhaps not all.
+         */
+        /lib/libz.so.1 /lib/
+        /lib/libnss_dns.so.2 /lib/
+        /lib/libnss_dns-2.24.so /lib/
+        /lib/libresolv.so.2 /lib/
+        /lib/libresolv-2.24.so /lib/
+        /etc/resolv.conf /etc/
+        /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+        /usr/bin/curl /usr/bin/
+    }
+}
+
+cflags:
+{
+    -std=c99
+    -I${LEGATO_BUILD}/framework/libjansson/include
+}

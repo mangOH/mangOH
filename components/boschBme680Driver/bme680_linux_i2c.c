@@ -107,7 +107,8 @@ static int8_t bme680_linux_i2c_write(uint8_t reg_addr, const uint8_t *reg_data, 
     return res;
 }
 
-struct bme680_linux* bme680_linux_i2c_create(unsigned i2c_bus_num, uint8_t i2c_addr, int8_t ambient_temperature)
+struct bme680_linux* bme680_linux_i2c_create(
+    unsigned i2c_bus_num, uint8_t i2c_addr, bme680_ambient_temperature_fptr_t read_ambient_temperature)
 {
     struct bme680_linux *bme680 = calloc(sizeof(*bme680), 1);
     if (!bme680)
@@ -122,7 +123,7 @@ struct bme680_linux* bme680_linux_i2c_create(unsigned i2c_bus_num, uint8_t i2c_a
     bme680->dev.read = bme680_linux_i2c_read;
     bme680->dev.write = bme680_linux_i2c_write;
     bme680->dev.delay_ms = bme680_linux_delay_ms;
-    bme680->dev.amb_temp = ambient_temperature;
+    bme680->dev.read_ambient_temperature = read_ambient_temperature;
 
     // Initialize private data required for read/write/delay_ms
     bme680->priv->i2c_bus_num = i2c_bus_num;
