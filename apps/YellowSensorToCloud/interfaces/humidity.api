@@ -1,0 +1,27 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_relativehumidity Relative Humidity Sensor API
+ *
+ * The following function can be used to fetch humidity measurement:
+ *
+ * - humidity_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file humidity_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the relative humidity measurement in % (%rH).
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    double reading OUT ///< Where the relative humidity (%rH) will be put if LE_OK is returned.
+);

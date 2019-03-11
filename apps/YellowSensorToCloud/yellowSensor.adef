@@ -1,0 +1,49 @@
+sandboxed: true
+start: auto	
+version: 0.0
+
+extern:
+{
+      imu = yellowSensor.imu.imu
+      imuTemp = yellowSensor.imu.temperature
+      light = yellowSensor.light.light
+      pressure = yellowSensor.environment.pressure
+      environmentTemp = yellowSensor.environment.temperature
+      gas = yellowSensor.environment.gas
+      humidity = yellowSensor.environment.humidity
+      magn = yellowSensor.magnetometer.magn
+}
+
+executables:
+{
+    yellowSensor = (  
+                       components/sensors/environment
+                       components/sensors/imu
+                       components/sensors/magnetometer
+                       components/sensors/light
+                )
+}
+
+processes:
+{
+    run:
+    {
+        ( yellowSensor )
+    }
+
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+        LD_LIBRARY_PATH = /legato/systems/current/apps/yellowSensor/read-only/usr/lib        
+    }
+}
+
+bindings:
+{
+
+      yellowSensor.periodicSensor.dhubIO -> dataHub.io
+      yellowSensor.imu.dhubIO -> dataHub.io
+      yellowSensor.light.dhubIO -> dataHub.io
+      yellowSensor.environment.dhubIO -> dataHub.io
+      yellowSensor.magnetometer.dhubIO -> dataHub.io
+}

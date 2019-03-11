@@ -1,0 +1,27 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_pressure Pressure Sensor API
+ *
+ * The following function can be used to fetch gas resistance measurement:
+ *
+ * - gas_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file gas_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the air pressure measurement in kiloPascals (kPa).
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    double reading OUT ///< Where the gas reading (kOhm) will be put if LE_OK is returned.
+);

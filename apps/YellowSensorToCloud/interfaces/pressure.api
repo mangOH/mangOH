@@ -1,0 +1,28 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_pressure Pressure Sensor API
+ *
+ * The following function can be used to fetch an air pressure measurement:
+ *
+ * - pressure_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file pressure_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the air pressure measurement in kiloPascals (kPa).
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    double reading OUT ///< Where the pressure reading (kPa) will be put if LE_OK is returned.
+);
+

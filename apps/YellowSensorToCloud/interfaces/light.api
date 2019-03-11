@@ -1,0 +1,29 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_light Light Sensor API
+ *
+ * The following function can be used to access the light intensity measurement provided
+ * by the light sensor on the mangOH Red DV3:
+ *
+ * - light_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file light_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the light intensity measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    double reading OUT ///< Where the light intensity reading will be put if LE_OK is returned.
+);
+

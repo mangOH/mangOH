@@ -1,0 +1,80 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow  pressure/temperature/gas sensor interface component.
+ */
+//--------------------------------------------------------------------------------------------------
+
+cflags:
+{
+    -I$LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
+    -std=c99
+     -I$CURDIR/../../fileUtils
+
+}
+
+
+
+
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/pressure.api
+        $CURDIR/../../../interfaces/temperature.api
+        $CURDIR/../../../interfaces/gas.api
+        $CURDIR/../../../interfaces/humidity.api
+
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+
+    component:
+    {
+        $LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
+        ../../fileUtils
+    }
+
+    file:
+    {
+#if ${LEGATO_TARGET} = wp85
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_temp_input     /driver/
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_pressure_input /driver/
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_resistance_input      /driver/
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_humidityrelative_input      /driver/
+ 
+#elif ${LEGATO_TARGET} = wp750x
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_temp_input     /driver/
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_pressure_input /driver/
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_resistance_input      /driver/
+        /sys/bus/i2c/devices/2-0076/iio:device0/in_humidityrelative_input      /driver/
+
+
+#elif ${LEGATO_TARGET} = wp76xx
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_temp_input     /driver/
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_pressure_input /driver/
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_resistance_input      /driver/
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_humidityrelative_input      /driver/
+
+
+#elif ${LEGATO_TARGET} = wp77xx
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_temp_input     /driver/
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_pressure_input /driver/
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_resistance_input      /driver/
+        /sys/bus/i2c/devices/6-0076/iio:device0/in_humidityrelative_input      /driver/
+
+
+#endif
+    }
+}
+
+sources:
+{
+    environmentSensor.c
+}
+

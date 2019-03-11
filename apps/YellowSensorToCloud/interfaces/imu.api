@@ -1,0 +1,49 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_imu Inertial Measurement Unit API
+ *
+ * The following functions can be used to access the accelerometer and gyroscope data provided
+ * by the Inertial Measurement Unit (IMU) chip:
+ *
+ * - imu_ReadAccel()
+ * - imu_ReadGyro()
+ *
+ * In addition, the IMU includes a temperature sensor that can also be read using
+ *
+ * - imuTemp_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file imu_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the accelerometer's linear acceleration measurement in meters per second squared.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t ReadAccel
+(
+    double x OUT, ///< Where the x-axis acceleration (m/s2) will be put if LE_OK is returned.
+    double y OUT, ///< Where the y-axis acceleration (m/s2) will be put if LE_OK is returned.
+    double z OUT  ///< Where the z-axis acceleration (m/s2) will be put if LE_OK is returned.
+);
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the gyroscope's angular velocity measurement in radians per seconds.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t ReadGyro
+(
+    double x OUT, ///< Where the x-axis rotation (rads/s) will be put if LE_OK is returned.
+    double y OUT, ///< Where the y-axis rotation (rads/s) will be put if LE_OK is returned.
+    double z OUT  ///< Where the z-axis rotation (rads/s) will be put if LE_OK is returned.
+);

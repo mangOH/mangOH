@@ -54,9 +54,9 @@ apps:
     $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
 
 #elif ${MANGOH_BOARD} = yellow
-   // $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
+    $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
-
+    
     $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
     $MANGOH_ROOT/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
     $MANGOH_ROOT/samples/BsecTest/bsecTest
