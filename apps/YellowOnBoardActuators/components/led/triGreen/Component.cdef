@@ -3,18 +3,29 @@
  * Component definition file for the mangOH Yellow on board actuator component.
  */
 //--------------------------------------------------------------------------------------------------
+cflags:
+{
+-std=c99
+-DMANGOH_BOARD=YELLOW
+}
+
 
 requires:
 {
     api:
     {
+
         dhubIO = io.api
     }
 
+    file:
+   {
+      /sys/devices/platform/expander.0/tri_led_grn /sys/devices/platform/expander.0/tri_led_grn
+   }
 }
 
 sources:
 {
-    actuator.c
+    tri_led_green.c
 }
 
