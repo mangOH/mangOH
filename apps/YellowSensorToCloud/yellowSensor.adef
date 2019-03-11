@@ -7,17 +7,16 @@ extern:
       imu = yellowSensor.imu.imu
       imuTemp = yellowSensor.imu.temperature
       light = yellowSensor.light.light
-      pressure = yellowSensor.environment.pressure
-      environmentTemp = yellowSensor.environment.temperature
-      gas = yellowSensor.environment.gas
-      humidity = yellowSensor.environment.humidity
+//     pressure = yellowSensor.environment.pressure
+//     environmentTemp = yellowSensor.environment.temperature
+//     gas = yellowSensor.environment.gas
+//  humidity = yellowSensor.environment.humidity
       magn = yellowSensor.magnetometer.magn
 }
 
 executables:
 {
     yellowSensor = (  
-                       components/sensors/environment
                        components/sensors/imu
                        components/sensors/magnetometer
                        components/sensors/light
@@ -44,6 +43,6 @@ bindings:
       yellowSensor.periodicSensor.dhubIO -> dataHub.io
       yellowSensor.imu.dhubIO -> dataHub.io
       yellowSensor.light.dhubIO -> dataHub.io
-      yellowSensor.environment.dhubIO -> dataHub.io
+   //   yellowSensor.environment.dhubIO -> dataHub.io
       yellowSensor.magnetometer.dhubIO -> dataHub.io
 }
