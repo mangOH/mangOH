@@ -1,0 +1,36 @@
+sandboxed: false
+start: auto
+version: 0.1
+
+executables:
+{
+    actuatorYellow = (
+                         components/led/generic
+                         components/led/triRed
+                         components/led/triGreen
+                         components/led/triBlue
+                     )
+}
+
+processes:
+{
+    run:
+    {
+        ( actuatorYellow   )
+    }
+
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+    faultAction: stopApp
+}
+
+
+bindings:
+{
+  actuatorYellow.generic.dhubIO -> dataHub.io
+  actuatorYellow.triRed.dhubIO -> dataHub.io
+  actuatorYellow.triGreen.dhubIO -> dataHub.io
+  actuatorYellow.triBlue.dhubIO -> dataHub.io
+}
