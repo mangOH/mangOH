@@ -76,7 +76,6 @@ static struct mangoh_yellow_driver_data {
 	/* struct i2c_client* eeprom; */
 	struct i2c_client* i2c_switch;
 	struct i2c_client* imu;
-	struct i2c_client* environmental;
 	struct i2c_client* rtc;
 	struct i2c_client* light;
 	struct i2c_client* magnetometer;
@@ -130,9 +129,6 @@ static const struct i2c_board_info mangoh_yellow_gpio_expander_devinfo = {
 };
 static struct i2c_board_info mangoh_yellow_imu_devinfo = {
 	I2C_BOARD_INFO("bmi160", 0x68),
-};
-static struct i2c_board_info mangoh_yellow_environmental_devinfo = {
-	I2C_BOARD_INFO("bme680", 0x76),
 };
 static struct i2c_board_info mangoh_yellow_rtc_devinfo = {
 	I2C_BOARD_INFO("pcf85063", 0x51),
@@ -283,19 +279,6 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}
 	mangoh_yellow_driver_data.expander_registered = true;
 
-	/* Map the BME680 environmental sensor (gas/humidity/temp/pressure) */
-	dev_info(&pdev->dev,
-		 "mapping bme680 gas/humidity/temperature/pressure sensor\n");
-	mangoh_yellow_driver_data.environmental = i2c_new_device(
-		i2c_adapter_port1, &mangoh_yellow_environmental_devinfo);
-	if (!mangoh_yellow_driver_data.environmental) {
-		dev_err(&pdev->dev,
-			"Failed to register environmental sensor %s\n",
-			mangoh_yellow_environmental_devinfo.type);
-		ret = -ENODEV;
-		goto cleanup;
-	}
-
 	/* Map the I2C BMI160 IMU for gyro/accel/temp sensor */
 	dev_dbg(&pdev->dev, "mapping bmi160 gyro/accel/temp sensor\n");
 	mangoh_yellow_driver_data.imu =
@@ -390,7 +373,6 @@ static int mangoh_yellow_remove(struct platform_device* pdev)
 
 	dev_info(&pdev->dev, "Removing mangoh yellow platform device\n");
 
-	i2c_unregister_device(dd->environmental);
 	i2c_unregister_device(dd->imu);
 	i2c_unregister_device(dd->magnetometer);
 	i2c_unregister_device(dd->light);
