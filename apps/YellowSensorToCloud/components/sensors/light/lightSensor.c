@@ -45,7 +45,7 @@ le_result_t light_Read
 
 static void SampleLight
 (
-    psensor_Ref_t ref
+    psensor_Ref_t ref, void *context
 )
 {
     double sample;
@@ -67,7 +67,7 @@ static void SampleLight
 
 COMPONENT_INIT
 {
-    psensor_Create("light", DHUBIO_DATA_TYPE_NUMERIC, "lux", SampleLight);
+    psensor_Create("light", DHUBIO_DATA_TYPE_NUMERIC, "lux", SampleLight, NULL);
 }
 
 

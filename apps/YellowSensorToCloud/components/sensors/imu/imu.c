@@ -171,7 +171,7 @@ done:
 //--------------------------------------------------------------------------------------------------
 static void SampleGyro
 (
-    psensor_Ref_t ref
+    psensor_Ref_t ref, void *context
 )
 {
     double x;
@@ -206,7 +206,7 @@ static void SampleGyro
 //--------------------------------------------------------------------------------------------------
 static void SampleAccel
 (
-    psensor_Ref_t ref
+    psensor_Ref_t ref, void *context
 )
 {
     double x;
@@ -241,7 +241,7 @@ static void SampleAccel
 //--------------------------------------------------------------------------------------------------
 static void SampleTemp
 (
-    psensor_Ref_t ref
+    psensor_Ref_t ref, void *context
 )
 {
     double sample;
@@ -267,7 +267,7 @@ static void SampleTemp
 COMPONENT_INIT
 {
     // Use the Periodic Sensor component from the Data Hub to implement the sensor interfaces.
-    psensor_Create("gyro", DHUBIO_DATA_TYPE_JSON, "", SampleGyro);
-    psensor_Create("accel", DHUBIO_DATA_TYPE_JSON, "", SampleAccel);
-    psensor_Create("imu/temp", DHUBIO_DATA_TYPE_NUMERIC, "degC", SampleTemp);
+    psensor_Create("gyro", DHUBIO_DATA_TYPE_JSON, "", SampleGyro, NULL);
+    psensor_Create("accel", DHUBIO_DATA_TYPE_JSON, "", SampleAccel, NULL);
+    psensor_Create("imu/temp", DHUBIO_DATA_TYPE_NUMERIC, "degC", SampleTemp, NULL);
 }

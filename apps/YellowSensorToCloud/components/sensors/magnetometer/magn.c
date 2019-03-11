@@ -73,7 +73,7 @@ done:
 //--------------------------------------------------------------------------------------------------
 static void SampleMagn
 (
-    psensor_Ref_t ref
+    psensor_Ref_t ref, void *context
 )
 {
     double x;
@@ -107,5 +107,5 @@ static void SampleMagn
 COMPONENT_INIT
 {
     // Use the Periodic Sensor component from the Data Hub to implement the sensor interfaces.
-    psensor_Create("magn", DHUBIO_DATA_TYPE_JSON, "", SampleMagn);
+    psensor_Create("magn", DHUBIO_DATA_TYPE_JSON, "", SampleMagn, NULL);
 }
