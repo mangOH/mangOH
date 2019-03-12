@@ -1,0 +1,25 @@
+sources:
+{
+    owmAmbientTemperature.c
+}
+
+provides:
+{
+    api:
+    {
+        mangOH_ambientTemperature.api [manual-start]
+    }
+}
+
+requires:
+{
+    api:
+    {
+        le_cfg.api
+        le_data.api
+    }
+    component:
+    {
+        openWeatherMap
+    }
+}

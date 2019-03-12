@@ -1,0 +1,39 @@
+sandboxed: true
+start: auto
+version: 1.0
+
+executables:
+{
+    owmAmbientTemperature = ( openWeatherMapAmbientTemperatureComponent )
+}
+
+processes:
+{
+    run:
+    {
+        ( owmAmbientTemperature )
+    }
+    faultAction: stopApp
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+}
+
+extern:
+{
+    owmAmbientTemperature.openWeatherMapAmbientTemperatureComponent.mangOH_ambientTemperature
+}
+
+requires:
+{
+    configTree:
+    {
+        [r] .
+    }
+}
+
+bindings:
+{
+    owmAmbientTemperature.openWeatherMapAmbientTemperatureComponent.le_data -> dataConnectionService.le_data
+}

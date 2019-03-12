@@ -61,7 +61,15 @@
 * For DCS (Data Connection Service) testing please do the following steps:
   * Please apply the Legato Patches as mentioned under:
      https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
-  * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
+  * Add the following lines to /etc/init.d/startlegato.sh on the target filesystem:
+	```
+        if [ -e "/legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh" ]
+        then
+            /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
+        fi
+	```
+    between "mount -o bind $LEGATO_MNT /legato" and "test -x $LEGATO_START && $LEGATO_START"
+
   * config set dataConnectionService:/wifi/SSID "SSID of your WiFi" string
   * config set dataConnectionService:/wifi/passphrase "password" string
   * config set dataConnectionService:/wifi/interface wlan1 string

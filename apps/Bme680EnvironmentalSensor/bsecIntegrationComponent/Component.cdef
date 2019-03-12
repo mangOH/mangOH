@@ -1,0 +1,32 @@
+sources:
+{
+    bsecIntegration.c
+    bme680ApiImpl.c
+}
+
+cflags:
+{
+    -std=c99
+    -DBME680_I2C_BUS=${BME680_I2C_BUS}
+}
+
+provides:
+{
+    api:
+    {
+        mangOH_bme680.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        ambient = mangOH_ambientTemperature.api
+    }
+    component:
+    {
+        boschBme680Driver
+        boschBsec
+    }
+}

@@ -1,0 +1,30 @@
+sources:
+{
+    component.c
+}
+
+cflags:
+{
+}
+
+ldflags:
+{
+    -lm
+    -L ${BSEC_DIR}
+}
+
+requires:
+{
+    lib:
+    {
+        libalgobsec.a
+    }
+}
+
+provides:
+{
+    headerDir:
+    {
+        ${BSEC_DIR}
+    }
+}

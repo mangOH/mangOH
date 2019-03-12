@@ -57,6 +57,11 @@ apps:
    // $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
 
+    $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
+    $MANGOH_ROOT/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
+    $MANGOH_ROOT/samples/BsecTest/bsecTest
+    $MANGOH_ROOT/apps/OpenWeatherMapAmbientTemperature/openWeatherMapAmbientTemperature
+
 #endif // MANGOH_BOARD
 
     $MANGOH_ROOT/apps/MqttClient/mqttClient
@@ -64,7 +69,6 @@ apps:
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
     $MANGOH_ROOT/apps/SocialService/socialService
     $LEGATO_ROOT/apps/tools/devMode
-
 
 }
 
@@ -81,6 +85,7 @@ commands:
 
 interfaceSearch:
 {
+    $MANGOH_ROOT/interfaces
 
 #if ${MANGOH_BOARD} = red
     $MANGOH_ROOT/apps/BatteryService
@@ -92,6 +97,7 @@ interfaceSearch:
 
 #elif ${MANGOH_BOARD} = yellow
     $LEGATO_ROOT/apps/sample/dataHub
+    $MANGOH_ROOT/apps/Bme680EnvironmentalSensor
 
 #endif // MANGOH_BOARD
     $MANGOH_ROOT/apps/DataRouter
@@ -121,6 +127,7 @@ componentSearch:
 
 kernelModules:
 {
+
 #if ${MANGOH_BOARD} = red
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
@@ -164,7 +171,6 @@ kernelModules:
     $CURDIR/linux_kernel_modules/iio/iio-kfifo-buf
     $CURDIR/linux_kernel_modules/iio/iio
 #endif // MANGOH_KERNEL_LACKS_IIO
-    $CURDIR/linux_kernel_modules/bme680/bme680-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
     $CURDIR/linux_kernel_modules/bmi160/bmi160
     $CURDIR/linux_kernel_modules/bmm150/bmc150_magn_i2c

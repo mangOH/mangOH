@@ -1,0 +1,22 @@
+sandboxed: true
+version: 1.0.0
+start: auto
+
+executables:
+{
+    bsecTest = ( bsecTestComponent )
+}
+
+processes:
+{
+    run:
+    {
+        ( bsecTest )
+    }
+    faultAction: restart
+}
+
+bindings:
+{
+    bsecTest.bsecTestComponent.mangOH_bme680 -> bme680EnvironmentalSensor.mangOH_bme680
+}
