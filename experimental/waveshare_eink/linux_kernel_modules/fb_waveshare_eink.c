@@ -17,6 +17,7 @@
 #include <linux/rmap.h>
 #include <linux/pagemap.h>
 #include <linux/device.h>
+#include <linux/bitrev.h>
 
 #include "fb_waveshare_eink.h"
 
@@ -51,7 +52,6 @@ struct waveshare_eink_device_properties {
 struct ws_eink_fb_par {
 	struct spi_device *spi;
 	struct fb_info *info;
-	u8 *ssbuf;
 	int rst;
 	int dc;
 	int busy;
@@ -339,8 +339,10 @@ static int ws_eink_init_display(struct ws_eink_fb_par *par)
 static int ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	int ret = 0;
+	int i;
+	int frame_size;
 	u8 *vmem = par->info->screen_base;
-	u8 *ssbuf = par->ssbuf;
+	u8 *ssbuf;
 	const u8 *lut;
 	size_t lut_size;
 	static int update_count = 0;
@@ -359,6 +361,12 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 		return ret;
 
 	memcpy(&ssbuf, &vmem, sizeof(vmem));
+	
+	frame_size = par->props->height * par->props->width * par->props->bpp / 8;
+
+	for (i = 0; i < frame_size; i++) {
+		ssbuf[i] = bitrev8(ssbuf[i]);
+	}
 
 	ret = set_frame_memory(par, ssbuf);
 	if (ret)
