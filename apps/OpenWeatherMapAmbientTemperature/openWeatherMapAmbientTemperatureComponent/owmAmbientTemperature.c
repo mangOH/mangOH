@@ -20,6 +20,7 @@ static struct
     double temperature;
 } LastResult;
 static le_data_RequestObjRef_t DataRequest = NULL;
+static bool AmbientTemperatureServiceAdvertised = false;
 
 static int64_t GetTimestampNs(void)
 {
@@ -70,7 +71,11 @@ static void DcsStateHandler
     {
         LE_INFO("Data connection established using interface %s", intfName);
         // Now that we have a connection, advertise the ambient temperature service
-        mangOH_ambientTemperature_AdvertiseService();
+        if (!AmbientTemperatureServiceAdvertised)
+        {
+            AmbientTemperatureServiceAdvertised = true;
+            mangOH_ambientTemperature_AdvertiseService();
+        }
     }
     else
     {
@@ -87,5 +92,6 @@ COMPONENT_INIT
         "Failed to read OpenWeatherMap API Key from config tree");
 
     le_data_AddConnectionStateHandler(DcsStateHandler, NULL);
+    LE_DEBUG("Requesting data connection");
     DataRequest = le_data_Request();
 }
