@@ -1,0 +1,31 @@
+sources:
+{
+    component.c
+}
+
+
+requires:
+{
+    api:
+    {
+         io = io.api
+        mangOH_bme680.api
+    }
+
+    file:
+    {
+        /legato/systems/current/lib/libjansson.so /usr/lib/
+    }
+}
+
+ldflags:
+{
+    -ljansson
+}
+
+cflags:
+{
+    -std=c99
+    -I$LEGATO_BUILD/framework/libjansson/include
+}
+
