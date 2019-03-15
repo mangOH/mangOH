@@ -515,8 +515,6 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	const struct spi_device_id *spi_id;
 	const struct waveshare_eink_device_properties *dev_props;
 	struct ws_eink_fb_par *par;
-	u8 *vmem;
-	u8 *ssbuf;
 	int vmem_size;
 
 	pdata = spi->dev.platform_data;
@@ -538,22 +536,17 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 		return -EINVAL;
 	}
 
-	vmem_size = dev_props->width * dev_props->height * dev_props->bpp / 8;
-	vmem = vzalloc(vmem_size);
-	if (!vmem)
-		return -ENOMEM;
-
-	ssbuf = vzalloc(vmem_size);
-	if (!ssbuf)
-		return -ENOMEM;
-
 	info = framebuffer_alloc(sizeof(struct ws_eink_fb_par), &spi->dev);
-	if (!info) {
+	if (!info)
+		return -ENOMEM;
+
+	vmem_size = dev_props->width * dev_props->height * dev_props->bpp / 8;
+	info->screen_base = vzalloc(vmem_size);
+	if (!info->screen_base) {
 		retval = -ENOMEM;
-		goto fballoc_fail;
+		goto screen_base_fail;
 	}
 
-	info->screen_base = (u8 __force __iomem *)vmem;
 	info->fbops = &ws_eink_ops;
 
 	WARN_ON(strlcpy(info->fix.id, "waveshare_eink", sizeof(info->fix.id)) >=
@@ -584,7 +577,11 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	par->rst	= pdata->rst_gpio;
 	par->dc		= pdata->dc_gpio;
 	par->busy	= pdata->busy_gpio;
-	par->ssbuf	= ssbuf;
+	par->ssbuf	= vzalloc(vmem_size);
+	if (!par->ssbuf) {
+		retval = -ENOMEM;
+		goto ssbuf_alloc_fail;
+	}
 
 	retval = register_framebuffer(info);
 	if (retval < 0) {
@@ -606,22 +603,30 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 
 	return 0;
 
-fbreg_fail:
 disp_init_fail:
 	framebuffer_release(info);
-
-fballoc_fail:
-	vfree(vmem);
-
+fbreg_fail:
+	kfree(par->ssbuf);
+ssbuf_alloc_fail:
+	vfree(info->screen_base);
+screen_base_fail:
+	kfree(info->screen_base);
 	return retval;
 }
 
 static int ws_eink_spi_remove(struct spi_device *spi)
 {
 	struct fb_info *p = spi_get_drvdata(spi);
+	struct ws_eink_fb_par *par = p->par;
 	unregister_framebuffer(p);
+	/*
+	 * TODO: Why is this necessary? It doesn't seem that there is a call to
+	 * fb_alloc_cmap()
+	 */
 	fb_dealloc_cmap(&p->cmap);
 	iounmap(p->screen_base);
+	kfree(p->screen_base);
+	kfree(par->ssbuf);
 	framebuffer_release(p);
 
 	return 0;
