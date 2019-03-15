@@ -17,6 +17,7 @@
 #include <linux/rmap.h>
 #include <linux/pagemap.h>
 #include <linux/device.h>
+#include <linux/bitrev.h>
 
 #include "fb_waveshare_eink.h"
 
@@ -339,6 +340,8 @@ static int ws_eink_init_display(struct ws_eink_fb_par *par)
 static int ws_eink_update_display(struct ws_eink_fb_par *par)
 {
 	int ret = 0;
+	int i;
+	int frame_size;
 	u8 *vmem = par->info->screen_base;
 	u8 *ssbuf = par->ssbuf;
 	const u8 *lut;
@@ -358,7 +361,13 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 	if (ret)
 		return ret;
 
-	memcpy(&ssbuf, &vmem, sizeof(vmem));
+	frame_size = par->props->height * par->props->width * par->props->bpp / 8;
+
+	memcpy(ssbuf, vmem, frame_size);
+
+	for (i = 0; i < frame_size; i++) {
+		ssbuf[i] = bitrev8(ssbuf[i]);
+	}
 
 	ret = set_frame_memory(par, ssbuf);
 	if (ret)
@@ -507,6 +516,7 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	const struct waveshare_eink_device_properties *dev_props;
 	struct ws_eink_fb_par *par;
 	u8 *vmem;
+	u8 *ssbuf;
 	int vmem_size;
 
 	pdata = spi->dev.platform_data;
@@ -531,6 +541,10 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	vmem_size = dev_props->width * dev_props->height * dev_props->bpp / 8;
 	vmem = vzalloc(vmem_size);
 	if (!vmem)
+		return -ENOMEM;
+
+	ssbuf = vzalloc(vmem_size);
+	if (!ssbuf)
 		return -ENOMEM;
 
 	info = framebuffer_alloc(sizeof(struct ws_eink_fb_par), &spi->dev);
@@ -570,6 +584,7 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	par->rst	= pdata->rst_gpio;
 	par->dc		= pdata->dc_gpio;
 	par->busy	= pdata->busy_gpio;
+	par->ssbuf	= ssbuf;
 
 	retval = register_framebuffer(info);
 	if (retval < 0) {
