@@ -83,7 +83,7 @@ void *HttpThreadFunc(void *context)
 
     UpdateTimer = le_timer_Create("owm ambient");
     LE_ASSERT_OK(le_timer_SetHandler(UpdateTimer, UpdateTimerHandler));
-    LE_ASSERT_OK(le_timer_SetMsInterval(UpdateTimer, 1000 * 60 * 1));
+    LE_ASSERT_OK(le_timer_SetMsInterval(UpdateTimer, 1000 * 60 * 10));
     LE_ASSERT_OK(le_timer_SetRepeat(UpdateTimer, 0));
     LE_ASSERT_OK(le_timer_Start(UpdateTimer));
 
