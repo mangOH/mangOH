@@ -1,0 +1,93 @@
+cxxflags:
+{
+    -std=c++14
+    -I$LEGATO_BUILD/framework/libjansson/include
+}
+
+sources:
+{
+    combainLocationApi.cpp
+    CombainRequestBuilder.cpp
+    CombainResult.cpp
+    CombainHttp.cpp
+}
+
+provides:
+{
+    api:
+    {
+        $CURDIR/../ma_combainLocation.api
+    }
+}
+
+ldflags:
+{
+    -ljansson
+}
+
+requires:
+{
+    api:
+    {
+        le_cfg.api
+    }
+
+    lib:
+    {
+        curl
+    }
+
+    component:
+    {
+        ${LEGATO_ROOT}/components/3rdParty/curl
+    }
+
+    file:
+    {
+        /legato/systems/current/lib/libjansson.so /usr/lib/
+        /lib/libz.so.1 /lib/
+        /lib/libnss_dns.so.2 /lib/
+        /lib/libnss_dns-2.24.so /lib/
+        /lib/libresolv.so.2 /lib/
+        /lib/libresolv-2.24.so /lib/
+        /etc/resolv.conf /etc/
+        /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+        /usr/bin/curl /usr/bin/
+    }
+}
+
+bundles:
+{
+    file:
+    {
+    #if file_exists(${LEGATO_SYSROOT}/usr/lib/libgnutls.so.30)
+        ${LEGATO_SYSROOT}/usr/lib/libgnutls.so.30 /usr/lib/
+    #elif file_exists(${LEGATO_SYSROOT}/usr/lib/libgnutls.so.28)
+        ${LEGATO_SYSROOT}/usr/lib/libgnutls.so.28 /usr/lib/
+    #endif
+
+    #if file_exists(${LEGATO_SYSROOT}/usr/lib/libidn.so.11)
+        ${LEGATO_SYSROOT}/usr/lib/libidn.so.11 /usr/lib/
+    #endif
+
+    #if file_exists(${LEGATO_SYSROOT}/usr/lib/libnettle.so.6)
+        ${LEGATO_SYSROOT}/usr/lib/libnettle.so.6 /usr/lib/
+    #elif file_exists(${LEGATO_SYSROOT}/usr/lib/libnettle.so.4)
+        ${LEGATO_SYSROOT}/usr/lib/libnettle.so.4 /usr/lib/
+    #endif
+
+    #if file_exists(${LEGATO_SYSROOT}/usr/lib/libhogweed.so.4)
+        ${LEGATO_SYSROOT}/usr/lib/libhogweed.so.4 /usr/lib/
+    #elif file_exists(${LEGATO_SYSROOT}/usr/lib/libhogweed.so.2)
+        ${LEGATO_SYSROOT}/usr/lib/libhogweed.so.2 /usr/lib/
+    #endif
+
+    #if file_exists(${LEGATO_SYSROOT}/usr/lib/libgmp.so.10.3.1)
+        ${LEGATO_SYSROOT}/usr/lib/libgmp.so.10.3.1 /usr/lib/
+        ${LEGATO_SYSROOT}/usr/lib/libgmp.so.10 /usr/lib/
+    #elif file_exists(${LEGATO_SYSROOT}/usr/lib/libgmp.so.10.2.0)
+        ${LEGATO_SYSROOT}/usr/lib/libgmp.so.10.2.0 /usr/lib/
+        ${LEGATO_SYSROOT}/usr/lib/libgmp.so.10 /usr/lib/
+    #endif
+    }
+}

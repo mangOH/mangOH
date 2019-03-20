@@ -1,0 +1,36 @@
+sandboxed: true
+start: manual
+version: 1.0
+
+executables:
+{
+    combainLocation = ( combain )
+}
+
+processes:
+{
+    run:
+    {
+        ( combainLocation )
+    }
+
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+
+    faultAction: stopApp
+}
+
+extern:
+{
+    combainLocation.combain.ma_combainLocation
+}
+
+requires:
+{
+    configTree:
+    {
+        [r] .
+    }
+}

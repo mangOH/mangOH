@@ -1,0 +1,40 @@
+sandboxed: true
+start: manual
+version: 0.0.1
+
+extern:
+{
+}
+
+executables:
+{
+    location = ( components )
+}
+
+processes:
+{
+    run:
+    {
+        ( location )
+    }
+
+    //faultAction: restartApp
+
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+    }
+}
+
+bindings:
+{
+    location.components.le_pos -> positioningService.le_pos
+    location.components.le_posCtrl -> positioningService.le_posCtrl
+
+    location.periodicSensor.dhubIO -> dataHub.io
+    location.components.dhubIO -> dataHub.io
+
+    location.components.ma_combainLocation -> combainLocation.ma_combainLocation
+    location.components.le_wifiClient -> wifiService.le_wifiClient
+    //location.components.le_mrc -> modemService.le_mrc
+}
