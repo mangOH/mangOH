@@ -316,10 +316,8 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
                     exit(1);
                 }
 
-                // TODO: LE-10254 notes that an incorrect error code of 0xFFFF is mentioned in the
-                // documentation. The error code used in the implementation is 0xFFF.
                 signalStrength = le_wifiClient_GetSignalStrength(ap);
-                if (signalStrength == 0xFFF)
+                if (signalStrength == LE_WIFICLIENT_NO_SIGNAL_STRENGTH)
                 {
                     LE_INFO("Failed while fetching WiFi signal strength\n");
                     exit(1);
