@@ -124,7 +124,7 @@ static void PackJson
     res = le_pos_GetTime(&hours, &minutes, &seconds, &millis);
     if (res == LE_OK){
         res = le_pos_GetDate(&years, &months, &days);
-            if (res == LE_OK){
+        if (res == LE_OK){
             time ( &rawtime );
             timeinfo = localtime ( &rawtime );
             timeinfo->tm_year = years - 1900;
@@ -146,18 +146,18 @@ static void PackJson
     }
 
     if (loc == GPS)
-    	len = snprintf(jsonp, jsonl,
-              "{ \"lat\": %lf, \"lon\": %lf, \"hAcc\": %lf,"
-              " \"alt\": %lf, \"vAcc\": %lf, \"fixType\" : \"GNSS\", \"ts\" : %ju}",
-              scanp->lat, scanp->lon, scanp->hAccuracy,
-              scanp->alt, scanp->vAccuracy, (uintmax_t)ts);
+        len = snprintf(jsonp, jsonl,
+                       "{ \"lat\": %lf, \"lon\": %lf, \"hAcc\": %lf,"
+                       " \"alt\": %lf, \"vAcc\": %lf, \"fixType\" : \"GNSS\", \"ts\" : %ju}",
+                       scanp->lat, scanp->lon, scanp->hAccuracy,
+                       scanp->alt, scanp->vAccuracy, (uintmax_t)ts);
     else if (loc == WIFI)
-    	len = snprintf(jsonp, jsonl,
-              "{ \"lat\": %lf, \"lon\": %lf, \"hAcc\": %lf,"
-              " \"fixType\" : \"WIFI\", \"ts\" : %ju}",
-              scanp->lat, scanp->lon, scanp->hAccuracy, (uintmax_t)ts);
+        len = snprintf(jsonp, jsonl,
+                       "{ \"lat\": %lf, \"lon\": %lf, \"hAcc\": %lf,"
+                       " \"fixType\" : \"WIFI\", \"ts\" : %ju}",
+                       scanp->lat, scanp->lon, scanp->hAccuracy, (uintmax_t)ts);
     else
-	LE_FATAL("ILLEGAL Location Type: WIFI|GPS");
+        LE_FATAL("ILLEGAL Location Type: WIFI|GPS");
 
     if (len >= jsonl)
     {
@@ -172,25 +172,26 @@ static void LocationResultHandler(
     {
     case MA_COMBAINLOCATION_RESULT_SUCCESS:
     {
-    	Scan_t scan;
-    	char json[256];
+        Scan_t scan;
+        char json[256];
 
 
         const le_result_t res = ma_combainLocation_GetSuccessResponse(
             handle, &scan.lat, &scan.lon, &scan.hAccuracy);
         if (res != LE_OK)
         {
-            LE_INFO("Received result notification of type success response, but couldn't fetch the result\n");
+            LE_INFO(
+                "Received result notification of type success response, but couldn't fetch the result\n");
             exit(1);
         }
         else
         {
             LE_INFO("Location: latitude=%f, longitude=%f, accuracy=%f meters\n",
-                 scan.lat, scan.lon, scan.hAccuracy);
-	    PackJson(WIFI, &scan, json, sizeof(json));
+                    scan.lat, scan.lon, scan.hAccuracy);
+            PackJson(WIFI, &scan, json, sizeof(json));
             LE_INFO("Sent dhub json: %s", json);
-    	    psensor_PushJson(saved_ref, 0 /* now */, json);
-	    saved_ref = NULL;
+            psensor_PushJson(saved_ref, 0 /* now */, json);
+            saved_ref = NULL;
         }
         break;
     }
@@ -216,7 +217,8 @@ static void LocationResultHandler(
             sizeof(message) - 1);
         if (res != LE_OK)
         {
-            LE_INFO("Received result notification of type success response, but couldn't fetch the result\n");
+            LE_INFO(
+                "Received result notification of type success response, but couldn't fetch the result\n");
             exit(1);
         }
         else
@@ -240,7 +242,8 @@ static void LocationResultHandler(
             handle, rawResult, sizeof(rawResult) - 1);
         if (res != LE_OK)
         {
-            LE_INFO("Received result notification of type success response, but couldn't fetch the result\n");
+            LE_INFO(
+                "Received result notification of type success response, but couldn't fetch the result\n");
             exit(1);
         }
         else
@@ -271,8 +274,8 @@ static bool TrySubmitRequest(void)
             State.combainHandle, LocationResultHandler, NULL);
         if (res != LE_OK)
             LE_FATAL("Failed to submit location request\n");
-	LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
-        
+        LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
+
         return true;
     }
 
@@ -330,7 +333,8 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
 
                 res = ma_combainLocation_AppendWifiAccessPoint(
                     State.combainHandle, bssidBytes, 6, ssid, ssidLen, signalStrength);
-		LE_INFO("Submitted AccessPoint: %d ssid: %s", (uint32_t) State.combainHandle, (char *) ssid);
+                LE_INFO("Submitted AccessPoint: %d ssid: %s", (uint32_t) State.combainHandle,
+                        (char *) ssid);
 
                 if (res != LE_OK)
                 {
@@ -373,7 +377,7 @@ static void Sample
     le_result_t posRes = le_pos_Get3DLocation(&lat, &lon, &hAccuracy, &alt, &vAccuracy);
 
     /* LE_INFO("le_pos_Get3DLocation returned: lat = %d lon: %d hAccuracy: %d alt: %d vAccuracy: %d",
-	lat, lon, hAccuracy, alt, vAccuracy); */
+       lat, lon, hAccuracy, alt, vAccuracy); */
 
     scan.lat = (double) lat / 1000000.0 ;
     scan.lon = (double) lon / 1000000.0;
@@ -382,18 +386,18 @@ static void Sample
     scan.vAccuracy = (double) vAccuracy;
 
     /* LE_INFO("CVT double: lat = %f lon: %f hAccuracy: %f alt: %f vAccuracy: %f",
-	scan.lat, scan.lon, scan.hAccuracy, scan.alt, scan.vAccuracy); */
+       scan.lat, scan.lon, scan.hAccuracy, scan.alt, scan.vAccuracy); */
 
     // No GPS or low accuracy GPS try Wifi Scan & Combain translation
     if (posRes != LE_OK || scan.hAccuracy > HACCURACY_GOOD) {
-	le_result_t startRes;
+        le_result_t startRes;
 
-	if (!State.waitingForWifiResults) {
-	    /* Legato WIFI is broken so we need to create a fake access point to do a scan */
-	    const char *ssidPtr = "mangOH";
-	    le_wifiClient_AccessPointRef_t  createdAccessPoint;
+        if (!State.waitingForWifiResults) {
+            /* Legato WIFI is broken so we need to create a fake access point to do a scan */
+            const char *ssidPtr = "mangOH";
+            le_wifiClient_AccessPointRef_t  createdAccessPoint;
 
-	    createdAccessPoint = le_wifiClient_Create((const uint8_t *)ssidPtr, strlen(ssidPtr));
+            createdAccessPoint = le_wifiClient_Create((const uint8_t *)ssidPtr, strlen(ssidPtr));
             if (NULL == createdAccessPoint)
             {
                 LE_INFO("le_wifiClient_Create returns NULL.\n");
@@ -411,28 +415,28 @@ static void Sample
 
             if (startRes != LE_OK && startRes != LE_BUSY) {
                 LE_FATAL("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
-	        exit(1);
+                exit(1);
             }
 
             le_wifiClient_Scan();
-	    State.combainHandle = ma_combainLocation_CreateLocationRequest();
-	    LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
-	    saved_ref = ref;
-	    State.waitingForWifiResults = true;
-	}
-	else
-	   LE_INFO("le_wifiClient_Scan still RUNNING");
+            State.combainHandle = ma_combainLocation_CreateLocationRequest();
+            LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
+            saved_ref = ref;
+            State.waitingForWifiResults = true;
+        }
+        else
+            LE_INFO("le_wifiClient_Scan still RUNNING");
     }
 
     // Good GPS
     else if (posRes == LE_OK && scan.hAccuracy <= HACCURACY_GOOD)
     {
-	PackJson(GPS, &scan, json, sizeof(json));
-    	psensor_PushJson(ref, 0 /* now */, json);
-	
-	// Kill any errant WIFI sacn requests as we got GPS
-	if (State.waitingForWifiResults)
-	    State.waitingForWifiResults = false;
+        PackJson(GPS, &scan, json, sizeof(json));
+        psensor_PushJson(ref, 0 /* now */, json);
+
+        // Kill any errant WIFI sacn requests as we got GPS
+        if (State.waitingForWifiResults)
+            State.waitingForWifiResults = false;
     }
 
     else
@@ -454,6 +458,6 @@ COMPONENT_INIT
     psensor_Create("coordinates", DHUBIO_DATA_TYPE_JSON, "", Sample);
 
     dhubIO_SetJsonExample("coordinates/value", "{\"lat\":0.1,\"lon\":0.2,"
-            "\"alt\":0.3,\"hAcc\":0.4,\"vAcc\":0.5,\"fixType\":\"GNSS\"}");
+                          "\"alt\":0.3,\"hAcc\":0.4,\"vAcc\":0.5,\"fixType\":\"GNSS\"}");
 }
 
