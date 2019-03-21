@@ -606,11 +606,11 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 disp_init_fail:
 	framebuffer_release(info);
 fbreg_fail:
-	kfree(par->ssbuf);
+	vfree(par->ssbuf);
 ssbuf_alloc_fail:
 	vfree(info->screen_base);
 screen_base_fail:
-	kfree(info->screen_base);
+	vfree(info->screen_base);
 	return retval;
 }
 
@@ -618,15 +618,10 @@ static int ws_eink_spi_remove(struct spi_device *spi)
 {
 	struct fb_info *p = spi_get_drvdata(spi);
 	struct ws_eink_fb_par *par = p->par;
+	fb_deferred_io_cleanup(p);
 	unregister_framebuffer(p);
-	/*
-	 * TODO: Why is this necessary? It doesn't seem that there is a call to
-	 * fb_alloc_cmap()
-	 */
-	fb_dealloc_cmap(&p->cmap);
-	iounmap(p->screen_base);
-	kfree(p->screen_base);
-	kfree(par->ssbuf);
+	vfree(p->screen_base);
+	vfree(par->ssbuf);
 	framebuffer_release(p);
 
 	return 0;
