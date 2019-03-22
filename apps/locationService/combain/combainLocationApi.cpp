@@ -12,6 +12,11 @@
 #include "CombainHttp.h"
 #include "ThreadSafeQueue.h"
 
+#define RES_PATH_API_KEY        "ApiKey/value"
+
+static bool combainApiKeySet = false;
+char combainApiKey[MAX_LEN_API_KEY];
+
 
 struct RequestRecord
 {
@@ -126,6 +131,11 @@ le_result_t ma_combainLocation_SubmitLocationRequest
     void *context
 )
 {
+    /* WLAN caching has so much variance, ssids coming & going, ordered list, ...
+     * Need to rethink the algorithm for caching
+     * Lets cache the value so that we don't make multiple Combain requests
+    static std::string cached_requestBody; */
+
     RequestRecord *requestRecord = GetRequestRecordFromHandle(handle, true);
     if (!requestRecord)
     {
@@ -139,7 +149,16 @@ le_result_t ma_combainLocation_SubmitLocationRequest
     }
 
     std::string requestBody = requestRecord->request->generateRequestBody();
-    LE_DEBUG("Submitting request: %s", requestBody.c_str());
+
+    /* if (!cached_requestBody.empty()) {
+    	LE_INFO("Submitting request: %s", requestBody.c_str());
+    	LE_INFO("Cached request: %s", cached_requestBody.c_str());
+	if (cached_requestBody.compare(requestBody) == 0) {
+	     LE_INFO("cached_requestBody same as requestBody");
+	     return LE_DUPLICATE;
+	}
+    } */
+
     {
         FILE* f = fopen("request.txt", "w");
         LE_ASSERT(f != NULL);
@@ -147,6 +166,8 @@ le_result_t ma_combainLocation_SubmitLocationRequest
         fclose(f);
     }
     requestRecord->responseHandler = responseHandler;
+    /* cached_requestBody = requestBody; */
+	
     requestRecord->responseHandlerContext = context;
     // NULL out the request generator since we're done with it
     requestRecord->request.reset();
@@ -440,6 +461,22 @@ static bool TryParseAsSuccess(json_t *responseJson, std::shared_ptr<CombainResul
     return parseSuccess;
 }
 
+static void SetApiKey (double timestamp, const char *api_key, void *contextPtr)
+{
+    LE_INFO("SetApiKey called");
+    if (strlen(api_key) > (MAX_LEN_API_KEY - 1))
+    {
+        LE_INFO("To large an ApiKey!!");
+        return;
+    }
+    strncpy(combainApiKey, api_key, MAX_LEN_API_KEY - 1);
+    combainApiKeySet = true;
+    LE_INFO("combainApiKey set from dhub starting http thread");
+    CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
+    le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
+    le_thread_Start(httpThread);
+}
+
 COMPONENT_INIT
 {
     ResponseAvailableEvent = le_event_CreateId("CombainResponseAvailable", 0);
@@ -449,7 +486,24 @@ COMPONENT_INIT
     le_msg_AddServiceCloseHandler(
         ma_combainLocation_GetServiceRef(), ClientSessionClosedHandler, NULL);
 
-    CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
-    le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
-    le_thread_Start(httpThread);
+    // Let's either get the API key from the config tree or wait for it from dhub
+    le_cfg_ConnectService();
+    const le_result_t cfgRes = le_cfg_QuickGetString(
+        "/ApiKey", combainApiKey, sizeof(combainApiKey) - 1, "");
+    if (cfgRes == LE_OK && combainApiKey[0] != '\0')
+    {
+        combainApiKeySet = true;
+    	CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
+    	le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
+    	le_thread_Start(httpThread);
+    }
+
+    // Let's wait for dhub to set the combainApiKey
+    else
+    {
+    	LE_INFO("Wait for dhub to set the combainApiKey");
+    	LE_ASSERT(LE_OK == dhubIO_CreateOutput(RES_PATH_API_KEY, DHUBIO_DATA_TYPE_STRING, ""));
+    	dhubIO_AddStringPushHandler(RES_PATH_API_KEY, SetApiKey, NULL);
+    	dhubIO_MarkOptional(RES_PATH_API_KEY);
+    }
 }

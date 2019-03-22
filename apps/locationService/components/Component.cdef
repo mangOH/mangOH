@@ -11,7 +11,7 @@ requires:
         positioning/le_posCtrl.api
         positioning/le_pos.api
         dhubIO = io.api
-        ${CURDIR}/../../CombainLocation/ma_combainLocation.api
+        ${CURDIR}/../ma_combainLocation.api
         wifi/le_wifiClient.api
         //modemServices/le_mrc.api
     }

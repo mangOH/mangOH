@@ -12,4 +12,8 @@ void CombainHttpInit(
 void CombainHttpDeinit(void);
 void *CombainHttpThreadFunc(void *context);
 
+#define MAX_LEN_API_KEY         32
+extern char combainApiKey[MAX_LEN_API_KEY];
+
+
 #endif // COMBAIN_HTTP_H

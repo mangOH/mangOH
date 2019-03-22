@@ -12,8 +12,10 @@
 #include <stdio.h>
 #include <time.h>
 
-#define HACCURACY_GOOD	 		50
-#define HACCURACY_GREY_ZONE_UPPER	500
+#define HACCURACY_GOOD	50
+#define PSENSOR_ENABLE	"coordinates/enable"
+#define PSENSOR_PERIOD	"coordinates/period"
+#define DEFAULT_PERIOD	30
 
 typedef enum {GPS, WIFI} Loc_t;
 
@@ -181,7 +183,6 @@ static void LocationResultHandler(
         if (res != LE_OK)
         {
             LE_INFO("Received result notification of type success response, but couldn't fetch the result\n");
-            exit(1);
         }
         else
         {
@@ -217,7 +218,6 @@ static void LocationResultHandler(
         if (res != LE_OK)
         {
             LE_INFO("Received result notification of type success response, but couldn't fetch the result\n");
-            exit(1);
         }
         else
         {
@@ -227,7 +227,6 @@ static void LocationResultHandler(
             LE_INFO("  firstMessage: %s\n", firstMessage);
             LE_INFO("  code: %d\n", code);
             LE_INFO("  message: %s\n", message);
-            exit(1);
         }
 
         break;
@@ -241,24 +240,20 @@ static void LocationResultHandler(
         if (res != LE_OK)
         {
             LE_INFO("Received result notification of type success response, but couldn't fetch the result\n");
-            exit(1);
         }
         else
         {
             LE_INFO("Received a result which couldn't be parsed \"%s\"\n", rawResult);
-            exit(1);
         }
         break;
     }
 
     case MA_COMBAINLOCATION_RESULT_COMMUNICATION_FAILURE:
         LE_INFO("Couldn't communicate with Combain server\n");
-        exit(1);
         break;
 
     default:
         LE_INFO("Received unhandled result type (%d)\n", result);
-        exit(1);
     }
 }
 
@@ -269,11 +264,19 @@ static bool TrySubmitRequest(void)
         LE_INFO("Attempting to submit location request");
         const le_result_t res = ma_combainLocation_SubmitLocationRequest(
             State.combainHandle, LocationResultHandler, NULL);
-        if (res != LE_OK)
-            LE_FATAL("Failed to submit location request\n");
-	LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
+
+	if (res == LE_DUPLICATE) {
+	    ma_combainLocation_DestroyLocationRequest(State.combainHandle);
+	    return true;
+	}
+
+        if (res == LE_OK) {
+	    LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
+	    return true;
+	}
         
-        return true;
+        LE_FATAL("Failed to submit location request\n");
+        return false;
     }
 
     LE_INFO("Cannot submit WIFI location request to Combain as previous in transit");
@@ -303,14 +306,12 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
                 if (res != LE_OK)
                 {
                     LE_INFO("Failed while fetching WiFi SSID\n");
-                    exit(1);
                 }
 
                 res = le_wifiClient_GetBssid(ap, bssid, sizeof(bssid) - 1);
                 if (res != LE_OK)
                 {
                     LE_INFO("Failed while fetching WiFi BSSID\n");
-                    exit(1);
                 }
 
                 // TODO: LE-10254 notes that an incorrect error code of 0xFFFF is mentioned in the
@@ -319,13 +320,11 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
                 if (signalStrength == 0xFFF)
                 {
                     LE_INFO("Failed while fetching WiFi signal strength\n");
-                    exit(1);
                 }
 
                 if (!MacAddrStringToBinary(bssid, bssidBytes))
                 {
                     LE_INFO("WiFi scan contained invalid bssid=\"%s\"\n", bssid);
-                    exit(1);
                 }
 
                 res = ma_combainLocation_AppendWifiAccessPoint(
@@ -347,7 +346,6 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
 
     case LE_WIFICLIENT_EVENT_SCAN_FAILED:
         LE_INFO("WiFi scan failed\n");
-        exit(1);
         break;
 
     default:
@@ -409,14 +407,14 @@ static void Sample
 
             startRes = le_wifiClient_Start();
 
+	    State.combainHandle = ma_combainLocation_CreateLocationRequest();
+	    LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
             if (startRes != LE_OK && startRes != LE_BUSY) {
                 LE_FATAL("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
 	        exit(1);
             }
 
             le_wifiClient_Scan();
-	    State.combainHandle = ma_combainLocation_CreateLocationRequest();
-	    LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
 	    saved_ref = ref;
 	    State.waitingForWifiResults = true;
 	}
@@ -430,7 +428,7 @@ static void Sample
 	PackJson(GPS, &scan, json, sizeof(json));
     	psensor_PushJson(ref, 0 /* now */, json);
 	
-	// Kill any errant WIFI sacn requests as we got GPS
+	// Kill any errant WIFI scan requests as we got GPS
 	if (State.waitingForWifiResults)
 	    State.waitingForWifiResults = false;
     }
@@ -452,6 +450,10 @@ COMPONENT_INIT
     // Use the periodic sensor component from the Data Hub to implement the timer and Data Hub
     // interface.  We'll provide samples as JSON structures.
     psensor_Create("coordinates", DHUBIO_DATA_TYPE_JSON, "", Sample);
+
+    // Make sure the periodic sensor is enabled and defaults to 30 secs.
+    dhubIO_SetBooleanDefault(PSENSOR_ENABLE, true);
+    dhubIO_SetNumericDefault(PSENSOR_PERIOD, DEFAULT_PERIOD);
 
     dhubIO_SetJsonExample("coordinates/value", "{\"lat\":0.1,\"lon\":0.2,"
             "\"alt\":0.3,\"hAcc\":0.4,\"vAcc\":0.5,\"fixType\":\"GNSS\"}");
