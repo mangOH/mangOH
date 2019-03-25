@@ -268,20 +268,22 @@ static bool TrySubmitRequest(void)
         const le_result_t res = ma_combainLocation_SubmitLocationRequest(
             State.combainHandle, LocationResultHandler, NULL);
 
-    if (res == LE_DUPLICATE) {
-        ma_combainLocation_DestroyLocationRequest(State.combainHandle);
-        return true;
-    }
+         if (res == LE_DUPLICATE) {
+             ma_combainLocation_DestroyLocationRequest(State.combainHandle);
+             return true;
+         }
 
-        if (res == LE_OK) {
-        LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
-        return true;
-    }
+         if (res == LE_OK) {
+             LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
+             return true;
+         }
         
-        LE_FATAL("Failed to submit location request\n");
-        return false;
+         ma_combainLocation_DestroyLocationRequest(State.combainHandle);
+         LE_FATAL("Failed to submit location request\n");
+         return false;
     }
 
+    ma_combainLocation_DestroyLocationRequest(State.combainHandle);
     LE_INFO("Cannot submit WIFI location request to Combain as previous in transit");
     return false;
 }

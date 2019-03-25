@@ -492,6 +492,7 @@ COMPONENT_INIT
         "/ApiKey", combainApiKey, sizeof(combainApiKey) - 1, "");
     if (cfgRes == LE_OK && combainApiKey[0] != '\0')
     {
+	LE_INFO("config get of combainApiKey worked");
         combainApiKeySet = true;
     	CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
     	le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
