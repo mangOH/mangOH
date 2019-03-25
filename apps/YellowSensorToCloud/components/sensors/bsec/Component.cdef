@@ -8,7 +8,7 @@ requires:
 {
     api:
     {
-         io = io.api
+        io = io.api
         mangOH_bme680.api
     }
 
