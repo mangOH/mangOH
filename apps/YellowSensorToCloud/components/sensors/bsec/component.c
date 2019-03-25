@@ -3,10 +3,11 @@
 #include <jansson.h>
 
 /// Input resource path
-#define RES_PATH_VALUE        "value"
-#define RES_PATH_CONFIG       "Bmeconfig"
-#define JSON_EXAMPLE "{\"samplingRate\":\"SAMPLING_RATE_LP\",\"enableIaq\":true,\"enableCo2Equivalent\":true,\"enableBreathVoc\":true,"\
-                      "\"enablePressure\":true,\"enableTemperature\":false,\"enableHumidity\":false}"
+#define RES_PATH_VALUE        "bme/value"
+#define RES_PATH_CONFIG       "bme/config"
+#define JSON_EXAMPLE "{\"timestamp\":1,\"iaqValue\":1,\"iaqAccuracy\":1,\"co2EquivalentValue\":1,"\
+                      "\"co2EquivalentAccuracy\":1,\"breathVocValue\":1,\"breathVocAccuracy\":1,"\
+                      "\"pressure\":1,\"temperature\":1,\"humidity\":1 }"
 
 static void BmeConfigPushHandler(double timestamp, const char *jsonStr, void *context)
 {
@@ -95,21 +96,21 @@ static void SensorReadingHandler(
 
     if( reading->iaq.valid)
     {
-        json_object_set_new(jsonBme, "iaq_value", json_real(reading->iaq.value));
-        json_object_set_new(jsonBme, "iaq_accuracy", json_integer(reading->iaq.accuracy));
+        json_object_set_new(jsonBme, "iaqValue", json_real(reading->iaq.value));
+        json_object_set_new(jsonBme, "iaqAccuracy", json_integer(reading->iaq.accuracy));
     }
 
     if(reading->co2Equivalent.valid)
     {
-        json_object_set_new(jsonBme, "co2_equivalent_value", json_real(reading->co2Equivalent.value));
-        json_object_set_new(jsonBme, "co2_equivalent_accuracy", json_integer(reading->co2Equivalent.accuracy));
+        json_object_set_new(jsonBme, "co2EquivalentValue", json_real(reading->co2Equivalent.value));
+        json_object_set_new(jsonBme, "co2EquivalentAccuracy", json_integer(reading->co2Equivalent.accuracy));
     }
 
 
     if(reading->breathVoc.valid)
     {
-        json_object_set_new(jsonBme, "breath_voc_value", json_real(reading->breathVoc.value));
-        json_object_set_new(jsonBme, "breath_voc_accuracy", json_integer(reading->breathVoc.accuracy));
+        json_object_set_new(jsonBme, "breathVocValue", json_real(reading->breathVoc.value));
+        json_object_set_new(jsonBme, "breathVocAccuracy", json_integer(reading->breathVoc.accuracy));
     }
 
     if(reading->pressure.valid)
@@ -149,10 +150,10 @@ COMPONENT_INIT
     LE_FATAL_IF(res != LE_OK, "Couldn't create config data hub output - %s", LE_RESULT_TXT(res));
 //    io_MarkOptional(RES_PATH_CONFIG); 
     io_AddJsonPushHandler(RES_PATH_CONFIG, BmeConfigPushHandler, NULL);
-    io_SetJsonExample(RES_PATH_CONFIG, JSON_EXAMPLE);
     
     LE_ASSERT_OK(io_CreateInput(RES_PATH_VALUE, IO_DATA_TYPE_JSON, ""));
-   
+    io_SetJsonExample(RES_PATH_VALUE, JSON_EXAMPLE);
+  
     mangOH_bme680_AddSensorReadingHandler(SensorReadingHandler, NULL);
 
 }
