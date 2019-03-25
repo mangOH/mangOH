@@ -360,7 +360,8 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
 
 static void Sample
 (
-    psensor_Ref_t ref
+    psensor_Ref_t ref,
+    void *context
 )
 {
     Scan_t scan;
@@ -455,7 +456,7 @@ COMPONENT_INIT
 
     // Use the periodic sensor component from the Data Hub to implement the timer and Data Hub
     // interface.  We'll provide samples as JSON structures.
-    psensor_Create("coordinates", DHUBIO_DATA_TYPE_JSON, "", Sample);
+    psensor_Create("coordinates", DHUBIO_DATA_TYPE_JSON, "", Sample, NULL);
 
     // Make sure the periodic sensor is enabled and defaults to 30 secs.
     dhubIO_SetBooleanDefault(PSENSOR_ENABLE, true);
