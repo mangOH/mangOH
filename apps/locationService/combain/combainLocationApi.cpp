@@ -463,18 +463,24 @@ static bool TryParseAsSuccess(json_t *responseJson, std::shared_ptr<CombainResul
 
 static void SetApiKey (double timestamp, const char *api_key, void *contextPtr)
 {
-    LE_INFO("SetApiKey called");
+    LE_INFO("DHUB SetApiKey called with ApiKey: %s", api_key);
     if (strlen(api_key) > (MAX_LEN_API_KEY - 1))
     {
         LE_INFO("To large an ApiKey!!");
         return;
     }
     strncpy(combainApiKey, api_key, MAX_LEN_API_KEY - 1);
-    combainApiKeySet = true;
-    LE_INFO("combainApiKey set from dhub starting http thread");
-    CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
-    le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
-    le_thread_Start(httpThread);
+    /*  Only start HttpThread if combainApiKeySet was not set
+     *  Thus, we are using combainApiKeySet to mean that HttpThread is running
+     */
+    if (!combainApiKeySet)
+    {
+        combainApiKeySet = true;
+        LE_INFO("Starting http thread");
+        CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
+        le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
+        le_thread_Start(httpThread);
+    }
 }
 
 COMPONENT_INIT

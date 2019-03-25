@@ -153,18 +153,17 @@ static void PackJson
                        " \"alt\": %lf, \"vAcc\": %lf, \"fixType\" : \"GNSS\", \"ts\" : %ju}",
                        scanp->lat, scanp->lon, scanp->hAccuracy,
                        scanp->alt, scanp->vAccuracy, (uintmax_t)ts);
+    // For Wifi we keep the same JSON format as GNSS - i.e. alt & vAcc are 0
+    // TODO: go to jansson directly and send NULL
     else if (loc == WIFI)
         len = snprintf(jsonp, jsonl,
                        "{ \"lat\": %lf, \"lon\": %lf, \"hAcc\": %lf,"
-                       " \"fixType\" : \"WIFI\", \"ts\" : %ju}",
-                       scanp->lat, scanp->lon, scanp->hAccuracy, (uintmax_t)ts);
-    else
-        LE_FATAL("ILLEGAL Location Type: WIFI|GPS");
+                       " \"alt\": %lf, \"vAcc\": %lf, \"fixType\" : \"WIFI\", \"ts\" : %ju}",
+                       scanp->lat, scanp->lon, scanp->hAccuracy,
+                       (double) 0, (double) 0, (uintmax_t)ts);
 
     if (len >= jsonl)
-    {
         LE_FATAL("JSON string (len %d) is longer than buffer (size %zu).", len, jsonl);
-    }
 }
 
 static void LocationResultHandler(

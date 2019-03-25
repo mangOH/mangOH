@@ -46,10 +46,19 @@ static size_t WriteMemCallback(void *contents, size_t size, size_t nmemb, void *
 
 void *CombainHttpThreadFunc(void *context)
 {
-    char combainUrl[128] = "https://cps.combain.com?key=";
-    strncat(combainUrl, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
+    char combainUrl[128];
+    char OldCombainApiKey[MAX_LEN_API_KEY];
     do {
         auto t = RequestJson->dequeue();
+
+	// Have the API key changeable from DHUB
+	if (strncmp(OldCombainApiKey,combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl))) != 0)
+	{
+	    strncpy(OldCombainApiKey, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
+	    combainUrl[0] = '\0';
+	    strcpy(combainUrl, "https://cps.combain.com?key=");
+	    strncat(combainUrl, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
+	}
 
 	// Bug existed as we kept tacking onto the existing buffer
 	HttpReceiveBuffer.used = 0;
@@ -69,6 +78,7 @@ void *CombainHttpThreadFunc(void *context)
         LE_ASSERT(curl_easy_setopt(curl, CURLOPT_HTTPHEADER, httpHeaders) == CURLE_OK);
 
         LE_ASSERT(curl_easy_setopt(curl, CURLOPT_COPYPOSTFIELDS, requestBody.c_str()) == CURLE_OK);
+        LE_INFO("APIKEY: %s", combainUrl);
         LE_INFO("SENDING %d char: %s", requestBody.length(), requestBody.c_str());
 
         LE_ASSERT(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemCallback) == CURLE_OK);
