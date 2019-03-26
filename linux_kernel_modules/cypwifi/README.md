@@ -48,8 +48,9 @@
       following lines to "/etc/network/interfaces":
       
       iface wlan1 inet manual
-      pre-up /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
-      post-down /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh stop
+      
+        pre-up /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
+        post-down /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh stop
     
   * Please apply the Legato Patches as mentioned under:
      https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
