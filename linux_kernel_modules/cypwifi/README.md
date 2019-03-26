@@ -46,6 +46,7 @@
     to the AP reference found from scan. These are the steps:
   * To have the Cypress Wifi start via init.d properly (i.e. ifup scripts) you need to add
       following lines to "/etc/network/interfaces":
+      
       iface wlan1 inet manual
       pre-up /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
       post-down /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh stop
