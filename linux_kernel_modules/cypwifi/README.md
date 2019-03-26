@@ -46,12 +46,12 @@
     to the AP reference found from scan. These are the steps:
   * To have the Cypress Wifi start via init.d properly (i.e. ifup scripts) you need to add
       following lines to "/etc/network/interfaces":
+	```
       
       iface wlan1 inet manual
-      
         pre-up /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
         post-down /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh stop
-    
+	```
   * Please apply the Legato Patches as mentioned under:
      https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
   * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
@@ -74,6 +74,7 @@
         if [ -e "/legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh" ]
         then
             /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
+            /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
         fi
 	```
     between "mount -o bind $LEGATO_MNT /legato" and "test -x $LEGATO_START && $LEGATO_START"
