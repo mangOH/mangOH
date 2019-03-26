@@ -44,6 +44,12 @@
     one can set the interface to wlan1. Note that MangOH Red has wlan1 used
     by the MT7697 Wifi chip which is not present on the MangOH Yellow. AP_REF refers
     to the AP reference found from scan. These are the steps:
+  * To have the Cypress Wifi start via init.d properly (i.e. ifup scripts) you need to add
+      following lines to "/etc/network/interfaces":
+      iface wlan1 inet manual
+      pre-up /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh start
+      post-down /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh stop
+    
   * Please apply the Legato Patches as mentioned under:
      https://github.com/mangOH/mangOH/wiki/mangOH-Red-mt7697-WiFi
   * /legato/systems/current/modules/files/brcmutil/etc/init.d/cywifi.sh init
