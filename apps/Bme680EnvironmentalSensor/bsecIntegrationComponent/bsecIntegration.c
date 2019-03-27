@@ -354,7 +354,12 @@ static void TimerHandler(le_timer_Ref_t t)
         }
     }
     int64_t nextTimerMs = (sensorSettings.next_call - GetTimestampNs()) / (1000LL * 1000LL);
-    LE_FATAL_IF(nextTimerMs <= 0, "Processing too slowly - next timeout scheduled for %lld ms", nextTimerMs);
+    LE_DEBUG("Configuring timer to %" PRId64 " ms", nextTimerMs);
+    if (nextTimerMs <= 0)
+    {
+        LE_WARN("Next timer set to occur in %" PRId64 " ms. Setting to 1 ms instead", nextTimerMs);
+        nextTimerMs = 1;
+    }
     LE_ASSERT_OK(le_timer_SetMsInterval(t, nextTimerMs));
     LE_ASSERT_OK(le_timer_Start(t));
 }

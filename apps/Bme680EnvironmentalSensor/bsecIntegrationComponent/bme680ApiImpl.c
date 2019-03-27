@@ -80,11 +80,13 @@ le_result_t mangOH_bme680_Configure(
     if (samplingRate != _s.samplingRate)
     {
         _s.samplingRate = samplingRate;
-        LE_ASSERT_OK(le_timer_SetMsInterval(_s.timer, (uint32_t)(1000.0 / sr)));
-        if (!le_timer_IsRunning(_s.timer))
-        {
-            LE_ASSERT_OK(le_timer_Start(_s.timer));
-        }
+        le_timer_Stop(_s.timer);
+        /*
+         * Set the timer to 1ms to trigger a reading with the new settings immediately. Once that
+         * reading is performed, BSEC will decide how to set the timer.
+         */
+        LE_ASSERT_OK(le_timer_SetMsInterval(_s.timer, 1.0));
+        LE_ASSERT_OK(le_timer_Start(_s.timer));
     }
 
     return status == BSEC_OK ? LE_OK : LE_FAULT;
