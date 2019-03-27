@@ -137,12 +137,35 @@ static void SensorReadingHandler
     free(value);
 }
 
+//--------------------------------------------------------------------------------------------------
+/**
+ * SIGTERM handler to cleanly shutdown
+ */
+//--------------------------------------------------------------------------------------------------
+/*static void actuator_SigTermHandler
+(
+    int pSigNum
+)
+{
+    (void)pSigNum;
+    LE_INFO("Remove bsec resource");
+
+    io_DeleteResource(RES_PATH_VALUE);
+    io_DeleteResource(RES_PATH_CONFIG);
+
+}
+*/
 
 COMPONENT_INIT
 {
+    // Catch application termination and shutdown cleanly
+    // le_sig_Block(SIGTERM);
+    // le_sig_SetEventHandler(SIGTERM, actuator_SigTermHandler);
+
     le_result_t res = io_CreateOutput(RES_PATH_CONFIG, IO_DATA_TYPE_JSON, "");
-    LE_FATAL_IF(res != LE_OK, "Couldn't create config data hub output - %s", LE_RESULT_TXT(res));
-//    io_MarkOptional(RES_PATH_CONFIG);
+    
+    LE_FATAL_IF(res != LE_OK &&  res !=LE_DUPLICATE, "Couldn't create config data hub output - %s", LE_RESULT_TXT(res));
+    io_MarkOptional(RES_PATH_CONFIG);
     io_AddJsonPushHandler(RES_PATH_CONFIG, BmeConfigPushHandler, NULL);
 
     LE_ASSERT_OK(io_CreateInput(RES_PATH_VALUE, IO_DATA_TYPE_JSON, ""));
