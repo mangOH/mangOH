@@ -12,10 +12,11 @@
 #include <stdio.h>
 #include <time.h>
 
-#define HACCURACY_GOOD	50
-#define PSENSOR_ENABLE	"coordinates/enable"
-#define PSENSOR_PERIOD	"coordinates/period"
-#define DEFAULT_PERIOD	30
+#define HACCURACY_GOOD_GPS    75
+#define HACCURACY_WIFI_ONLY   500
+#define PSENSOR_ENABLE        "coordinates/enable"
+#define PSENSOR_PERIOD        "coordinates/period"
+#define DEFAULT_PERIOD        30
 
 typedef enum {GPS, WIFI} Loc_t;
 
@@ -35,10 +36,15 @@ static struct
 {
     ma_combainLocation_LocReqHandleRef_t combainHandle;
     bool waitingForWifiResults;
+    bool waitingForCombainResults;
     le_wifiClient_NewEventHandlerRef_t wifiHandler;
 } State;
 
-static psensor_Ref_t saved_ref= NULL;
+// > HACCURACY_GOOD_GPS - save the last GPS scan to send if Wifi scan fails
+static Scan_t SavedGpsScan;
+static Scan_t *GpsScan = NULL;
+
+static psensor_Ref_t saved_ref = NULL;
 
 uint64_t GetCurrentTimestamp(void)
 {
@@ -166,15 +172,36 @@ static void PackJson
         LE_FATAL("JSON string (len %d) is longer than buffer (size %zu).", len, jsonl);
 }
 
+static void UseGpsScan(void)
+{
+    char json[256];
+
+    if (GpsScan != NULL)
+    {
+        PackJson(GPS, &SavedGpsScan, json, sizeof(json));
+        LE_INFO("Sending dhub json: %s", json);
+        psensor_PushJson(saved_ref, 0 /* now */, json);
+        GpsScan = NULL;
+    }
+}
+
 static void LocationResultHandler(
     ma_combainLocation_LocReqHandleRef_t handle, ma_combainLocation_Result_t result, void *context)
 {
+    char json[256];
+
+    if (State.waitingForCombainResults != true)
+    {
+        LE_FATAL("Serious error from Combain service");
+        exit(1);
+    }
+
+    State.waitingForCombainResults = false;
     switch (result)
     {
     case MA_COMBAINLOCATION_RESULT_SUCCESS:
     {
         Scan_t scan;
-        char json[256];
 
 
         const le_result_t res = ma_combainLocation_GetSuccessResponse(
@@ -189,11 +216,11 @@ static void LocationResultHandler(
             LE_INFO("Location: latitude=%f, longitude=%f, accuracy=%f meters\n",
                     scan.lat, scan.lon, scan.hAccuracy);
             PackJson(WIFI, &scan, json, sizeof(json));
-            LE_INFO("Sent dhub json: %s", json);
+            LE_INFO("Sending dhub json: %s", json);
             psensor_PushJson(saved_ref, 0 /* now */, json);
             saved_ref = NULL;
         }
-        break;
+        return;
     }
 
     case MA_COMBAINLOCATION_RESULT_ERROR:
@@ -257,6 +284,8 @@ static void LocationResultHandler(
     default:
         LE_INFO("Received unhandled result type (%d)\n", result);
     }
+
+    UseGpsScan();
 }
 
 static bool TrySubmitRequest(void)
@@ -273,6 +302,7 @@ static bool TrySubmitRequest(void)
          }
 
          if (res == LE_OK) {
+             State.waitingForCombainResults = true;
              LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
              return true;
          }
@@ -292,68 +322,69 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
     LE_INFO("Called WifiEventHandler() with event=%d", event);
     switch (event)
     {
-    case LE_WIFICLIENT_EVENT_SCAN_DONE:
-        if (State.waitingForWifiResults)
-        {
-            State.waitingForWifiResults = false;
-
-            le_wifiClient_AccessPointRef_t ap = le_wifiClient_GetFirstAccessPoint();
-            while (ap != NULL)
+        case LE_WIFICLIENT_EVENT_SCAN_DONE:
+            if (State.waitingForWifiResults)
             {
-                uint8_t ssid[32];
-                size_t ssidLen = sizeof(ssid);
-                char bssid[(2 * 6) + (6 - 1) + 1]; // "nn:nn:nn:nn:nn:nn\0"
-                int16_t signalStrength;
-                le_result_t res;
-                uint8_t bssidBytes[6];
-                res = le_wifiClient_GetSsid(ap, ssid, &ssidLen);
-                if (res != LE_OK)
+                State.waitingForWifiResults = false;
+    
+                le_wifiClient_AccessPointRef_t ap = le_wifiClient_GetFirstAccessPoint();
+                while (ap != NULL)
                 {
-                    LE_INFO("Failed while fetching WiFi SSID\n");
-                }
+                    uint8_t ssid[32];
+                    size_t ssidLen = sizeof(ssid);
+                    char bssid[(2 * 6) + (6 - 1) + 1]; // "nn:nn:nn:nn:nn:nn\0"
+                    int16_t signalStrength;
+                    le_result_t res;
+                    uint8_t bssidBytes[6];
+                    res = le_wifiClient_GetSsid(ap, ssid, &ssidLen);
+                    if (res != LE_OK)
+                    {
+                        LE_INFO("Failed while fetching WiFi SSID\n");
+                    }
+    
+                    res = le_wifiClient_GetBssid(ap, bssid, sizeof(bssid) - 1);
+                    if (res != LE_OK)
+                    {
+                        LE_INFO("Failed while fetching WiFi BSSID\n");
+                    }
+    
+                    signalStrength = le_wifiClient_GetSignalStrength(ap);
+                    if (signalStrength == LE_WIFICLIENT_NO_SIGNAL_STRENGTH)
+                    {
+                        LE_INFO("Failed while fetching WiFi signal strength\n");
+                    }
 
-                res = le_wifiClient_GetBssid(ap, bssid, sizeof(bssid) - 1);
-                if (res != LE_OK)
-                {
-                    LE_INFO("Failed while fetching WiFi BSSID\n");
-                }
+                    if (!MacAddrStringToBinary(bssid, bssidBytes))
+                    {
+                        LE_INFO("WiFi scan contained invalid bssid=\"%s\"\n", bssid);
+                    }
 
-                signalStrength = le_wifiClient_GetSignalStrength(ap);
-                if (signalStrength == LE_WIFICLIENT_NO_SIGNAL_STRENGTH)
-                {
-                    LE_INFO("Failed while fetching WiFi signal strength\n");
-                }
-
-                if (!MacAddrStringToBinary(bssid, bssidBytes))
-                {
-                    LE_INFO("WiFi scan contained invalid bssid=\"%s\"\n", bssid);
-                }
-
-                res = ma_combainLocation_AppendWifiAccessPoint(
+                    res = ma_combainLocation_AppendWifiAccessPoint(
                     State.combainHandle, bssidBytes, 6, ssid, ssidLen, signalStrength);
-                LE_INFO("Submitted AccessPoint: %d ssid: %s", (uint32_t) State.combainHandle,
+                    LE_INFO("Submitted AccessPoint: %d ssid: %s", (uint32_t) State.combainHandle,
                         (char *) ssid);
 
-                if (res != LE_OK)
-                {
-                    LE_INFO("Failed to append WiFi scan results to combain request\n");
-                    exit(1);
+                    if (res != LE_OK)
+                    {
+                        LE_INFO("Failed to append WiFi scan results to combain request\n");
+                        exit(1);
+                    }
+
+                    ap = le_wifiClient_GetNextAccessPoint();
                 }
 
-                ap = le_wifiClient_GetNextAccessPoint();
+                TrySubmitRequest();
             }
+            break;
 
-            TrySubmitRequest();
+        default:
+        {
+            LE_INFO("WiFi scan failed\n");
+            ma_combainLocation_DestroyLocationRequest(State.combainHandle);
+            State.waitingForWifiResults = false;
+            UseGpsScan();
+            break;
         }
-        break;
-
-    case LE_WIFICLIENT_EVENT_SCAN_FAILED:
-        LE_INFO("WiFi scan failed\n");
-        break;
-
-    default:
-        // Do nothing - don't care about connect/disconnect events
-        break;
     }
 }
 
@@ -374,8 +405,11 @@ static void Sample
 
     le_result_t posRes = le_pos_Get3DLocation(&lat, &lon, &hAccuracy, &alt, &vAccuracy);
 
-    /* LE_INFO("le_pos_Get3DLocation returned: lat = %d lon: %d hAccuracy: %d alt: %d vAccuracy: %d",
-       lat, lon, hAccuracy, alt, vAccuracy); */
+    if (posRes == LE_OK)
+        LE_INFO("le_pos_Get3DLocation returned: lat = %d lon: %d hAccuracy: %d alt: %d vAccuracy: %d",
+           lat, lon, hAccuracy, alt, vAccuracy); 
+    else
+        LE_INFO("le_pos_Get3DLocation FAILED: %s", LE_RESULT_TXT(posRes));
 
     scan.lat = (double) lat / 1000000.0 ;
     scan.lon = (double) lon / 1000000.0;
@@ -387,8 +421,14 @@ static void Sample
        scan.lat, scan.lon, scan.hAccuracy, scan.alt, scan.vAccuracy); */
 
     // No GPS or low accuracy GPS try Wifi Scan & Combain translation
-    if (posRes != LE_OK || scan.hAccuracy > HACCURACY_GOOD) {
+    if (posRes != LE_OK || scan.hAccuracy > HACCURACY_GOOD_GPS) {
         le_result_t startRes;
+
+        if (scan.hAccuracy < HACCURACY_WIFI_ONLY)
+        {
+            SavedGpsScan = scan;
+            GpsScan = &SavedGpsScan;
+        }    
 
         if (!State.waitingForWifiResults) {
             /* Legato WIFI is broken so we need to create a fake access point to do a scan */
@@ -411,8 +451,8 @@ static void Sample
 
             startRes = le_wifiClient_Start();
 
-        State.combainHandle = ma_combainLocation_CreateLocationRequest();
-        LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
+            State.combainHandle = ma_combainLocation_CreateLocationRequest();
+            LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
             if (startRes != LE_OK && startRes != LE_BUSY) {
                 LE_FATAL("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
                 exit(1);
@@ -429,19 +469,23 @@ static void Sample
     }
 
     // Good GPS
-    else if (posRes == LE_OK && scan.hAccuracy <= HACCURACY_GOOD)
+    else if (posRes == LE_OK && scan.hAccuracy <= HACCURACY_GOOD_GPS)
     {
         PackJson(GPS, &scan, json, sizeof(json));
+        LE_INFO("Sending dhub json: %s", json);
         psensor_PushJson(ref, 0 /* now */, json);
+        GpsScan = NULL;
 
-        // Kill any errant WIFI sacn requests as we got GPS
-        if (State.waitingForWifiResults)
+        // Kill any errant WIFI scan or Combain requests as we got GPS
+        if (State.waitingForWifiResults || State.waitingForCombainResults)
+        {
+            ma_combainLocation_DestroyLocationRequest(State.combainHandle);
             State.waitingForWifiResults = false;
+        }
     }
 
     else
         LE_ERROR("SHOULD NOT REACH HERE");
-
 }
 
 

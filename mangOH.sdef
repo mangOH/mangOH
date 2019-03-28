@@ -67,6 +67,8 @@ apps:
 
 #endif // MANGOH_BOARD
 
+    $MANGOH_ROOT/apps/locationService/combainLocation
+    $MANGOH_ROOT/apps/locationService/location
     $MANGOH_ROOT/apps/MqttClient/mqttClient
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
@@ -101,6 +103,7 @@ interfaceSearch:
 #elif ${MANGOH_BOARD} = yellow
     $LEGATO_ROOT/apps/sample/dataHub
     $MANGOH_ROOT/apps/Bme680EnvironmentalSensor
+    $LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
     
 
 #endif // MANGOH_BOARD
@@ -124,6 +127,7 @@ componentSearch:
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
 #elif ${MANGOH_BOARD} = yellow
     ${CURDIR}/apps/YellowSensorToCloud/interfaces
+    $LEGATO_ROOT/apps/sample/dataHub/components
 #endif
 
 }
