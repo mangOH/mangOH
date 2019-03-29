@@ -148,3 +148,13 @@ FUNCTION le_result_t GetParseFailureResult
     LocReqHandle handle IN,
     string unparsedResponse[256] OUT
 );
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Is the Combain service available?
+ *
+ * @return true/false
+ *         
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION bool ServiceAvailable();

@@ -14,7 +14,7 @@
 
 #define RES_PATH_API_KEY        "ApiKey/value"
 
-static bool combainApiKeySet = false;
+bool combainApiKeySet = false;
 char combainApiKey[MAX_LEN_API_KEY];
 
 
@@ -136,6 +136,11 @@ le_result_t ma_combainLocation_SubmitLocationRequest
      * Lets cache the value so that we don't make multiple Combain requests
     static std::string cached_requestBody; */
 
+    if (!combainApiKeySet)
+    {
+        return LE_UNAVAILABLE;
+    }
+
     RequestRecord *requestRecord = GetRequestRecordFromHandle(handle, true);
     if (!requestRecord)
     {
@@ -150,7 +155,7 @@ le_result_t ma_combainLocation_SubmitLocationRequest
 
     std::string requestBody = requestRecord->request->generateRequestBody();
 
-    /* if (!cached_requestBody.empty()) {
+    /* if (!cached_requestBody.empty() {
     	LE_INFO("Submitting request: %s", requestBody.c_str());
     	LE_INFO("Cached request: %s", cached_requestBody.c_str());
 	if (cached_requestBody.compare(requestBody) == 0) {
@@ -459,6 +464,11 @@ static bool TryParseAsSuccess(json_t *responseJson, std::shared_ptr<CombainResul
     }
 
     return parseSuccess;
+}
+
+bool ma_combainLocation_ServiceAvailable ()
+{
+	return combainApiKeySet;
 }
 
 static void SetApiKey (double timestamp, const char *api_key, void *contextPtr)

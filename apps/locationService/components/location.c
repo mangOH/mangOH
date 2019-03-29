@@ -31,6 +31,10 @@ typedef struct ScanReading
 
 // Hacking - assuming mangOH Yellow and the Cypress chip as wlan1 - TODO: add TI Wifi on wlan0?
 //static const char *interfacePtr = "wlan1";
+// Legato WIFI is broken so we need to create a fake access point to do a scan 
+static const char *ssidPtr = "mangOH";
+static le_wifiClient_AccessPointRef_t  createdAccessPoint;
+static bool  WifiStarted = false;
 
 static struct
 {
@@ -296,20 +300,13 @@ static bool TrySubmitRequest(void)
         const le_result_t res = ma_combainLocation_SubmitLocationRequest(
             State.combainHandle, LocationResultHandler, NULL);
 
-         if (res == LE_DUPLICATE) {
-             ma_combainLocation_DestroyLocationRequest(State.combainHandle);
-             return true;
-         }
-
          if (res == LE_OK) {
              State.waitingForCombainResults = true;
              LE_INFO("Submitted request handle: %d", (uint32_t) State.combainHandle);
              return true;
          }
         
-         ma_combainLocation_DestroyLocationRequest(State.combainHandle);
-         LE_FATAL("Failed to submit location request\n");
-         return false;
+         LE_INFO("Failed to submit location request\n");
     }
 
     ma_combainLocation_DestroyLocationRequest(State.combainHandle);
@@ -326,6 +323,8 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
             if (State.waitingForWifiResults)
             {
                 State.waitingForWifiResults = false;
+                State.combainHandle = ma_combainLocation_CreateLocationRequest();
+                LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
     
                 le_wifiClient_AccessPointRef_t ap = le_wifiClient_GetFirstAccessPoint();
                 while (ap != NULL)
@@ -372,6 +371,11 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
 
                     ap = le_wifiClient_GetNextAccessPoint();
                 }
+                if (WifiStarted)
+                {
+                    le_wifiClient_Stop();
+                    WifiStarted = false;
+                }
 
                 TrySubmitRequest();
             }
@@ -380,6 +384,11 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
         default:
         {
             LE_INFO("WiFi scan failed\n");
+            if (WifiStarted)
+            {
+                le_wifiClient_Stop();
+                WifiStarted = false;
+            }
             ma_combainLocation_DestroyLocationRequest(State.combainHandle);
             State.waitingForWifiResults = false;
             UseGpsScan();
@@ -424,6 +433,13 @@ static void Sample
     if (posRes != LE_OK || scan.hAccuracy > HACCURACY_GOOD_GPS) {
         le_result_t startRes;
 
+        // If Combain is down no use doing a Wifi scan
+        if (!ma_combainLocation_ServiceAvailable())
+        {
+            LE_INFO("Combain Service is not available");
+            return;
+        }
+
         if (scan.hAccuracy < HACCURACY_WIFI_ONLY)
         {
             SavedGpsScan = scan;
@@ -431,35 +447,31 @@ static void Sample
         }    
 
         if (!State.waitingForWifiResults) {
-            /* Legato WIFI is broken so we need to create a fake access point to do a scan */
-            const char *ssidPtr = "mangOH";
-            le_wifiClient_AccessPointRef_t  createdAccessPoint;
 
-            createdAccessPoint = le_wifiClient_Create((const uint8_t *)ssidPtr, strlen(ssidPtr));
-            if (NULL == createdAccessPoint)
+            if (!createdAccessPoint)
             {
-                LE_INFO("le_wifiClient_Create returns NULL.\n");
-                exit(1);
-            }
+                createdAccessPoint = le_wifiClient_Create((const uint8_t *)ssidPtr, strlen(ssidPtr));
+                if (NULL == createdAccessPoint)
+                {
+                    LE_INFO("le_wifiClient_Create returns NULL.\n");
+                    exit(1);
+                }
 
-            startRes = le_wifiClient_SetInterface(createdAccessPoint, "wlan1");
-            if (LE_OK != startRes)
-            {
-                LE_FATAL("ERROR: le_wifiClient_SetInterface returns %d.\n", startRes);
-                exit(1);
+                startRes = le_wifiClient_SetInterface(createdAccessPoint, "wlan1");
+                if (LE_OK != startRes)
+                {
+                    LE_FATAL("ERROR: le_wifiClient_SetInterface returns %d.\n", startRes);
+                    exit(1);
+                }
             }
 
             startRes = le_wifiClient_Start();
 
-            State.combainHandle = ma_combainLocation_CreateLocationRequest();
-            LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
             if (startRes != LE_OK && startRes != LE_BUSY) {
-                LE_FATAL("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
-                exit(1);
+                LE_INFO("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
+		WifiStarted = true;
             }
 
-            State.combainHandle = ma_combainLocation_CreateLocationRequest();
-            LE_INFO("Create request handle: %d", (uint32_t) State.combainHandle);
             saved_ref = ref;
             le_wifiClient_Scan();
             State.waitingForWifiResults = true;
@@ -485,7 +497,7 @@ static void Sample
     }
 
     else
-        LE_ERROR("SHOULD NOT REACH HERE");
+        LE_ERROR("NO RESULTS TO REPORT");
 }
 
 
