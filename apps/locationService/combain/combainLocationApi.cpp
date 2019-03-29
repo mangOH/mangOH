@@ -14,7 +14,7 @@
 
 #define RES_PATH_API_KEY        "ApiKey/value"
 
-bool combainApiKeySet = false;
+static bool combainApiKeySet = false;
 char combainApiKey[MAX_LEN_API_KEY];
 
 
@@ -466,31 +466,21 @@ static bool TryParseAsSuccess(json_t *responseJson, std::shared_ptr<CombainResul
     return parseSuccess;
 }
 
-bool ma_combainLocation_ServiceAvailable ()
+bool ma_combainLocation_ServiceAvailable(void)
 {
-	return combainApiKeySet;
+    return combainApiKeySet;
 }
 
-static void SetApiKey (double timestamp, const char *api_key, void *contextPtr)
+static void SetApiKey(double timestamp, const char *api_key, void *contextPtr)
 {
     LE_INFO("DHUB SetApiKey called with ApiKey: %s", api_key);
     if (strlen(api_key) > (MAX_LEN_API_KEY - 1))
     {
-        LE_INFO("To large an ApiKey!!");
+        LE_INFO("Too large an ApiKey!!");
         return;
     }
     strncpy(combainApiKey, api_key, MAX_LEN_API_KEY - 1);
-    /*  Only start HttpThread if combainApiKeySet was not set
-     *  Thus, we are using combainApiKeySet to mean that HttpThread is running
-     */
-    if (!combainApiKeySet)
-    {
-        combainApiKeySet = true;
-        LE_INFO("Starting http thread");
-        CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
-        le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
-        le_thread_Start(httpThread);
-    }
+    combainApiKeySet = strlen(api_key) > 0;
 }
 
 COMPONENT_INIT
@@ -508,11 +498,8 @@ COMPONENT_INIT
         "/ApiKey", combainApiKey, sizeof(combainApiKey) - 1, "");
     if (cfgRes == LE_OK && combainApiKey[0] != '\0')
     {
-	LE_INFO("config get of combainApiKey worked");
+        LE_INFO("config get of combainApiKey worked");
         combainApiKeySet = true;
-    	CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
-    	le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
-    	le_thread_Start(httpThread);
     }
 
     // Let's wait for dhub to set the combainApiKey
@@ -523,4 +510,8 @@ COMPONENT_INIT
     	dhubIO_AddStringPushHandler(RES_PATH_API_KEY, SetApiKey, NULL);
     	dhubIO_MarkOptional(RES_PATH_API_KEY);
     }
+
+    CombainHttpInit(&RequestJson, &ResponseJson, ResponseAvailableEvent);
+    le_thread_Ref_t httpThread = le_thread_Create("CombainHttp", CombainHttpThreadFunc, NULL);
+    le_thread_Start(httpThread);
 }

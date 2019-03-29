@@ -329,8 +329,12 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
                 le_wifiClient_AccessPointRef_t ap = le_wifiClient_GetFirstAccessPoint();
                 while (ap != NULL)
                 {
-                    uint8_t ssid[32];
-                    size_t ssidLen = sizeof(ssid);
+                    // Add one to the length so that the SSID is guaranteed to have a final zero
+                    // byte. This allows us to (incorrectly) treat the SSID as though it's a C
+                    // string and print it out. It's possible that some of the string may not get
+                    // printed if there are unprintable characters or embedded nulls in the SSID.
+                    uint8_t ssid[32 + 1] = {0};
+                    size_t ssidLen = sizeof(ssid)- 1;
                     char bssid[(2 * 6) + (6 - 1) + 1]; // "nn:nn:nn:nn:nn:nn\0"
                     int16_t signalStrength;
                     le_result_t res;

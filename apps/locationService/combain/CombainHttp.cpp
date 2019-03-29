@@ -47,25 +47,32 @@ static size_t WriteMemCallback(void *contents, size_t size, size_t nmemb, void *
 void *CombainHttpThreadFunc(void *context)
 {
     char combainUrl[128];
-    char OldCombainApiKey[MAX_LEN_API_KEY];
+    char oldCombainApiKey[MAX_LEN_API_KEY];
     do {
         auto t = RequestJson->dequeue();
 
-	// Have the API key changeable from DHUB
-	if (strncmp(OldCombainApiKey,combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl))) != 0)
-	{
-	    strncpy(OldCombainApiKey, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
-	    combainUrl[0] = '\0';
-	    strcpy(combainUrl, "https://cps.combain.com?key=");
-	    strncat(combainUrl, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
-	}
-
-	// Bug existed as we kept tacking onto the existing buffer
-	HttpReceiveBuffer.used = 0;
-	HttpReceiveBuffer.data[0] = 0;
+        // Have the API key changeable from DHUB
+        if (strncmp(oldCombainApiKey, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl))) != 0)
+        {
+            strncpy(oldCombainApiKey, combainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
+            combainUrl[0] = '\0';
+            strcpy(combainUrl, "https://cps.combain.com?key=");
+            strncat(combainUrl, oldCombainApiKey, sizeof(combainUrl) - (1 + strlen(combainUrl)));
+        }
 
         ma_combainLocation_LocReqHandleRef_t handle = std::get<0>(t);
         std::string &requestBody = std::get<1>(t);
+
+        if (oldCombainApiKey[0] == '\0')
+        {
+            ResponseJson->enqueue(std::make_tuple(handle, "Combain API key not set"));
+            le_event_Report(ResponseAvailableEvent, NULL, 0);
+            continue;
+        }
+
+        // Bug existed as we kept tacking onto the existing buffer
+        HttpReceiveBuffer.used = 0;
+        HttpReceiveBuffer.data[0] = 0;
 
         CURL* curl = curl_easy_init();
         LE_ASSERT(curl);
@@ -90,6 +97,7 @@ void *CombainHttpThreadFunc(void *context)
             LE_ERROR("libcurl returned error (%d): %s", res, curl_easy_strerror(res));
             // TODO: better way to encode CURL errors?
             ResponseJson->enqueue(std::make_tuple(handle, ""));
+            le_event_Report(ResponseAvailableEvent, NULL, 0);
         }
 
         std::string json((char*)HttpReceiveBuffer.data, HttpReceiveBuffer.used);
@@ -102,6 +110,5 @@ void *CombainHttpThreadFunc(void *context)
         curl_easy_cleanup(curl);
 
         curl_slist_free_all(httpHeaders);
-
     } while (true);
 }
