@@ -37,8 +37,6 @@ apps:
     ${CURDIR}/apps/YellowOnBoardActuators/actuator
     ${CURDIR}/apps/BatteryService/battery 
     ${CURDIR}/apps/OpenWeatherMapAmbientTemperature/openWeatherMapAmbientTemperature
-    ${CURDIR}/apps/locationService/combainLocation
-    ${CURDIR}/apps/locationService/location
 
 #endif // MANGOH_BOARD
 }
