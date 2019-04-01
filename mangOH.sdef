@@ -64,11 +64,11 @@ apps:
     $MANGOH_ROOT/apps/YellowOnBoardActuators/actuator
     $MANGOH_ROOT/apps/BatteryService/battery 
     $MANGOH_ROOT/apps/OpenWeatherMapAmbientTemperature/openWeatherMapAmbientTemperature
+    $MANGOH_ROOT/apps/locationService/combainLocation
+    $MANGOH_ROOT/apps/locationService/location
 
 #endif // MANGOH_BOARD
 
-    $MANGOH_ROOT/apps/locationService/combainLocation
-    $MANGOH_ROOT/apps/locationService/location
     $MANGOH_ROOT/apps/MqttClient/mqttClient
     $MANGOH_ROOT/apps/DataRouter/dataRouter
     $MANGOH_ROOT/apps/DataRouter/drTool/drTool
