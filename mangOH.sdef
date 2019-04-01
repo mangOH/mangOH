@@ -10,133 +10,108 @@
 
 apps:
 {
-#if ${MANGOH_BOARD} = red
-    /*
-     * There is a conflict between the following software components:
-     *  - sx1509 Linux kernel driver
-     *  - mangOH GPIO expander service
-     *  - gpioexp command line program
-     * All of these components attempt to control the sx1509 GPIO expander on mangOH Red. The sx1509
-     * driver is required for other kernel modules such as the iot slot driver and the LED driver to
-     * manipulate the GPIOs. The mangOH GPIO expander service is a userspace driver for the SX1509
-     * which provides a service conforming to le_gpio.api to access the GPIOs of the sx1509 from
-     * Legato apps. gpioexp is also a userspace command line program which can control the sx1509.
-     * This program is called from the /etc/init.d/tiwifi provided by the Sierra Wireless Linux
-     * distro in order to setup GPIOs to use the TI WiFi IoT card (without the iot slot module). The
-     * fundamental problem is that the gpiolib implementation in the Sierra Wireless kernels doesn't
-     * support accessing GPIOs from userspace through sysfs if they are not listed in the kernel at
-     * build time.
-     */
-    // $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceRed
-
-    /*
-     * The heartbeat app is disabled on mangOH Red because the logging messages from the low power
-     * microcontroller make it very difficult to use the console port.
-     */
-    // $MANGOH_ROOT/apps/Heartbeat/heartbeatRed
-
-    $MANGOH_ROOT/apps/LedService/ledService
-    $MANGOH_ROOT/apps/RedSensorToCloud/redSensorToCloud
-
-    /*
-     * The Location Triangulation application is disabled as it requires update qmi libraries
-     */
-    //$MANGOH_ROOT/apps/LocationTriangulation/locationTriangulation
-    $MANGOH_ROOT/apps/DataPushTest/dataPushTest
-    $MANGOH_ROOT/apps/BatteryService/battery
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
-
-#elif ${MANGOH_BOARD} = green
-    $MANGOH_ROOT/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
-    $MANGOH_ROOT/apps/MuxControl/muxCtrlService/muxCtrlService
-    $MANGOH_ROOT/apps/MuxControl/tools/muxCtrlTools
-    $MANGOH_ROOT/apps/ArduinoBridge/arduinoBridge
-    $MANGOH_ROOT/apps/Heartbeat/heartbeatGreen
-
-#elif ${MANGOH_BOARD} = yellow
-    $MANGOH_ROOT/apps/YellowSensorToCloud/yellowSensor
-    $LEGATO_ROOT/apps/sample/dataHub/dataHub
-    
-    $MANGOH_ROOT/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
-    $MANGOH_ROOT/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
-    $MANGOH_ROOT/samples/BsecTest/bsecTest
-    $MANGOH_ROOT/apps/DataHub-Buzzer/buzzer   
-    $MANGOH_ROOT/apps/YellowOnBoardActuators/actuator
-    $MANGOH_ROOT/apps/BatteryService/battery 
-    $MANGOH_ROOT/apps/OpenWeatherMapAmbientTemperature/openWeatherMapAmbientTemperature
-    $MANGOH_ROOT/apps/locationService/combainLocation
-    $MANGOH_ROOT/apps/locationService/location
-
-#endif // MANGOH_BOARD
-
-    $MANGOH_ROOT/apps/MqttClient/mqttClient
-    $MANGOH_ROOT/apps/DataRouter/dataRouter
-    $MANGOH_ROOT/apps/DataRouter/drTool/drTool
-    $MANGOH_ROOT/apps/SocialService/socialService
     $LEGATO_ROOT/apps/tools/devMode
 
+#if ${MANGOH_BOARD} = green
+    ${CURDIR}/apps/GpioExpander/gpioExpanderService/gpioExpanderServiceGreen
+    ${CURDIR}/apps/MuxControl/muxCtrlService/muxCtrlService
+    ${CURDIR}/apps/MuxControl/tools/muxCtrlTools
+    ${CURDIR}/apps/DataRouter/dataRouter
+    ${CURDIR}/apps/DataRouter/drTool/drTool
+    ${CURDIR}/apps/ArduinoBridge/arduinoBridge
+    ${CURDIR}/apps/Heartbeat/heartbeatGreen
+    ${CURDIR}/apps/MqttClient/mqttClient
+
+#elif ${MANGOH_BOARD} = red
+    ${CURDIR}/apps/LedService/ledService
+    ${CURDIR}/apps/RedSensorToCloud/redSensorToCloud
+    ${CURDIR}/apps/BatteryService/battery
+
+#elif ${MANGOH_BOARD} = yellow
+    ${CURDIR}/apps/YellowSensorToCloud/yellowSensor
+    
+    ${CURDIR}/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
+    ${CURDIR}/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
+    ${CURDIR}/apps/DataHub-Buzzer/buzzer   
+    ${CURDIR}/apps/YellowOnBoardActuators/actuator
+    ${CURDIR}/apps/BatteryService/battery 
+    ${CURDIR}/apps/OpenWeatherMapAmbientTemperature/openWeatherMapAmbientTemperature
+    ${CURDIR}/apps/locationService/combainLocation
+    ${CURDIR}/apps/locationService/location
+
+#endif // MANGOH_BOARD
 }
+
 
 commands:
 {
+    dhub = dataHub:/bin/dhub
+
 #if ${MANGOH_BOARD} = green
     mux = muxCtrlTools:/bin/mux
-#else // MANGOH_BOARD
-    dhub = dataHub:/bin/dhub
-#endif // MANGOH_BOARD
     dr = drTool:/bin/dr
-    twitter = socialService:/bin/twitter
+
+#elif ${MANGOH_BOARD} = red
+
+#elif ${MANGOH_BOARD} = yellow
+
+#endif // MANGOH_BOARD
 }
+
 
 interfaceSearch:
 {
-    $MANGOH_ROOT/interfaces
-
-#if ${MANGOH_BOARD} = red
-    $MANGOH_ROOT/apps/BatteryService
-    $MANGOH_ROOT/apps/mangOHRedSensorToCloud
+    ${CURDIR}/interfaces
     $LEGATO_ROOT/apps/sample/dataHub
 
-#elif ${MANGOH_BOARD} = green
-    $MANGOH_ROOT/apps/MuxControl
+#if ${MANGOH_BOARD} = green
+    ${CURDIR}/apps/MuxControl
+    ${CURDIR}/apps/DataRouter
+    ${CURDIR}/apps/MqttClient
+
+#elif ${MANGOH_BOARD} = red
+    ${CURDIR}/apps/BatteryService
 
 #elif ${MANGOH_BOARD} = yellow
-    $LEGATO_ROOT/apps/sample/dataHub
-    $MANGOH_ROOT/apps/Bme680EnvironmentalSensor
-    $LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
+    ${CURDIR}/apps/BatteryService
+    ${CURDIR}/apps/Bme680EnvironmentalSensor
     
-
 #endif // MANGOH_BOARD
-    $MANGOH_ROOT/apps/DataRouter
-    $MANGOH_ROOT/apps/MqttClient
-    $MANGOH_ROOT/apps/SocialService/interfaces
-
 }
+
 
 componentSearch:
 {
     ${CURDIR}/components
 
 #if ${MANGOH_BOARD} = red
-    ${CURDIR}/apps/GpioExpander/gpioExpanderService
     ${CURDIR}/apps/RedSensorToCloud
-    ${CURDIR}/apps/LocationTriangulation
-    ${CURDIR}/apps/MqttClient
-    ${CURDIR}/apps/mangOHRedSensorToCloud/interfaces
+
 #elif ${MANGOH_BOARD} = green
     ${CURDIR}/apps/GpioExpander/gpioExpanderService
+
 #elif ${MANGOH_BOARD} = yellow
     ${CURDIR}/apps/YellowSensorToCloud/interfaces
     $LEGATO_ROOT/apps/sample/dataHub/components
-#endif
 
+#endif
 }
 
 
 kernelModules:
 {
+#if ${MANGOH_BOARD} = green
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
 
-#if ${MANGOH_BOARD} = red
+    /*
+     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
+     * way that Legato kernel module dependencies work
+     */
+    $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
+    $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
+	
+#elif ${MANGOH_BOARD} = red
     $CURDIR/linux_kernel_modules/mangoh/mangoh_red
     $CURDIR/linux_kernel_modules/mt7697wifi/mt7697wifi_core
 
@@ -144,7 +119,6 @@ kernelModules:
      * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
      * way that Legato kernel module dependencies work
      */
-
     $CURDIR/linux_kernel_modules/led/led
     $CURDIR/linux_kernel_modules/bq24296/bq24296
     $CURDIR/linux_kernel_modules/ltc294x/ltc294x
@@ -162,16 +136,6 @@ kernelModules:
     $CURDIR/linux_kernel_modules/mt7697q/mt7697q
     $CURDIR/linux_kernel_modules/mt7697serial/mt7697serial
 
-#elif ${MANGOH_BOARD} = green
-    $CURDIR/linux_kernel_modules/mangoh/mangoh_green_dv4
-
-    /*
-     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
-     * way that Legato kernel module dependencies work
-     */
-    $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3-i2c
-    $CURDIR/linux_kernel_modules/lsm6ds3/lsm6ds3
-	
 #elif ${MANGOH_BOARD} = yellow
     $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
 #if ${MANGOH_KERNEL_LACKS_IIO} = 1
@@ -190,7 +154,7 @@ kernelModules:
     $CURDIR/linux_kernel_modules/opt300x/opt300x
     $CURDIR/linux_kernel_modules/expander/expander
     $CURDIR/linux_kernel_modules/cypwifi/cypwifi
-//    $CURDIR/linux_kernel_modules/cp2130/cp2130
+    $CURDIR/linux_kernel_modules/cp2130/cp2130
 
 #endif // MANGOH_BOARD
 }

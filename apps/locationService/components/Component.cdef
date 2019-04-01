@@ -25,6 +25,7 @@ requires:
 cflags:
 {
     "-std=c99"
+    -I${LEGATO_ROOT}/apps/sample/dataHub/components/periodicSensor
 }
 
 sources:
