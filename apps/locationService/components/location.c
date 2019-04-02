@@ -294,7 +294,7 @@ static void LocationResultHandler(
 
 static bool TrySubmitRequest(void)
 {
-    if (!State.waitingForWifiResults)
+    if (!State.waitingForWifiResults && State.waitingForCombainResults == false)
     {
         LE_INFO("Attempting to submit location request");
         const le_result_t res = ma_combainLocation_SubmitLocationRequest(
@@ -369,17 +369,16 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
 
                     if (res != LE_OK)
                     {
-                        LE_INFO("Failed to append WiFi scan results to combain request\n");
-                        exit(1);
+                        LE_INFO("Failed to append a WiFi scan result to combain request\n");
                     }
 
                     ap = le_wifiClient_GetNextAccessPoint();
                 }
-                if (WifiStarted)
+                /* if (WifiStarted)
                 {
                     le_wifiClient_Stop();
                     WifiStarted = false;
-                }
+                } */
 
                 TrySubmitRequest();
             }
@@ -388,11 +387,11 @@ static void WifiEventHandler(le_wifiClient_Event_t event, void *context)
         default:
         {
             LE_INFO("WiFi scan failed\n");
-            if (WifiStarted)
+            /*if (WifiStarted)
             {
                 le_wifiClient_Stop();
                 WifiStarted = false;
-            }
+            }*/
             ma_combainLocation_DestroyLocationRequest(State.combainHandle);
             State.waitingForWifiResults = false;
             UseGpsScan();
@@ -450,8 +449,7 @@ static void Sample
             GpsScan = &SavedGpsScan;
         }    
 
-        if (!State.waitingForWifiResults) {
-
+        if (!State.waitingForWifiResults && State.waitingForCombainResults == false) {
             if (!createdAccessPoint)
             {
                 createdAccessPoint = le_wifiClient_Create((const uint8_t *)ssidPtr, strlen(ssidPtr));
@@ -469,16 +467,22 @@ static void Sample
                 }
             }
 
-            startRes = le_wifiClient_Start();
+            if (WifiStarted == false) {
+                startRes = le_wifiClient_Start();
 
-            if (startRes != LE_OK && startRes != LE_BUSY) {
-                LE_INFO("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
-		WifiStarted = true;
+                if (startRes != LE_OK && startRes != LE_BUSY) {
+                    LE_INFO("Couldn't start the WiFi service error code: %s", LE_RESULT_TXT(startRes));
+		    WifiStarted = false;
+                }
+                else
+		    WifiStarted = true;
             }
 
-            saved_ref = ref;
-            le_wifiClient_Scan();
-            State.waitingForWifiResults = true;
+            if (WifiStarted == true) {
+                saved_ref = ref;
+                le_wifiClient_Scan();
+                State.waitingForWifiResults = true;
+            }
         }
         else
             LE_INFO("le_wifiClient_Scan still RUNNING");

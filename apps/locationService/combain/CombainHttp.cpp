@@ -100,12 +100,13 @@ void *CombainHttpThreadFunc(void *context)
             le_event_Report(ResponseAvailableEvent, NULL, 0);
         }
 
-        std::string json((char*)HttpReceiveBuffer.data, HttpReceiveBuffer.used);
-
-        LE_INFO("RECEIVED %d char: %s", HttpReceiveBuffer.used, (char*) HttpReceiveBuffer.data);
-
-        ResponseJson->enqueue(std::make_tuple(handle, json));
-        le_event_Report(ResponseAvailableEvent, NULL, 0);
+        else
+        {
+            std::string json((char*)HttpReceiveBuffer.data, HttpReceiveBuffer.used);
+            LE_INFO("RECEIVED %d char: %s", HttpReceiveBuffer.used, (char*) HttpReceiveBuffer.data);
+            ResponseJson->enqueue(std::make_tuple(handle, json));
+            le_event_Report(ResponseAvailableEvent, NULL, 0);
+        }
 
         curl_easy_cleanup(curl);
 

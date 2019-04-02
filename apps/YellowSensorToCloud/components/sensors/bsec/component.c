@@ -3,8 +3,8 @@
 #include <jansson.h>
 
 /// Input resource path
-#define RES_PATH_VALUE        "bme/value"
-#define RES_PATH_CONFIG       "bme/config"
+#define RES_PATH_VALUE        "bsec/value"
+#define RES_PATH_CONFIG       "bsec/config"
 #define VALUE_EXAMPLE "{\"timestamp\":1,\"iaqValue\":1,\"iaqAccuracy\":1,\"co2EquivalentValue\":1,"\
                       "\"co2EquivalentAccuracy\":1,\"breathVocValue\":1,\"breathVocAccuracy\":1,"\
                       "\"pressure\":1,\"temperature\":1,\"humidity\":1 }"
