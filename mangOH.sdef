@@ -31,7 +31,6 @@ apps:
 #elif ${MANGOH_BOARD} = yellow
     ${CURDIR}/apps/YellowSensorToCloud/yellowSensor
     
-    ${CURDIR}/apps/Mcp9700aTemperatureSensor/mcp9700aTemperatureSensor
     ${CURDIR}/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
     ${CURDIR}/apps/DataHub-Buzzer/buzzer   
     ${CURDIR}/apps/YellowOnBoardActuators/actuator
