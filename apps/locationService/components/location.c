@@ -17,6 +17,9 @@
 #define PSENSOR_ENABLE        "coordinates/enable"
 #define PSENSOR_PERIOD        "coordinates/period"
 #define DEFAULT_PERIOD        30
+#define FIX_TYPE_THIS_PERIOD  "FixTypeThisPeriod/value"
+#define HAVE_FIX              "fix/value"
+
 
 typedef enum {GPS, WIFI} Loc_t;
 
@@ -186,7 +189,11 @@ static void UseGpsScan(void)
         LE_INFO("Sending dhub json: %s", json);
         psensor_PushJson(saved_ref, 0 /* now */, json);
         GpsScan = NULL;
+        dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "Weak GNSS");
+        dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, true);
     }
+    dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "NONE");
+    dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, false);
 }
 
 static void LocationResultHandler(
@@ -223,6 +230,8 @@ static void LocationResultHandler(
             LE_INFO("Sending dhub json: %s", json);
             psensor_PushJson(saved_ref, 0 /* now */, json);
             saved_ref = NULL;
+            dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "Wifi");
+            dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, true);
         }
         return;
     }
@@ -311,6 +320,8 @@ static bool TrySubmitRequest(void)
 
     ma_combainLocation_DestroyLocationRequest(State.combainHandle);
     LE_INFO("Cannot submit WIFI location request to Combain as previous in transit");
+    dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "NONE");
+    dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, false);
     return false;
 }
 
@@ -440,6 +451,8 @@ static void Sample
         if (!ma_combainLocation_ServiceAvailable())
         {
             LE_INFO("Combain Service is not available");
+            dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "NONE");
+            dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, false);
             return;
         }
 
@@ -484,8 +497,11 @@ static void Sample
                 State.waitingForWifiResults = true;
             }
         }
-        else
+        else {
             LE_INFO("le_wifiClient_Scan still RUNNING");
+            dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "Waiting for Wifi");
+            dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, false);
+        }
     }
 
     // Good GPS
@@ -495,6 +511,8 @@ static void Sample
         LE_INFO("Sending dhub json: %s", json);
         psensor_PushJson(ref, 0 /* now */, json);
         GpsScan = NULL;
+        dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "Good GNSS");
+        dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, true);
 
         // Kill any errant WIFI scan or Combain requests as we got GPS
         if (State.waitingForWifiResults || State.waitingForCombainResults)
@@ -504,8 +522,11 @@ static void Sample
         }
     }
 
-    else
+    else {
         LE_ERROR("NO RESULTS TO REPORT");
+        dhubIO_PushString(FIX_TYPE_THIS_PERIOD, DHUBIO_NOW, "NONE");
+        dhubIO_PushBoolean(HAVE_FIX, DHUBIO_NOW, false);
+    }
 }
 
 
@@ -527,5 +548,8 @@ COMPONENT_INIT
 
     dhubIO_SetJsonExample("coordinates/value", "{\"lat\":0.1,\"lon\":0.2,"
                           "\"alt\":0.3,\"hAcc\":0.4,\"vAcc\":0.5,\"fixType\":\"GNSS\"}");
+
+    LE_ASSERT(LE_OK == dhubIO_CreateInput(FIX_TYPE_THIS_PERIOD, DHUBIO_DATA_TYPE_STRING, ""));
+    LE_ASSERT(LE_OK == dhubIO_CreateInput(HAVE_FIX, DHUBIO_DATA_TYPE_BOOLEAN, ""));
 }
 
