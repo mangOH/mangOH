@@ -116,11 +116,11 @@ static void DcsStateHandler
 
 COMPONENT_INIT
 {
-    const le_result_t cfgRes = le_cfg_QuickGetString(
-        "/ApiKey", ApiKey, sizeof(ApiKey), "");
-    LE_FATAL_IF(
-        cfgRes != LE_OK || ApiKey[0] == '\0',
-        "Failed to read OpenWeatherMap API Key from config tree");
+    const char *defaultOpenWeatherMapKey = "";
+    LE_ASSERT_OK(le_cfg_QuickGetString(
+                     "/ApiKey", ApiKey, sizeof(ApiKey), defaultOpenWeatherMapKey));
+    LE_FATAL_IF(ApiKey[0] == '\0', "No valid API key was provided");
+    LE_INFO("Using OpenWeatherMap key: \"%s\"", ApiKey);
 
     LastResult.lock = le_mutex_CreateNonRecursive("owm LastResult");
 
