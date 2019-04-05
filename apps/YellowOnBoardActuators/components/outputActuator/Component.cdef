@@ -1,0 +1,25 @@
+cflags:
+{
+    -std=c99
+}
+
+requires:
+{
+    api:
+    {
+        dhub = io.api
+    }
+}
+
+provides:
+{
+    headerDir:
+    {
+        ${CURDIR}
+    }
+}
+
+sources:
+{
+    outputActuator.c
+}

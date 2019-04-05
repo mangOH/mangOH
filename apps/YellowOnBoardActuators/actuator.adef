@@ -4,19 +4,14 @@ version: 0.1
 
 executables:
 {
-    actuatorYellow = (
-                         components/led/generic
-                         components/led/triRed
-                         components/led/triGreen
-                         components/led/triBlue
-                     )
+    actuatorYellow = ( components/yellowActuators )
 }
 
 processes:
 {
     run:
     {
-        ( actuatorYellow   )
+        ( actuatorYellow )
     }
 
     envVars:
@@ -26,11 +21,7 @@ processes:
     faultAction: stopApp
 }
 
-
 bindings:
 {
-  actuatorYellow.generic.dhubIO -> dataHub.io
-  actuatorYellow.triRed.dhubIO -> dataHub.io
-  actuatorYellow.triGreen.dhubIO -> dataHub.io
-  actuatorYellow.triBlue.dhubIO -> dataHub.io
+    actuatorYellow.outputActuator.dhub -> dataHub.io
 }

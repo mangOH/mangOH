@@ -1,0 +1,26 @@
+cflags:
+{
+    -std=c99
+}
+
+requires:
+{
+    component:
+    {
+        ../outputActuator
+    }
+
+    file:
+    {
+        /sys/devices/platform/expander.0/generic_led /sys/devices/platform/expander.0/
+        /sys/devices/platform/expander.0/tri_led_red /sys/devices/platform/expander.0/
+        /sys/devices/platform/expander.0/tri_led_grn /sys/devices/platform/expander.0/
+        /sys/devices/platform/expander.0/tri_led_blu /sys/devices/platform/expander.0/
+    }
+}
+
+sources:
+{
+    yellowActuators.c
+}
+
