@@ -3,6 +3,8 @@
 #include "legato.h"
 #include "interfaces.h"
 
+#define CURL_CONNECT_TIMEOUT_SECONDS    10L
+
 static ThreadSafeQueue<std::tuple<ma_combainLocation_LocReqHandleRef_t, std::string>> *RequestJson;
 static ThreadSafeQueue<std::tuple<ma_combainLocation_LocReqHandleRef_t, std::string>> *ResponseJson;
 static le_event_Id_t ResponseAvailableEvent;
@@ -90,6 +92,9 @@ void *CombainHttpThreadFunc(void *context)
 
         LE_ASSERT(curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteMemCallback) == CURLE_OK);
         LE_ASSERT(curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&HttpReceiveBuffer) == CURLE_OK);
+
+        // Set the timeout for connection phase
+        LE_ASSERT(curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, CURL_CONNECT_TIMEOUT_SECONDS) == CURLE_OK);
 
         const CURLcode res = curl_easy_perform(curl);
         if (res != CURLE_OK)
