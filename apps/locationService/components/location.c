@@ -222,6 +222,14 @@ static void LocationResultHandler(
             LE_INFO(
                 "Received result notification of type success response, but couldn't fetch the result\n");
         }
+
+        // Add hard-coded geo-fencing for Vancouver SunRun - TODO - fix with values from dhub
+        else if (scan.lat < 49.0f || scan.lat >= 50.0f ||
+                 scan.lon > -122.0f || scan.lon <= -124.0f)
+        {
+            UseGpsScan();
+        }
+
         else
         {
             LE_INFO("Location: latitude=%f, longitude=%f, accuracy=%f meters\n",
