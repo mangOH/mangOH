@@ -33,6 +33,7 @@ static void SleepNs(uint64_t ns)
     }
 }
 
+/*
 static le_result_t LoadState(void)
 {
     le_result_t res = LE_OK;
@@ -83,6 +84,7 @@ fail_read:
 done:
     return res;
 }
+*/
 
 static le_result_t SaveState(void)
 {
@@ -425,7 +427,12 @@ COMPONENT_INIT
         bsecVersion.major_bugfix,
         bsecVersion.minor_bugfix);
 
-    LoadState();
+    /*
+     * It seems that sometimes the state is going "bad" in some way and this can
+     * lead to abnormally high humidity readings (for example). Disable loading
+     * of the state for now so that we can ensure a clean state on app start.
+     */
+    // LoadState();
 
     _s.bme680 = bme680_linux_i2c_create(BME680_I2C_BUS, BME680_I2C_ADDR, ReadAmbientTemperature);
     LE_FATAL_IF(!_s.bme680, "Couldn't create bme680 device");
