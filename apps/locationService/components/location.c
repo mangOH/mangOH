@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#define HACCURACY_GOOD_GPS    75
+#define HACCURACY_GOOD_GPS    150
 #define HACCURACY_WIFI_ONLY   500
 #define PSENSOR_ENABLE        "coordinates/enable"
 #define PSENSOR_PERIOD        "coordinates/period"
