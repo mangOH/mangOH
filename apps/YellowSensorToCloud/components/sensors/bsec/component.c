@@ -9,6 +9,7 @@
                       "\"co2EquivalentAccuracy\":1,\"breathVocValue\":1,\"breathVocAccuracy\":1,"\
                       "\"pressure\":1,\"temperature\":1,\"humidity\":1 }"
 
+#ifdef BME680_DHUB_CONFIG
 static void BmeConfigPushHandler(double timestamp, const char *jsonStr, void *context)
 {
     /*
@@ -84,6 +85,7 @@ static void BmeConfigPushHandler(double timestamp, const char *jsonStr, void *co
     cleanup:
         json_decref(json);
 }
+#endif // BME680_DHUB_CONFIG
 
 
 static void SensorReadingHandler
@@ -162,14 +164,19 @@ COMPONENT_INIT
     // le_sig_Block(SIGTERM);
     // le_sig_SetEventHandler(SIGTERM, actuator_SigTermHandler);
 
-    le_result_t res = io_CreateOutput(RES_PATH_CONFIG, IO_DATA_TYPE_JSON, "");
-    
-    LE_FATAL_IF(res != LE_OK &&  res !=LE_DUPLICATE, "Couldn't create config data hub output - %s", LE_RESULT_TXT(res));
-    io_MarkOptional(RES_PATH_CONFIG);
-    io_AddJsonPushHandler(RES_PATH_CONFIG, BmeConfigPushHandler, NULL);
-
     LE_ASSERT_OK(io_CreateInput(RES_PATH_VALUE, IO_DATA_TYPE_JSON, ""));
     io_SetJsonExample(RES_PATH_VALUE, VALUE_EXAMPLE);
 
     mangOH_bme680_AddSensorReadingHandler(SensorReadingHandler, NULL);
+
+#ifdef BME680_DHUB_CONFIG
+    le_result_t res = io_CreateOutput(RES_PATH_CONFIG, IO_DATA_TYPE_JSON, "");
+    LE_FATAL_IF(res != LE_OK && res != LE_DUPLICATE,
+                "Couldn't create config data hub output - %s", LE_RESULT_TXT(res));
+    io_MarkOptional(RES_PATH_CONFIG);
+    io_AddJsonPushHandler(RES_PATH_CONFIG, BmeConfigPushHandler, NULL);
+#else
+    LE_ASSERT_OK(mangOH_bme680_Configure(MANGOH_BME680_SAMPLING_RATE_LP, true, true, true, true,
+                                         true, true));
+#endif // BME680_DHUB_CONFIG
 }
