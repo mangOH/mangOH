@@ -331,7 +331,11 @@ int brcmf_c_preinit_dcmds(struct brcmf_if *ifp)
 
 	/* set mpc */
 	/* SWI WP85 does not work with power control off for scanning */
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
 	err = brcmf_fil_iovar_int_set(ifp, "mpc", 0);
+#else          /* SWI WP7XX is fine with power control */
+	err = brcmf_fil_iovar_int_set(ifp, "mpc", 1);
+#endif /* WPX5XX */
 	if (err) {
 		brcmf_err("failed setting mpc\n");
 		goto done;

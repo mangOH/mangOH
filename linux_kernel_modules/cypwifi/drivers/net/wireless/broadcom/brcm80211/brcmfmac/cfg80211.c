@@ -1108,7 +1108,11 @@ brcmf_do_escan(struct brcmf_if *ifp, struct cfg80211_scan_request *request)
 	err = escan->run(cfg, ifp, request);
 	if (err)
 		/* SWI WP85 does not work with power control off for scanning */
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
 		brcmf_scan_config_mpc(ifp, 0);
+#else          /* SWI WP7XX is fine with power control */
+		brcmf_scan_config_mpc(ifp, 1);
+#endif /* WPX5XX */
 	return err;
 }
 
@@ -1206,7 +1210,11 @@ brcmf_cfg80211_escan(struct wiphy *wiphy, struct brcmf_cfg80211_vif *vif,
 				brcmf_err("WLC_SCAN error (%d)\n", err);
 
 			/* SWI WP85 does not work with power control off for scanning */
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
 			brcmf_scan_config_mpc(ifp, 0);
+#else          /* SWI WP7XX is fine with power control */
+			brcmf_scan_config_mpc(ifp, 1);
+#endif /* WPX5XX */
 			goto scan_out;
 		}
 	}
@@ -3820,7 +3828,12 @@ static s32 brcmf_cfg80211_suspend(struct wiphy *wiphy,
 		}
 		/* Configure MPC */
 		/* SWI WP85 does not work with power control off for scanning */
-		brcmf_set_mpc(ifp, 0);
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
+		brcmf_scan_config_mpc(ifp, 0);
+#else          /* SWI WP7XX is fine with power control */
+		brcmf_scan_config_mpc(ifp, 1);
+#endif /* WPX5XX */
+
 
 	} else {
 		/* Configure WOWL parameters */
@@ -4744,7 +4757,11 @@ brcmf_cfg80211_start_ap(struct wiphy *wiphy, struct net_device *ndev,
 exit:
 	if ((err) && (!mbss)) {
 		/* SWI WP85 does not work with power control off for scanning */
-		brcmf_set_mpc(ifp, 0);
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
+		brcmf_scan_config_mpc(ifp, 0);
+#else          /* SWI WP7XX is fine with power control */
+		brcmf_scan_config_mpc(ifp, 1);
+#endif /* WPX5XX */
 		brcmf_configure_arp_nd_offload(ifp, true);
 	}
 	return err;
@@ -4802,8 +4819,12 @@ static int brcmf_cfg80211_stop_ap(struct wiphy *wiphy, struct net_device *ndev)
 		if (err < 0)
 			brcmf_err("bss_enable config failed %d\n", err);
 	}
-	/* SWI WP85 does not work with power control off for scanning */
-	brcmf_set_mpc(ifp, 0);
+		/* SWI WP85 does not work with power control off for scanning */
+#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
+		brcmf_scan_config_mpc(ifp, 0);
+#else          /* SWI WP7XX is fine with power control */
+		brcmf_scan_config_mpc(ifp, 1);
+#endif /* WPX5XX */
 	brcmf_configure_arp_nd_offload(ifp, true);
 	clear_bit(BRCMF_VIF_STATUS_AP_CREATED, &ifp->vif->sme_state);
 	brcmf_net_setcarrier(ifp, false);
