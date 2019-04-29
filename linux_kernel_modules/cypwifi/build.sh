@@ -19,14 +19,16 @@ if [ -z "$2" ] ; then
 	exit 3
 fi
 
-export PATH=`findtoolchain ${LEGATO_TARGET} dir`:$PATH
-export MY_KERNEL=`findtoolchain ${LEGATO_TARGET} kernelroot`
+FINDTOOLCHAIN=${LEGATO_ROOT}/bin/findtoolchain
+
+export PATH=`${FINDTOOLCHAIN} ${LEGATO_TARGET} dir`:$PATH
+export MY_KERNEL=`${FINDTOOLCHAIN} ${LEGATO_TARGET} kernelroot`
 export KLIB=$MY_KERNEL
 export KLIB_BUILD=$MY_KERNEL
 
 # Need to change these if you want a different X-chain
 export ARCH=arm
-export CROSS_COMPILE=`findtoolchain ${LEGATO_TARGET} prefix`
+export CROSS_COMPILE=`${FINDTOOLCHAIN} ${LEGATO_TARGET} prefix`
 
 
 # Lets do it
