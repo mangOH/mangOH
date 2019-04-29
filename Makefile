@@ -30,14 +30,12 @@ all:  green_wp85  green_wp750x  green_wp76xx  green_wp77xx \
 LEGATO ?= 1
 .PHONY: legato_%
 legato_%:
+	$(eval LEGATO_TARGET := $(subst legato_,,$@))
 ifeq ($(LEGATO),0)
 	echo "Not building LEGATO due to \$$LEGATO == 0"
 else
-	$(eval LEGATO_TARGET := $(subst legato_,,$@))
 	$(MAKE) -C $(LEGATO_ROOT) framework_$(LEGATO_TARGET)
 endif
-
-export LEGATO_TARGET := $(subst legato_,,$@)
 
 .PHONY: green_wp85
 green_wp85: legato_wp85
