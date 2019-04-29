@@ -220,6 +220,7 @@ void seq_hex_dump(struct seq_file *m, const char *prefix_str, int prefix_type,
 }
 EXPORT_SYMBOL_GPL(seq_hex_dump);
 
+#if !defined(CONFIG_ARCH_MDM9607) || LINUX_VERSION_IS_LESS(3,18,122)
 ssize_t strscpy(char *dest, const char *src, size_t count)
 {
 	long res = 0;
@@ -245,3 +246,5 @@ ssize_t strscpy(char *dest, const char *src, size_t count)
 	return -E2BIG;
 }
 EXPORT_SYMBOL_GPL(strscpy);
+
+#endif /* !SWI - WP76XX or Linux < 3.18.122 */
