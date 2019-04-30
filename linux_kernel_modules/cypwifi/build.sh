@@ -1,4 +1,5 @@
-#
+#!/bin/sh
+
 # We Assume that the user has run cfglegato previously to make many
 # environment variables exportable
 
@@ -34,7 +35,7 @@ export CROSS_COMPILE=`${FINDTOOLCHAIN} ${LEGATO_TARGET} prefix`
 # Lets do it
 OLDPWD=`pwd`
 cd ${MANGOH_ROOT}/build/${1}/modules/cypwifi
-if [ "$2" == "clean" ] ; then
+if [ "$2" = "clean" ] ; then
 	make defconfig-brcmfmac
 fi
 make modules
