@@ -4,4 +4,4 @@
 // Copyright (C), Sierra Wireless Inc.
 //--------------------------------------------------------------------------------------------------
 
-#include mdm9x07.sinc
+#include "../chipset/mdm9x07.sinc"

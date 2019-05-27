@@ -1,7 +1,7 @@
 //--------------------------------------------------------------------------------------------------
-// Target definitions specific to Sierra Wireless WP750x modules.
+// Target definitions specific to Sierra Wireless WP76xx modules.
 //
 // Copyright (C), Sierra Wireless Inc.
 //--------------------------------------------------------------------------------------------------
 
-#include mdm9x15.sinc
+#include "../chipset/mdm9x07.sinc"

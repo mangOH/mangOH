@@ -7,7 +7,7 @@ sources:
 cflags:
 {
     -std=c99
-    -DBME680_I2C_BUS=${BME680_I2C_BUS}
+    -DBME680_I2C_BUS=${MANGOH_BME680_I2C_BUS}
 }
 
 provides:

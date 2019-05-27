@@ -29,7 +29,7 @@ requires:
 {
     device:
     {
-        [rw] /dev/i2c-${BME680_I2C_BUS} /dev/
+        [rw] /dev/i2c-${MANGOH_BME680_I2C_BUS} /dev/
     }
 }
 
