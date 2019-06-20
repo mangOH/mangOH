@@ -20,11 +20,6 @@ provides:
 
 requires:
 {
-    api:
-    {
-        ambient = mangOH_ambientTemperature.api [optional]
-    }
-
     component:
     {
         boschBme680Driver

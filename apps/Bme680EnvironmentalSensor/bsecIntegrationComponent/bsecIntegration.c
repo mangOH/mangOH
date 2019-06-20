@@ -11,7 +11,8 @@
 
 struct Bme680State _s;
 
-static bool AmbientTempApiConnected = false;
+static struct bme680_linux *Bme680;
+
 
 int64_t GetTimestampNs(void)
 {
@@ -288,32 +289,18 @@ static void ProcessData(bsec_input_t *bsecInputs, size_t numBsecInputs, int64_t 
                 reading.breathVoc.accuracy = bsecOutputs[i].accuracy;
                 break;
             case BSEC_OUTPUT_RAW_TEMPERATURE:
+            {
                 /*
                  * Update the temperature offset based upon the raw temperature from the BME680 and
-                 * the ambient temperature given by the ambient temperature API. It is assumed that
-                 * the value from the ambient temperature is the true ambient temperature.
+                 * the ambient temperature. It is assumed that the ambient temperature is the true
+                 * ambient temperature, but this may be a false assumption, in which case the
+                 * ambient temperature will be incorrect.
                  */
-                if (!AmbientTempApiConnected)
-                {
-                    le_result_t result = ambient_TryConnectService();
-                    LE_DEBUG("ambient_TryConnect() returned %s", LE_RESULT_TXT(result));
-                    if (result == LE_OK)
-                    {
-                        AmbientTempApiConnected = true;
-                    }
-                }
-                if (AmbientTempApiConnected)
-                {
-                    double ambientTemperature;
-                    le_result_t ambientRes = ambient_Read(&ambientTemperature);
-                    if (ambientRes == LE_OK)
-                    {
-                        double delta = bsecOutputs[i].signal - ambientTemperature;
-                        _s.temperatureOffset = (delta * 0.25) + (_s.temperatureOffset * 0.75);
-                        LE_INFO("Temperature offset is now %f", _s.temperatureOffset);
-                    }
-                }
+                double delta = bsecOutputs[i].signal - _s.ambientTemperature;
+                _s.temperatureOffset = (delta * 0.25) + (_s.temperatureOffset * 0.75);
+                LE_DEBUG("Temperature offset is now %lf", _s.temperatureOffset);
                 break;
+            }
             case BSEC_OUTPUT_SENSOR_HEAT_COMPENSATED_TEMPERATURE:
                 reading.temperature.valid = true;
                 reading.temperature.value = bsecOutputs[i].signal;
@@ -348,14 +335,14 @@ static void TimerHandler(le_timer_Ref_t t)
     int64_t timestamp = GetTimestampNs();
     bsec_sensor_control(timestamp, &sensorSettings);
 
-    TriggerMeasurement(&_s.bme680->dev, &sensorSettings);
+    TriggerMeasurement(&Bme680->dev, &sensorSettings);
 
     /* Allocate enough memory for up to BSEC_MAX_PHYSICAL_SENSOR physical inputs*/
     bsec_input_t bsecInputs[BSEC_MAX_PHYSICAL_SENSOR];
 
     /* Number of inputs to BSEC */
     size_t numBsecInputs = 0;
-    ReadData(&_s.bme680->dev, timestamp, bsecInputs, &numBsecInputs, &sensorSettings);
+    ReadData(&Bme680->dev, timestamp, bsecInputs, &numBsecInputs, &sensorSettings);
 
     ProcessData(bsecInputs, numBsecInputs, timestamp);
 
@@ -378,49 +365,18 @@ static void TimerHandler(le_timer_Ref_t t)
     LE_ASSERT_OK(le_timer_Start(t));
 }
 
-static void ClientSessionClosedHandler
-(
-    le_msg_SessionRef_t clientSession,
-    void *context
-)
-{
-    le_ref_IterRef_t it = le_ref_GetIterator(_s.HandlerRefMap);
-
-    bool finished = le_ref_NextNode(it) != LE_OK;
-    while (!finished)
-    {
-        struct Bme680HandlerMapping *hm = le_ref_GetValue(it);
-        LE_ASSERT(hm != NULL);
-        // In order to prevent invalidating the iterator, we store the reference of the device we
-        // want to close and advance the iterator before calling le_spi_Close which will remove the
-        // reference from the hashmap.
-        void* refToRemove =
-            (hm->owningSession == clientSession) ? ((void*)le_ref_GetSafeRef(it)) : NULL;
-        finished = le_ref_NextNode(it) != LE_OK;
-        if (refToRemove != NULL)
-        {
-            le_ref_DeleteRef(_s.HandlerRefMap, refToRemove);
-            le_mem_Release(hm);
-        }
-    }
-}
-
+//--------------------------------------------------------------------------------------------------
+/**
+ * Callback that is used by the bme680 to fetch the ambient temperature.
+ *
+ * @return the ambient temperature, in degrees celcius rounded to the nearest signed integer.
+ */
+//--------------------------------------------------------------------------------------------------
 int8_t ReadAmbientTemperature(void)
 {
-    int8_t ambientInt = 20;
-    double ambientTemperature;
-    le_result_t ambientRes = ambient_Read(&ambientTemperature);
-    if (ambientRes == LE_OK)
-    {
-        ambientInt = (int8_t)round(ambientTemperature);
-    }
-    else
-    {
-        LE_ERROR("Retrieval of ambient temperture failed");
-    }
-
-    return ambientInt;
+    return (int8_t)round(_s.ambientTemperature);
 }
+
 
 COMPONENT_INIT
 {
@@ -446,14 +402,16 @@ COMPONENT_INIT
      */
     // LoadState();
 
-    _s.bme680 = bme680_linux_i2c_create(BME680_I2C_BUS, BME680_I2C_ADDR, ReadAmbientTemperature);
-    LE_FATAL_IF(!_s.bme680, "Couldn't create bme680 device");
-    if (!_s.bme680) {
+    _s.ambientTemperature = 22.0; // Assume room temperature (degC), until told otherwise.
+
+    Bme680 = bme680_linux_i2c_create(BME680_I2C_BUS, BME680_I2C_ADDR, ReadAmbientTemperature);
+    LE_FATAL_IF(!Bme680, "Couldn't create bme680 device");
+    if (!Bme680) {
         fprintf(stderr, "Failed to create device\n");
         exit(1);
     }
 
-    int8_t initRes = bme680_init(&_s.bme680->dev);
+    int8_t initRes = bme680_init(&Bme680->dev);
     LE_FATAL_IF(initRes != BME680_OK, "Failed to initialize bme680 library");
 
     _s.timer = le_timer_Create("bme680 sample");
@@ -462,5 +420,4 @@ COMPONENT_INIT
 
     _s.HandlerPool = le_mem_CreatePool("bme680 handlers", sizeof(struct Bme680HandlerMapping));
     _s.HandlerRefMap = le_ref_CreateMap("bme680 refmap", 2);
-    le_msg_AddServiceCloseHandler(mangOH_bme680_GetServiceRef(), ClientSessionClosedHandler, NULL);
 }

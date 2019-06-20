@@ -3,12 +3,21 @@
 #include <jansson.h>
 
 /// Input resource path
-#define RES_PATH_VALUE        "bsec/value"
-#define RES_PATH_CONFIG       "bsec/config"
+#define RES_PATH_VALUE        "value"
+
+/// Ambient temperature output resource path.
+/// Providing an accurate measurement of ambient air temperature from another source improves the
+/// accuracy of the environmental sensor's measurements by allowing it to compensate for the
+/// difference between the device's internal temperature and the ambient air temperature.
+#define RES_PATH_AMBIENT_TEMP "ambientAirTemp"
+
+/// Main configuration output resource path
+#define RES_PATH_CONFIG       "config"
+
+/// Sample JSON value to report to the Data Hub for auto-discovery by administrative tools.
 #define VALUE_EXAMPLE "{\"timestamp\":1,\"iaqValue\":1,\"iaqAccuracy\":1,\"co2EquivalentValue\":1,"\
                       "\"co2EquivalentAccuracy\":1,\"breathVocValue\":1,\"breathVocAccuracy\":1,"\
                       "\"pressure\":1,\"temperature\":1,\"humidity\":1 }"
-
 
 #ifdef BME680_DHUB_CONFIG
 
@@ -92,6 +101,7 @@ static void BmeConfigPushHandler(double timestamp, const char *jsonStr, void *co
     cleanup:
         json_decref(json);
 }
+
 #endif // BME680_DHUB_CONFIG
 
 
@@ -147,10 +157,25 @@ static void SensorReadingHandler
 }
 
 
+static void AmbientTempPushHandler
+(
+    double timestamp,
+    double value,
+    void* contextPtr
+)
+{
+    mangOH_bme680_SetAmbientTemperature(value);
+}
+
+
 COMPONENT_INIT
 {
     LE_ASSERT_OK(io_CreateInput(RES_PATH_VALUE, IO_DATA_TYPE_JSON, ""));
     io_SetJsonExample(RES_PATH_VALUE, VALUE_EXAMPLE);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_AMBIENT_TEMP, IO_DATA_TYPE_NUMERIC, "degC"));
+    io_AddNumericPushHandler(RES_PATH_AMBIENT_TEMP, AmbientTempPushHandler, NULL);
+    io_MarkOptional(RES_PATH_AMBIENT_TEMP);
 
     mangOH_bme680_AddSensorReadingHandler(SensorReadingHandler, NULL);
 

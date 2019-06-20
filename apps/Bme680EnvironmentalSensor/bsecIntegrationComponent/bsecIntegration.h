@@ -10,7 +10,6 @@ struct Bme680HandlerMapping
 
 struct Bme680State
 {
-    struct bme680_linux *bme680;
     le_timer_Ref_t timer;
     mangOH_bme680_SamplingRate_t samplingRate;
     bool enableIaq;
@@ -21,6 +20,7 @@ struct Bme680State
     bool enableHumidity;
     le_mem_PoolRef_t HandlerPool;
     le_ref_MapRef_t HandlerRefMap;
+    double ambientTemperature; // Degrees Celcius
     double temperatureOffset;
 };
 

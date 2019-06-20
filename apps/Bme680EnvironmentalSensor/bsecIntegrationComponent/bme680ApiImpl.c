@@ -127,3 +127,11 @@ void mangOH_bme680_RemoveSensorReadingHandler
     le_ref_DeleteRef(_s.HandlerRefMap, handlerRef);
     le_mem_Release(hm);
 }
+
+void mangOH_bme680_SetAmbientTemperature
+(
+    double degC
+)
+{
+    _s.ambientTemperature = degC;
+}

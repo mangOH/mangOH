@@ -16,6 +16,11 @@ FUNCTION le_result_t Configure
     bool enableHumidity IN
 );
 
+FUNCTION SetAmbientTemperature
+(
+    double degC
+);
+
 STRUCT ReadingIaq
 {
     bool valid;

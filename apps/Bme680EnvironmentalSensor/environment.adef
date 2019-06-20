@@ -18,6 +18,7 @@ processes:
         ( bme680EnvSensor )
         ( dataHubConnector )
     }
+
     faultAction: restart
 }
 
@@ -27,7 +28,6 @@ extern:
     bme680EnvSensor.bsecIntegrationComponent.mangOH_bme680
 
     // uses
-    bme680EnvSensor.bsecIntegrationComponent.ambient
     dhubIO = dataHubConnector.bsec.io
 }
 

@@ -18,7 +18,7 @@ apps:
 {
     apps/YellowSensorToCloud/imu
     apps/YellowSensorToCloud/light
-//    apps/YellowSensorToCloud/environment
+    apps/Bme680EnvironmentalSensor/environment
     apps/DataHub-Buzzer/buzzer
     apps/YellowOnBoardActuators/leds
     apps/BatteryService/battery
@@ -32,7 +32,7 @@ bindings:
 {
     battery.dhubIO -> dataHub.io
     light.dhubIO -> dataHub.io
-//    environment.dhubIO -> dataHub.io
+    environment.dhubIO -> dataHub.io
 }
 
 
