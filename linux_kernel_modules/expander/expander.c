@@ -46,14 +46,12 @@ static int _var##_store(struct device *dev, struct device_attribute *attr,     \
         atomic_set(&exp->_var##_val, val);                                     \
         gpio_set_value_cansleep(exp->gpio_expander_base + _offset,             \
                                 _active_low ? !val : val);                     \
-        dev_info(dev, "Setting GPIO %d to %d\n",                               \
-                 exp->gpio_expander_base + _offset, val);                      \
                                                                                \
         return count;                                                          \
 }                                                                              \
 static DEVICE_ATTR_RW(_var)
 
-CREATE_SYSFS_DEFN(generic_led, GENERIC_LED, false);
+CREATE_SYSFS_DEFN(generic_led, GENERIC_LED, true);
 CREATE_SYSFS_DEFN(pcm_sel, PCM_SEL, false);
 //CREATE_SYSFS_DEFN(sdio_sel, SDIO_SEL, false);
 CREATE_SYSFS_DEFN(tri_led_blu, TRI_LED_BLU, true);
@@ -124,8 +122,8 @@ static int expander_probe(struct platform_device *pdev)
 	dev->gpio_expander_base = pdata->gpio_expander_base;
 	platform_set_drvdata(pdev, dev);
 
-	ret = gpio_initial_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0,
-				  &dev->generic_led_val, false);
+	ret = gpio_initial_status(pdev, &dev_attr_generic_led, GENERIC_LED, 1,
+				  &dev->generic_led_val, true);
 	if (ret)
 		goto done;
 	ret = gpio_initial_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0,
