@@ -1,0 +1,18 @@
+executables:
+{
+    lightSensor = ( components/sensors/light )
+}
+
+processes:
+{
+    run:
+    {
+        ( lightSensor )
+    }
+}
+
+extern:
+{
+    lightSensor.light.light
+    lightSensor.periodicSensor.dhubIO
+}

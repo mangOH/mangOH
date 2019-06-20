@@ -1,0 +1,75 @@
+//--------------------------------------------------------------------------------------------------
+// mangOH system definition for the mangOH Red board.
+//
+// Copyright (C) Sierra Wireless Inc.
+//--------------------------------------------------------------------------------------------------
+
+buildVars:
+{
+    MANGOH_BOARD = red
+}
+
+
+#include "shared.sdef"
+
+
+apps:
+{
+    apps/LedService/ledService
+    apps/RedSensorToCloud/redSensorToCloud
+    apps/BatteryService/battery
+}
+
+
+bindings:
+{
+    battery.dhubIO -> dataHub.io
+}
+
+
+interfaceSearch:
+{
+    apps/BatteryService
+}
+
+
+componentSearch:
+{
+    apps/RedSensorToCloud
+    apps/BatteryService
+}
+
+
+kernelModules:
+{
+    linux_kernel_modules/mangoh/mangoh_red
+    linux_kernel_modules/mt7697wifi/mt7697wifi_core
+
+    /*
+     * Dependencies of the above kernel modules - must be listed explicitly in the SDEF due to the
+     * way that Legato kernel module dependencies work
+     */
+    linux_kernel_modules/led/led
+    linux_kernel_modules/bq24296/bq24296
+    linux_kernel_modules/ltc294x/ltc294x
+    linux_kernel_modules/bq27xxx/bq27xxx_battery
+    linux_kernel_modules/cp2130/cp2130
+    linux_kernel_modules/bmp280/bmp280-i2c
+    linux_kernel_modules/bmp280/bmp280
+    linux_kernel_modules/bmi160/bmi160-i2c
+    linux_kernel_modules/bmi160/bmi160
+
+    #if ${MANGOH_KERNEL_LACKS_IIO} = 1
+
+        linux_kernel_modules/iio/iio-triggered-buffer
+        linux_kernel_modules/iio/iio-kfifo-buf
+        linux_kernel_modules/iio/iio
+
+    #endif // MANGOH_KERNEL_LACKS_IIO
+
+    linux_kernel_modules/mt7697q/mt7697q
+    linux_kernel_modules/mt7697serial/mt7697serial
+}
+
+// Uncomment to include support for the CAN IoT card
+// #include "sinc/can_iot_card.sinc"

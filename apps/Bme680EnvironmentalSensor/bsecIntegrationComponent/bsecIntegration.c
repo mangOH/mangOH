@@ -11,6 +11,8 @@
 
 struct Bme680State _s;
 
+static bool AmbientTempApiConnected = false;
+
 int64_t GetTimestampNs(void)
 {
     struct timespec monotime;
@@ -291,6 +293,16 @@ static void ProcessData(bsec_input_t *bsecInputs, size_t numBsecInputs, int64_t 
                  * the ambient temperature given by the ambient temperature API. It is assumed that
                  * the value from the ambient temperature is the true ambient temperature.
                  */
+                if (!AmbientTempApiConnected)
+                {
+                    le_result_t result = ambient_TryConnectService();
+                    LE_DEBUG("ambient_TryConnect() returned %s", LE_RESULT_TXT(result));
+                    if (result == LE_OK)
+                    {
+                        AmbientTempApiConnected = true;
+                    }
+                }
+                if (AmbientTempApiConnected)
                 {
                     double ambientTemperature;
                     le_result_t ambientRes = ambient_Read(&ambientTemperature);

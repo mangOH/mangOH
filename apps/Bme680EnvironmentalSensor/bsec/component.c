@@ -9,7 +9,14 @@
                       "\"co2EquivalentAccuracy\":1,\"breathVocValue\":1,\"breathVocAccuracy\":1,"\
                       "\"pressure\":1,\"temperature\":1,\"humidity\":1 }"
 
+
 #ifdef BME680_DHUB_CONFIG
+
+#define CONFIG_EXAMPLE "{\"samplingRate\":\"SAMPLING_RATE_LP\",\"enableIaq\":true,"\
+                       "\"enableCo2Equivalent\":true,\"enableBreathVoc\":true,"\
+                       "\"enablePressure\":true,\"enableTemperature\":true,"\
+                       "\"enableHumidity\":true}"
+
 static void BmeConfigPushHandler(double timestamp, const char *jsonStr, void *context)
 {
     /*
@@ -139,31 +146,9 @@ static void SensorReadingHandler
     free(value);
 }
 
-//--------------------------------------------------------------------------------------------------
-/**
- * SIGTERM handler to cleanly shutdown
- */
-//--------------------------------------------------------------------------------------------------
-/*static void actuator_SigTermHandler
-(
-    int pSigNum
-)
-{
-    (void)pSigNum;
-    LE_INFO("Remove bsec resource");
-
-    io_DeleteResource(RES_PATH_VALUE);
-    io_DeleteResource(RES_PATH_CONFIG);
-
-}
-*/
 
 COMPONENT_INIT
 {
-    // Catch application termination and shutdown cleanly
-    // le_sig_Block(SIGTERM);
-    // le_sig_SetEventHandler(SIGTERM, actuator_SigTermHandler);
-
     LE_ASSERT_OK(io_CreateInput(RES_PATH_VALUE, IO_DATA_TYPE_JSON, ""));
     io_SetJsonExample(RES_PATH_VALUE, VALUE_EXAMPLE);
 
@@ -174,6 +159,7 @@ COMPONENT_INIT
     LE_FATAL_IF(res != LE_OK && res != LE_DUPLICATE,
                 "Couldn't create config data hub output - %s", LE_RESULT_TXT(res));
     io_MarkOptional(RES_PATH_CONFIG);
+    io_SetJsonExample(RES_PATH_CONFIG, CONFIG_EXAMPLE);
     io_AddJsonPushHandler(RES_PATH_CONFIG, BmeConfigPushHandler, NULL);
 #else
     LE_ASSERT_OK(mangOH_bme680_Configure(MANGOH_BME680_SAMPLING_RATE_LP, true, true, true, true,

@@ -1,12 +1,3 @@
-sources:
-{
-    component.c
-}
-
-cflags:
-{
-}
-
 ldflags:
 {
     -lm

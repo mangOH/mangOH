@@ -1,0 +1,22 @@
+sandboxed: false
+start: auto
+
+executables:
+{
+    ledService = ( components/leds )
+}
+
+processes:
+{
+    run:
+    {
+        ( ledService )
+    }
+
+    faultAction: restart
+}
+
+bindings:
+{
+    ledService.outputActuator.dhub -> dataHub.io
+}

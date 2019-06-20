@@ -11,9 +11,8 @@ requires:
         positioning/le_posCtrl.api
         positioning/le_pos.api
         dhubIO = io.api
-        ${CURDIR}/../ma_combainLocation.api
+        ma_combainLocation.api
         wifi/le_wifiClient.api
-        //modemServices/le_mrc.api
     }
 
     component:
@@ -25,7 +24,6 @@ requires:
 cflags:
 {
     "-std=c99"
-    -I${LEGATO_ROOT}/apps/sample/dataHub/components/periodicSensor
 }
 
 sources:

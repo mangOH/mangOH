@@ -6,9 +6,6 @@
 //--------------------------------------------------------------------------------------------------
 cflags:
 {
-    -I$CURDIR/../../fileUtils
-    -I$LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
- //   -I${MANGOH_ROOT}/components/libiioComponent/libiio
     -std=c99
 }
 
@@ -16,7 +13,7 @@ provides:
 {
     api:
     {
-        $CURDIR/../../../interfaces/light.api
+        light.api
     }
 }
 
@@ -24,25 +21,25 @@ requires:
 {
     api:
     {
-        dhubIO = io.api
+        dhubIO = io.api [types-only]
     }
 
     component:
     {
         ../../fileUtils
-        $LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
-//        ${MANGOH_ROOT}/components/libiioComponent
+        periodicSensor
+//        libiioComponent
     }
     file:
     {
 #if ${LEGATO_TARGET} = wp85
         /sys/bus/i2c/devices/3-0044/iio:device2/in_illuminance_input     /driver/
- 
+
 #elif ${LEGATO_TARGET} = wp750x
        /sys/bus/i2c/devices/3-0044/iio:device2/in_illuminance_input     /driver/
 
 #elif ${LEGATO_TARGET} = wp76xx
-       /sys/bus/i2c/devices/7-0044/iio:device2/in_illuminance_input     /driver/
+       /sys/bus/i2c/devices/7-0044/iio:device1/in_illuminance_input     /driver/
 
 #elif ${LEGATO_TARGET} = wp77xx
        /sys/bus/i2c/devices/7-0044/iio:device2/in_illuminance_input     /driver/
@@ -58,9 +55,7 @@ requires:
     }*/
 }
 
-
 sources:
 {
     lightSensor.c
 }
-

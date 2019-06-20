@@ -16,7 +16,7 @@ provides:
 {
     api:
     {
-        $CURDIR/../ma_combainLocation.api
+        ma_combainLocation.api
     }
 }
 
@@ -40,7 +40,7 @@ requires:
 
     component:
     {
-        ${LEGATO_ROOT}/components/3rdParty/curl
+        curl
     }
 
     file:

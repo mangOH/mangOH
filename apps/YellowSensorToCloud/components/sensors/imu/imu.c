@@ -269,5 +269,5 @@ COMPONENT_INIT
     // Use the Periodic Sensor component from the Data Hub to implement the sensor interfaces.
     psensor_Create("gyro", DHUBIO_DATA_TYPE_JSON, "", SampleGyro, NULL);
     psensor_Create("accel", DHUBIO_DATA_TYPE_JSON, "", SampleAccel, NULL);
-    psensor_Create("imu/temp", DHUBIO_DATA_TYPE_NUMERIC, "degC", SampleTemp, NULL);
+    psensor_Create("temp", DHUBIO_DATA_TYPE_NUMERIC, "degC", SampleTemp, NULL);
 }

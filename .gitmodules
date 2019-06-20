@@ -56,3 +56,6 @@
 [submodule "apps/DataHub-Buzzer"]
 	path = apps/DataHub-Buzzer
 	url = https://github.com/mangOH/DataHub-Buzzer.git
+[submodule "apps/VegasMode"]
+	path = apps/VegasMode
+	url = https://github.com/mangOH/YellowVegasMode.git

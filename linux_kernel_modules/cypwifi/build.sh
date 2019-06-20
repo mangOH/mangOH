@@ -34,7 +34,7 @@ export CROSS_COMPILE=`${FINDTOOLCHAIN} ${LEGATO_TARGET} prefix`
 
 # Lets do it
 OLDPWD=`pwd`
-cd ${MANGOH_ROOT}/build/${1}/modules/cypwifi
+cd `dirname $0`
 if [ "$2" = "clean" ] ; then
 	make defconfig-brcmfmac
 fi

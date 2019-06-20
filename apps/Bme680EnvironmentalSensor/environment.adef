@@ -1,0 +1,45 @@
+sandboxed: true
+start: auto
+
+executables:
+{
+    bme680EnvSensor = ( bsecIntegrationComponent )
+    dataHubConnector = ( bsec )
+}
+
+processes:
+{
+    envVars:
+    {
+        // LE_LOG_LEVEL = DEBUG
+    }
+    run:
+    {
+        ( bme680EnvSensor )
+        ( dataHubConnector )
+    }
+    faultAction: restart
+}
+
+extern:
+{
+    // serves
+    bme680EnvSensor.bsecIntegrationComponent.mangOH_bme680
+
+    // uses
+    bme680EnvSensor.bsecIntegrationComponent.ambient
+    dhubIO = dataHubConnector.bsec.io
+}
+
+requires:
+{
+    device:
+    {
+        [rw] /dev/i2c-${MANGOH_BME680_I2C_BUS} /dev/
+    }
+}
+
+bindings:
+{
+    dataHubConnector.bsec.mangOH_bme680 -> bme680EnvSensor.bsecIntegrationComponent.mangOH_bme680
+}

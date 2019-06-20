@@ -30,7 +30,7 @@ requires:
     }
     component:
     {
-        ${LEGATO_ROOT}/components/3rdParty/curl
+        curl
     }
     file:
     {

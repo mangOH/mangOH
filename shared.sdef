@@ -1,0 +1,48 @@
+//--------------------------------------------------------------------------------------------------
+// Base mangOH system definition that is shared by all types of mangOH board with all models of
+// Sierra Wireless WP module.  This contains only the base features that are common to all types
+// of mangOH board.  It is intended to be included by model-specific .sdef files, like green.sdef
+// and red.sdef.
+//
+// Copyright (C) Sierra Wireless Inc.
+//--------------------------------------------------------------------------------------------------
+
+#include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
+#include "sinc/module/${LEGATO_TARGET}.sinc"
+#include "sinc/board/${MANGOH_BOARD}.sinc"
+
+buildVars:
+{
+    MANGOH_ROOT = $CURDIR
+    DATAHUB_ROOT = $CURDIR/../dataHub
+
+    LEGATO_WIFI_ROOT = ${LEGATO_ROOT}/modules/WiFi
+    LEGATO_WIFI_PA = ${CURDIR}/linux_kernel_modules/cypwifi/scripts/pa_wifi.sh
+}
+
+apps:
+{
+    $DATAHUB_ROOT/dataHub
+    {
+        maxFileBytes: 4000K
+    }
+}
+
+commands:
+{
+    dhub = dataHub:/bin/dhub
+}
+
+interfaceSearch:
+{
+    interfaces
+    apps/LedService
+    $DATAHUB_ROOT
+    $DATAHUB_ROOT/components/periodicSensor
+}
+
+componentSearch:
+{
+    components
+    $DATAHUB_ROOT/components
+}

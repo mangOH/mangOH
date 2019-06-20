@@ -21,6 +21,6 @@ requires:
 
 sources:
 {
-    yellowActuators.c
+    leds.c
 }
 

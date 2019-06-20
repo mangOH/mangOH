@@ -6,8 +6,6 @@
 //--------------------------------------------------------------------------------------------------
 cflags:
 {
-    -I$CURDIR/../../fileUtils
-    -I$LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
     -std=c99
 }
 
@@ -30,7 +28,7 @@ requires:
     component:
     {
         ../../fileUtils
-        $LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
+        periodicSensor
     }
 
     file:

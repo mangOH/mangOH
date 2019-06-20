@@ -1,0 +1,78 @@
+//--------------------------------------------------------------------------------------------------
+// mangOH system definition for the mangOH Yellow board.
+//
+// Copyright (C) Sierra Wireless Inc.
+//--------------------------------------------------------------------------------------------------
+
+buildVars:
+{
+    MANGOH_BOARD = yellow
+    BSEC_DIR = ../boschBsecLib/BSEC_1.4.7.2_GCC_CortexA7_20190225/algo/bin/Normal_version/Cortex_A7
+}
+
+
+#include "shared.sdef"
+
+
+apps:
+{
+    apps/YellowSensorToCloud/imu
+    apps/YellowSensorToCloud/light
+//    apps/YellowSensorToCloud/environment
+    apps/DataHub-Buzzer/buzzer
+    apps/YellowOnBoardActuators/leds
+    apps/BatteryService/battery
+    apps/VegasMode/vegasMode
+
+    $LEGATO_ROOT/apps/tools/devMode
+}
+
+
+bindings:
+{
+    battery.dhubIO -> dataHub.io
+    light.dhubIO -> dataHub.io
+//    environment.dhubIO -> dataHub.io
+}
+
+
+interfaceSearch:
+{
+    apps/BatteryService
+    apps/Bme680EnvironmentalSensor
+    apps/YellowSensorToCloud/interfaces
+}
+
+
+componentSearch:
+{
+    apps/BatteryService
+    apps/YellowSensorToCloud/components
+}
+
+
+kernelModules:
+{
+    linux_kernel_modules/mangoh/mangoh_yellow_dev
+
+    #if ${MANGOH_KERNEL_LACKS_IIO} = 1
+
+        linux_kernel_modules/iio/iio-triggered-buffer
+        linux_kernel_modules/iio/iio-kfifo-buf
+        linux_kernel_modules/iio/iio
+
+    #endif // MANGOH_KERNEL_LACKS_IIO
+
+    linux_kernel_modules/bmi160/bmi160-i2c
+    linux_kernel_modules/bmi160/bmi160
+    linux_kernel_modules/bmm150/bmc150_magn_i2c
+    linux_kernel_modules/bmm150/bmc150_magn
+    linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
+    linux_kernel_modules/rtc_sync/rtc_sync
+    linux_kernel_modules/bq25601/bq25601
+    linux_kernel_modules/bq27xxx/bq27xxx_battery
+    linux_kernel_modules/opt300x/opt300x
+    linux_kernel_modules/expander/expander
+    linux_kernel_modules/cypwifi/cypwifi
+    linux_kernel_modules/cp2130/cp2130
+}

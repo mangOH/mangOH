@@ -4,10 +4,9 @@
  * sensor interface component.
  */
 //--------------------------------------------------------------------------------------------------
+
 cflags:
 {
-    -I$CURDIR/../../fileUtils
-    -I$LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
     -std=c99
 }
 
@@ -15,7 +14,7 @@ provides:
 {
     api:
     {
-        $CURDIR/../../../interfaces/magn.api
+        magn.api
     }
 }
 
@@ -29,7 +28,7 @@ requires:
     component:
     {
         ../../fileUtils
-        $LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
+        periodicSensor
     }
 
     file:
@@ -63,4 +62,3 @@ sources:
 {
     magn.c
 }
-

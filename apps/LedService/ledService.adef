@@ -18,6 +18,8 @@ processes:
     {
         LE_LOG_LEVEL = INFO
     }
+
+    faultAction: restart
 }
 
 extern:
