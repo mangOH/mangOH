@@ -1,20 +1,23 @@
-#include <linux/module.h>
-#include <linux/kernel.h>
-#include <linux/platform_device.h>
-#include <linux/i2c.h>
+#include <linux/ctype.h>
 #include <linux/delay.h>
+#include <linux/errno.h>
 #include <linux/gpio/driver.h>
-#include <linux/platform_data/at24.h>
 #include <linux/gpio.h>
-#include  <linux/errno.h>
-#include "mangoh_common.h"
-#include "expander.h"
-#include "bq27xxx_battery.h"
+#include <linux/i2c.h>
 #include <linux/i2c/pca954x.h>
 #include <linux/i2c/sx150x.h>
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/platform_data/at24.h>
+#include <linux/platform_device.h>
 #include <linux/spi/spi.h>
+
 #include "bq25601-platform-data.h"
 #include "bq27426-platform-data.h"
+#include "bq27xxx_battery.h"
+#include "expander.h"
+#include "mangoh_common.h"
+
 /*
  *-----------------------------------------------------------------------------
  * Constants
@@ -31,9 +34,11 @@
  * Types
  *-----------------------------------------------------------------------------
  */
-enum mangoh_yellow_board_rev {
-	MANGOH_YELLOW_BOARD_REV_PROD,
-	MANGOH_YELLOW_BOARD_REV_DEV,
+enum board_rev {
+	BOARD_REV_UNKNOWN = 0,
+	BOARD_REV_DV2,
+	BOARD_REV_DV3,
+	BOARD_REV_NUM_OF, /* keep as last definition */
 };
 
 /*
@@ -45,6 +50,7 @@ static void mangoh_yellow_release(struct device* dev);
 static int mangoh_yellow_probe(struct platform_device* pdev);
 static int mangoh_yellow_remove(struct platform_device* pdev);
 static void mangoh_yellow_expander_release(struct device *dev);
+static void eeprom_setup(struct memory_accessor *mem_acc, void *context);
 
 /*
  *-----------------------------------------------------------------------------
@@ -52,11 +58,19 @@ static void mangoh_yellow_expander_release(struct device *dev);
  *-----------------------------------------------------------------------------
  */
 
-static char *revision_dev = "dev";
-static char *revision_prod = "prod";
-static char *revision = "dev";
-module_param(revision, charp, S_IRUGO);
-MODULE_PARM_DESC(revision, "mangOH Yellow board revision");
+static char * const board_rev_strings[BOARD_REV_NUM_OF] = {
+	[BOARD_REV_UNKNOWN] = "unknown",
+	[BOARD_REV_DV2] = "dv2",
+	[BOARD_REV_DV3] = "dv3",
+};
+
+static char *force_revision = "";
+module_param(force_revision, charp, S_IRUGO);
+MODULE_PARM_DESC(force_revision, "Skip board revision detection and assume a specific revision");
+
+static bool allow_eeprom_write = false;
+module_param(allow_eeprom_write, bool, S_IRUGO);
+MODULE_PARM_DESC(allow_eeprom_write, "Should the EEPROM be writeable by root");
 
 static struct platform_driver mangoh_yellow_driver = {
 	.probe = mangoh_yellow_probe,
@@ -68,12 +82,9 @@ static struct platform_driver mangoh_yellow_driver = {
 	},
 };
 
-static struct mangoh_yellow_platform_data {
-	enum mangoh_yellow_board_rev board_rev;
-} mangoh_yellow_pdata;
 
 static struct mangoh_yellow_driver_data {
-	/* struct i2c_client* eeprom; */
+	struct i2c_client* eeprom;
 	struct i2c_client* i2c_switch;
 	struct i2c_client* imu;
 	struct i2c_client* rtc;
@@ -83,8 +94,10 @@ static struct mangoh_yellow_driver_data {
 	struct i2c_client* battery_charger;
 	struct i2c_client* gpio_expander;
 	bool expander_registered;
+	enum board_rev board_rev;
 } mangoh_yellow_driver_data = {
 	.expander_registered = false,
+	.board_rev = BOARD_REV_UNKNOWN,
 };
 
 static struct platform_device mangoh_yellow_device = {
@@ -92,7 +105,6 @@ static struct platform_device mangoh_yellow_device = {
 	.id = -1,
 	.dev = {
 		.release = mangoh_yellow_release,
-		.platform_data = &mangoh_yellow_pdata,
 	},
 };
 
@@ -152,7 +164,7 @@ static struct i2c_board_info mangoh_yellow_magnetometer_devinfo = {
 
 static struct i2c_board_info mangoh_yellow_light_devinfo = {
 	I2C_BOARD_INFO("opt3002", 0x44),
-        .irq = 0,
+	.irq = 0,
 };
 static struct expander_platform_data mangoh_yellow_expander_platform_data = {
 	.gpio_expander_base = -1,
@@ -171,21 +183,67 @@ static struct platform_device mangoh_yellow_expander = {
  * making the upper 1/4 of the address space of the EEPROM write protected by
  * hardware.
  */
-/*
- * The EEPROM is commented out because it's not populated on mangOH Yellow DV2
- * hardware, but it is expected to return in later revisions.
- */
-/*
 static struct at24_platform_data mangoh_yellow_eeprom_data = {
 	.byte_len = 4096,
 	.page_size = 32,
-	.flags = (AT24_FLAG_ADDR16 | AT24_FLAG_READONLY),
+	.flags = (AT24_FLAG_ADDR16),
+	.setup = eeprom_setup,
 };
 static struct i2c_board_info mangoh_yellow_eeprom_info = {
 	I2C_BOARD_INFO("at24", 0x50),
 	.platform_data = &mangoh_yellow_eeprom_data,
 };
-*/
+
+static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
+{
+	const size_t eeprom_size = mangoh_yellow_eeprom_data.byte_len;
+	const char *dv3_string = "mangOH Yellow DV3";
+	u8 *data;
+
+	if (mangoh_yellow_driver_data.board_rev != BOARD_REV_UNKNOWN) {
+		/*
+		 * The board revision must have been forced via the kernel
+		 * module parameter, so don't bother reading out the eeprom
+		 * data.
+		 */
+		return;
+	}
+
+	data = kmalloc(eeprom_size, GFP_KERNEL);
+	if (data == NULL) {
+		pr_err("Couldn't allocate memory for EEPROM data");
+		return;
+	}
+
+	if (mem_acc->read(mem_acc, data, 0, eeprom_size) != eeprom_size) {
+		pr_err("Error reading from board identification EEPROM.\n");
+		goto done;
+	}
+
+	if (strcmp(data, dv3_string) == 0)
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV3;
+
+	if (mangoh_yellow_driver_data.board_rev != BOARD_REV_UNKNOWN) {
+		pr_info("Detected mangOH Yellow board revision: %s\n",
+			board_rev_strings[mangoh_yellow_driver_data.board_rev]);
+	} else {
+		const char *eeprom_string = "<not printable>";
+		int i;
+		for (i = 0; i < eeprom_size; i++) {
+			if (data[i] == '\0') {
+				eeprom_string = (char *)data;
+				break;
+			}
+			if (!isprint(data[i]))
+				break;
+		}
+		pr_warn("EEPROM contents did not match any known board signature: \"%s\"\n",
+			eeprom_string);
+	}
+
+done:
+	kfree(data);
+}
 
 static void mangoh_yellow_release(struct device* dev)
 {
@@ -218,17 +276,40 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	platform_set_drvdata(pdev, &mangoh_yellow_driver_data);
 
 	/* map the EEPROM */
-	/*
 	dev_dbg(&pdev->dev, "mapping eeprom\n");
+	if (!allow_eeprom_write)
+		mangoh_yellow_eeprom_data.flags |= AT24_FLAG_READONLY;
 	mangoh_yellow_driver_data.eeprom =
 		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_eeprom_info);
 	if (!mangoh_yellow_driver_data.eeprom) {
-		dev_err(&pdev->dev, "Failed to register %s\n",
-			mangoh_yellow_eeprom_info.type);
-		ret = -ENODEV;
-		goto cleanup;
+		if (mangoh_yellow_driver_data.board_rev == BOARD_REV_UNKNOWN) {
+			/*
+			 * Assume board is a DV2 since the EEPROM was missing on
+			 * that revision
+			 */
+			mangoh_yellow_driver_data.board_rev = BOARD_REV_DV2;
+		} else if (mangoh_yellow_driver_data.board_rev !=
+			   BOARD_REV_DV2) {
+			/*
+			 * If the revision was forced to something other than
+			 * DV2, the EEPROM is expected to be present.
+			 */
+			dev_err(&pdev->dev, "Failed to register %s\n",
+				mangoh_yellow_eeprom_info.type);
+			ret = -ENODEV;
+			goto cleanup;
+		}
 	}
-	*/
+
+	/*
+	 * If the board revision still isn't known after reading the EEPROM,
+	 * then abort.
+	 */
+	if (mangoh_yellow_driver_data.board_rev == BOARD_REV_UNKNOWN) {
+		dev_err(&pdev->dev, "mangOH Yellow board revision is unknown\n");
+		ret = -EINVAL;
+		goto done;
+	}
 
 	/* Map the I2C switch */
 	dev_dbg(&pdev->dev, "mapping i2c switch\n");
@@ -291,16 +372,23 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		goto cleanup;
 	}
 
-	/* Map the I2C BMM150 magnetometer */
-	dev_dbg(&pdev->dev, "mapping bmm150 magnetometer sensor\n");
-	mangoh_yellow_driver_data.magnetometer =
-		i2c_new_device(i2c_adapter_port1,
-			       &mangoh_yellow_magnetometer_devinfo);
-	if (!mangoh_yellow_driver_data.magnetometer) {
-		dev_err(&pdev->dev, "BMM150 sensor is missing %s\n",
-			mangoh_yellow_magnetometer_devinfo.type);
-		ret = -ENODEV;
-		goto cleanup;
+	/*
+	 * On the mangOH Yellow DV3, the magnetometer is downstream of the
+	 * bmi160.
+	 */
+	if (mangoh_yellow_driver_data.board_rev == BOARD_REV_DV2)
+	{
+		/* Map the I2C BMM150 magnetometer */
+		dev_dbg(&pdev->dev, "mapping bmm150 magnetometer sensor\n");
+		mangoh_yellow_driver_data.magnetometer =
+			i2c_new_device(i2c_adapter_port1,
+				&mangoh_yellow_magnetometer_devinfo);
+		if (!mangoh_yellow_driver_data.magnetometer) {
+			dev_err(&pdev->dev, "BMM150 sensor is missing %s\n",
+				mangoh_yellow_magnetometer_devinfo.type);
+			ret = -ENODEV;
+			goto cleanup;
+		}
 	}
 
 	/* Map the I2C RTC */
@@ -345,7 +433,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		dev_err(&pdev->dev, "Couldn't request CF3 gpio36");
 		ret = -ENODEV;
 		goto cleanup;
-        }
+	}
 	mangoh_yellow_light_devinfo.irq = gpio_to_irq(CF3_GPIO36);
 	mangoh_yellow_driver_data.light =
 		i2c_new_device(i2c_adapter_port2, &mangoh_yellow_light_devinfo);
@@ -367,23 +455,29 @@ done:
 	return ret;
 }
 
+static void safe_i2c_unregister_device(struct i2c_client *client)
+{
+	if (client)
+		i2c_unregister_device(client);
+}
+
 static int mangoh_yellow_remove(struct platform_device* pdev)
 {
 	struct mangoh_yellow_driver_data *dd = platform_get_drvdata(pdev);
 
 	dev_info(&pdev->dev, "Removing mangoh yellow platform device\n");
 
-	i2c_unregister_device(dd->imu);
-	i2c_unregister_device(dd->magnetometer);
-	i2c_unregister_device(dd->light);
-	i2c_unregister_device(dd->battery_charger);
-	i2c_unregister_device(dd->battery_gauge);
-	i2c_unregister_device(dd->rtc);
+	safe_i2c_unregister_device(dd->imu);
+	safe_i2c_unregister_device(dd->magnetometer);
+	safe_i2c_unregister_device(dd->light);
+	safe_i2c_unregister_device(dd->battery_charger);
+	safe_i2c_unregister_device(dd->battery_gauge);
+	safe_i2c_unregister_device(dd->rtc);
 	if (dd->expander_registered)
 		platform_device_unregister(&mangoh_yellow_expander);
-	i2c_unregister_device(dd->gpio_expander);
-	i2c_unregister_device(dd->i2c_switch);
-	/* i2c_unregister_device(dd->eeprom); */
+	safe_i2c_unregister_device(dd->gpio_expander);
+	safe_i2c_unregister_device(dd->i2c_switch);
+	safe_i2c_unregister_device(dd->eeprom);
 	return 0;
 }
 
@@ -398,13 +492,13 @@ static int __init mangoh_yellow_init(void)
 	platform_driver_register(&mangoh_yellow_driver);
 	printk(KERN_DEBUG "mangoh: registered platform driver\n");
 
-	if ( strcmp(revision, revision_prod) == 0) {
-		mangoh_yellow_pdata.board_rev = MANGOH_YELLOW_BOARD_REV_PROD;
-	} else if (strcmp(revision, revision_dev) == 0) {
-		mangoh_yellow_pdata.board_rev = MANGOH_YELLOW_BOARD_REV_DEV;
-	} else {
-		pr_err("%s:Unsupported mangoh yellow board revision (%s)\n",
-		       __func__, revision);
+	if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV2]) == 0) {
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV2;
+	} else if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV3]) == 0) {
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV3;
+	} else if (strcmp(force_revision, "") != 0) {
+		pr_err("%s: Can't force unsupported board revision (%s)\n",
+		       __func__, force_revision);
 		return -ENODEV;
 	}
 
