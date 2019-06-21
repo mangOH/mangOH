@@ -15,7 +15,19 @@ sources:
 
 params:
 {
-    revision = "dev"
+    /*
+     * Do not perform EEPROM based revision detection and assume that the revision is as specified
+     */
+    // force_revision = "dv3"
+
+
+    /*
+     * The EEPROM is used for board identification. In general, the eeprom should not be writable.
+     * If it is necessary to write the eeprom to set the board identification string, then enable
+     * this parameter and then run this command on the target:
+     * # printf 'YOUR STRING HERE\x00' > /sys/bus/i2c/devices/4-0050/eeprom
+     */
+    // allow_eeprom_write = "1"
 }
 
 
