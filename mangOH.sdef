@@ -9,6 +9,13 @@
 #include "sinc/module/${LEGATO_TARGET}.sinc"
 #include "sinc/board/${MANGOH_BOARD}.sinc"
 
+buildVars:
+{
+    LEGATO_WIFI_ROOT=${LEGATO_ROOT}/modules/WiFi
+    // File is selected by users, replace "ti" with "qca" to support qca chipset
+    LEGATO_WIFI_PA=${CURDIR}/linux_kernel_modules/cypwifi/scripts/pa_wifi.sh
+}
+
 apps:
 {
     $LEGATO_ROOT/apps/sample/dataHub/dataHub
@@ -31,7 +38,6 @@ apps:
 
 #elif ${MANGOH_BOARD} = yellow
     ${CURDIR}/apps/YellowSensorToCloud/yellowSensor
-    
     ${CURDIR}/apps/Bme680EnvironmentalSensor/bme680EnvironmentalSensor
     ${CURDIR}/apps/DataHub-Buzzer/buzzer   
     ${CURDIR}/apps/YellowOnBoardActuators/actuator

@@ -59,6 +59,7 @@ cy_wifi_start() {
 	# as we will assume MMC enumeration happened. Need a better way to error check
 	# as the driver on the WP76 continuously polls CIS tuples ad-infinitum and messes up the log
 	#sleep 3
+        # TODO: Return exit code 50 here as the Chip was not scanned across SDIO
 	dmesg | grep "new high speed SDIO card" > /dev/null 2>&1
 	if [ $? -ne 0 ] ; then
 		echo "Cypress chip MMC recognition may have been overwritten"
@@ -69,7 +70,7 @@ cy_wifi_start() {
 	# and remove this temp. workaround, should be /lib/firmware - TODO
 	if [ ! -d "/legato/systems/current/modules/files/brcmutil/etc/firmware/brcm" ]; then
   		echo "/legato/systems/current/modules/files/brcmutil/etc/firmware/brcm directory does not exist"
-		exit 10
+		exit 100
 	fi
 
 	# Currently, to load the broadcom driver we are changing the Kernel's FW search path
@@ -90,13 +91,13 @@ cy_wifi_start() {
 	# firmware loads and reboots the Cypress device
 	sleep 5
 
-	ifconfig -a | grep wlan1 >/dev/null
+	ifconfig -a | grep wlan0 >/dev/null
 	if [ $? -ne 0 ] ; then
-		echo "wlan1 interface was not created by Cypress drivers"; exit 127
-	fi
-	ifconfig wlan1 up >/dev/null
+		echo "wlan0 interface was not created by Cypress drivers"; exit 100
+        fi
+	ifconfig wlan0 up >/dev/null
 	if [ $? -ne 0 ] ; then
-		echo "wlan1 interface UP not working; exit 127"
+		echo "wlan0 interface UP not working; exit 127"
 	fi
 	# In case you have access to the Broadcom wl tool
 	#./wlarmv7a mpc 0
@@ -104,14 +105,15 @@ cy_wifi_start() {
 }
 
 cy_wifi_stop() {
-	ifconfig | grep wlan1 >/dev/null
-	if [ $? -eq 0 ]; then
-	   ifconfig wlan1 down
-	fi
-	rmmod /legato/systems/current/modules/brcmfmac.ko || exit 127
-	rmmod /legato/systems/current/modules/brcmutil.ko || exit 127
-	rmmod /legato/systems/current/modules/cfg80211.ko || exit 127
-	rmmod /legato/systems/current/modules/compat.ko || exit 127
+	ifconfig | grep wlan0 >/dev/null
+        # TODO FIX:  For now we have commented rmmod's and kicking the Cypress chip
+	#if [ $? -eq 0 ]; then
+	   #ifconfig wlan0 down
+	#fi
+	#rmmod /legato/systems/current/modules/brcmfmac.ko || exit 127
+	#rmmod /legato/systems/current/modules/brcmutil.ko || exit 127
+	#rmmod /legato/systems/current/modules/cfg80211.ko || exit 127
+	#rmmod /legato/systems/current/modules/compat.ko || exit 127
 	# Turn off the Cypress chip
 	#echo 0  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
 }
@@ -121,6 +123,7 @@ case "$1" in
 		cy_wifi_init
 		;;
 	start)
+		cy_wifi_init
 		cy_wifi_start
 		;;
 	stop)
