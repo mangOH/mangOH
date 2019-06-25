@@ -175,7 +175,6 @@ COMPONENT_INIT
 
     LE_ASSERT_OK(io_CreateOutput(RES_PATH_AMBIENT_TEMP, IO_DATA_TYPE_NUMERIC, "degC"));
     io_AddNumericPushHandler(RES_PATH_AMBIENT_TEMP, AmbientTempPushHandler, NULL);
-    io_MarkOptional(RES_PATH_AMBIENT_TEMP);
 
     mangOH_bme680_AddSensorReadingHandler(SensorReadingHandler, NULL);
 
