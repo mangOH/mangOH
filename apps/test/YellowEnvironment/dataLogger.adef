@@ -1,0 +1,22 @@
+sandboxed: false  // Have to be unsandboxed to save persistent files to flash. :(
+
+executables:
+{
+    dataLogger = ( dataLogger )
+}
+
+processes:
+{
+    run:
+    {
+        ( dataLogger )
+    }
+
+    faultAction: restart
+}
+
+bindings:
+{
+    dataLogger.dataLogger.dhubAdmin -> dataHub.admin
+    dataLogger.dataLogger.dhubQuery -> dataHub.query
+}

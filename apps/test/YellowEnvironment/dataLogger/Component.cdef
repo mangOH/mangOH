@@ -1,0 +1,13 @@
+sources:
+{
+    dataLogger.c
+}
+
+requires:
+{
+    api:
+    {
+        dhubAdmin = admin.api
+        dhubQuery = query.api
+    }
+}

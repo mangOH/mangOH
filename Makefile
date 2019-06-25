@@ -88,3 +88,15 @@ $(YELLOW_GOALS): yellow_%: legato_%
 .PHONY: clean
 clean:
 	rm -rf build
+
+TEST_BUILD_ID = $@_$(LEGATO_TARGET)
+.PHONY: env_test_yellow
+env_test_yellow: env_test_%:
+ifndef LEGATO_TARGET
+	$(error LEGATO_TARGET not specified)
+endif
+	$(call cyp_bld,$*_$(LEGATO_TARGET))
+	mksys -t $(LEGATO_TARGET) \
+		  --object-dir=build/$(TEST_BUILD_ID) \
+		  --output-dir=build/update_files/$(TEST_BUILD_ID) \
+	      $@.sdef
