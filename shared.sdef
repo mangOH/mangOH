@@ -14,7 +14,6 @@
 buildVars:
 {
     MANGOH_ROOT = $CURDIR
-    DATAHUB_ROOT = $CURDIR/../dataHub
 
     LEGATO_WIFI_ROOT = ${LEGATO_ROOT}/modules/WiFi
     LEGATO_WIFI_PA = ${CURDIR}/linux_kernel_modules/cypwifi/scripts/pa_wifi.sh
@@ -22,7 +21,7 @@ buildVars:
 
 apps:
 {
-    $DATAHUB_ROOT/dataHub
+    apps/DataHub/dataHub
     {
         maxFileBytes: 4000K
     }
@@ -37,12 +36,12 @@ interfaceSearch:
 {
     interfaces
     apps/LedService
-    $DATAHUB_ROOT
-    $DATAHUB_ROOT/components/periodicSensor
+    apps/DataHub
+    apps/DataHub/components/periodicSensor
 }
 
 componentSearch:
 {
     components
-    $DATAHUB_ROOT/components
+    apps/DataHub/components
 }
