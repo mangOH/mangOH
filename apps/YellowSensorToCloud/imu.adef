@@ -11,6 +11,8 @@ processes:
     {
         ( imu )
     }
+
+    faultAction: restart
 }
 
 extern:

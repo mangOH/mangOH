@@ -9,6 +9,8 @@ processes:
     {
         ( lightSensor )
     }
+
+    faultAction: restart
 }
 
 extern:
