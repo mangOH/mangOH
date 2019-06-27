@@ -1,4 +1,4 @@
-# MangOH makefile
+# mangOH Makefile
 #
 # Requirements:
 #  * Use leaf, or...
@@ -8,7 +8,10 @@
 #  * If the Legato version in LEGATO_ROOT is < 18.02.0, then it will be necessary to do "export
 #    LEGATO_SYSROOT=$XXXX_SYSROOT" where XXXX is the module the build is for.
 #
+# By default, the Legato framework will be built before building the mangOH software.
+# Set LEGATO=0 to skip this step.
 
+# Arguments passed to mksys whenever it is invoked.
 MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=build/update_files/$@
 
 # The comments below are for Developer Studio integration. Do not remove them.
@@ -18,15 +21,21 @@ MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=build/update_files/$@
 # NOTE: This isn't needed when using leaf.
 export PATH := $(LEGATO_ROOT)/bin:$(PATH)
 
+# List of all supported mangOH boards.
 BOARDS = green red yellow
+
+# List of all supported Sierra Wireless WP-series modules.
 MODULES = wp85 wp750x wp76xx wp77xx
 
+# List of goals for each board, in the form $(board)_$(module), like green_wp85.
 GREEN_GOALS = $(foreach module,$(MODULES),green_$(module))
 RED_GOALS = $(foreach module,$(MODULES),red_$(module))
 YELLOW_GOALS = $(foreach module,$(MODULES),yellow_$(module))
 
+# By default (if no goal is specified on the command line), we try to build for all combinations
+# of boards and targets.  This will probably not work for most people, though, because they won't
+# have all the necessary toolchains installed.
 ALL_COMBINATIONS = $(GREEN_GOALS) $(RED_GOALS) $(YELLOW_GOALS)
-
 .PHONY: all $(ALL_COMBINATIONS)
 all: $(ALL_COMBINATIONS)
 
@@ -46,6 +55,8 @@ define cyp_bld
 	fi
 endef
 
+# Rule to build the Legato framework, unless $(LEGATO) is 0.
+# Note: setting LEGATO=0 when using leaf with a pre-built Legato framework can save a few seconds.
 LEGATO ?= 1
 .PHONY: legato_%
 legato_%:
@@ -57,13 +68,21 @@ else
 endif
 
 # Build goals that get the target WP module type from the LEGATO_TARGET environment variable.
+# If LEGATO_TARGET is defined (e.g., when using leaf), then you can run 'make yellow', for example.
 .PHONY: $(BOARDS)
-$(BOARDS):
-ifndef LEGATO_TARGET
-	$(error LEGATO_TARGET not specified and no goal like $@_wp76xx provided)
-endif
-	if [ "$@" = "yellow" ] ; then $(call cyp_bld,$@_$(LEGATO_TARGET)) ; fi
-	mksys -t $(LEGATO_TARGET) $(MKSYS_ARGS_COMMON) $@.sdef
+$(BOARDS): %: %_$(LEGATO_TARGET)
+
+# If LEGATO_TARGET is not set, and someone tries to make one of the board goals (like 'make yellow')
+# then it will attempt to build something like 'yellow_'.  In that case, we want to report a
+# helpful error message, and we use these "missing LEGATO_TARGET" goals to do that.
+MISSING_LEGATO_TARGET = $(foreach board,$(BOARDS),$(board)_)
+.PHONY: $(MISSING_LEGATO_TARGET)
+$(MISSING_LEGATO_TARGET):
+	$(error LEGATO_TARGET not specified and no goal like $@wp76xx provided)
+
+# Build goals that don't rely on LEGATO_TARGET, instead allowing the module to be specified
+# on the command line as part of the goal. E.g., 'make green_wp85'.  If using these, Legato's
+# findtoolchain script will be used to try to find the approriate build toolchain.
 
 $(GREEN_GOALS): green_%: legato_%
 	# NOTE: When using leaf, these TOOLCHAIN_X variables aren't needed.
@@ -85,10 +104,12 @@ $(YELLOW_GOALS): yellow_%: legato_%
 	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* prefix) \
 	mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
 
+# The cleaning goal.
 .PHONY: clean
 clean:
 	rm -rf build
 
+# Goals for building the software to be used when testing inside the environmental test chamber.
 TEST_BUILD_ID = $@_$(LEGATO_TARGET)
 .PHONY: env_test_yellow
 env_test_yellow: env_test_%:

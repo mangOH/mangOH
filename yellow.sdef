@@ -54,15 +54,6 @@ componentSearch:
 kernelModules:
 {
     linux_kernel_modules/mangoh/mangoh_yellow_dev
-
-    #if ${MANGOH_KERNEL_LACKS_IIO} = 1
-
-        linux_kernel_modules/iio/iio-triggered-buffer
-        linux_kernel_modules/iio/iio-kfifo-buf
-        linux_kernel_modules/iio/iio
-
-    #endif // MANGOH_KERNEL_LACKS_IIO
-
     linux_kernel_modules/bmi160/bmi160-i2c
     linux_kernel_modules/bmi160/bmi160
     linux_kernel_modules/bmm150/bmc150_magn_i2c

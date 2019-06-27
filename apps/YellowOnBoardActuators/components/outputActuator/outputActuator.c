@@ -57,7 +57,7 @@ static void ActuatorPushHandler
 {
     const char* sysfsPath = context;
 
-    LE_ASSERT(LE_OK == WriteStringToFile(sysfsPath, value ? "1" : "0"));
+    LE_ASSERT_OK(WriteStringToFile(sysfsPath, value ? "1" : "0"));
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -98,7 +98,7 @@ void outputActuator_Register
     size_t contextSize = strlen(sysfsPath) + 1;
     char* contextPtr = malloc(contextSize);
     LE_ASSERT(contextPtr);
-    LE_ASSERT(LE_OK == le_utf8_Copy(contextPtr, sysfsPath, contextSize, NULL));
+    LE_ASSERT_OK(le_utf8_Copy(contextPtr, sysfsPath, contextSize, NULL));
 
     // Create the Data Hub resource, set its default value, and register for callbacks on update.
     le_result_t res;
