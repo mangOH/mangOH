@@ -26,33 +26,13 @@ requires:
 
     component:
     {
-        ../../fileUtils
+        fileUtils
         periodicSensor
-//        libiioComponent
     }
     file:
     {
-#if ${LEGATO_TARGET} = wp85
-        /sys/bus/i2c/devices/3-0044/iio:device2/in_illuminance_input     /driver/
-
-#elif ${LEGATO_TARGET} = wp750x
-       /sys/bus/i2c/devices/3-0044/iio:device2/in_illuminance_input     /driver/
-
-#elif ${LEGATO_TARGET} = wp76xx
        /sys/bus/i2c/devices/7-0044/iio:device1/in_illuminance_input     /driver/
-
-#elif ${LEGATO_TARGET} = wp77xx
-       /sys/bus/i2c/devices/7-0044/iio:device2/in_illuminance_input     /driver/
-
-#endif
     }
-
-   /* lib:
-    {
-        libiio.so
-        libiio.so.0:Ex
-        libiio.so.0.15
-    }*/
 }
 
 sources:
