@@ -14,6 +14,12 @@
 # Arguments passed to mksys whenever it is invoked.
 MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=build/update_files/$@
 
+MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
+
+# Export a default location for the BSEC library if one isn't already defined by the environment.
+# This variable is only relevant during yellow builds.
+export BSEC_DIR ?= $(MAKEFILE_DIR)/components/boschBsec/BSEC_1.4.7.2_GCC_CortexA7_20190225/algo/bin/Normal_version/Cortex_A7
+
 # The comments below are for Developer Studio integration. Do not remove them.
 # DS_CLONE_ROOT(CURDIR)
 # DS_CUSTOM_OPTIONS(MKSYS_ARGS_COMMON)

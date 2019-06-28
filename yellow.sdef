@@ -7,7 +7,6 @@
 buildVars:
 {
     MANGOH_BOARD = yellow
-    BSEC_DIR = ../boschBsecLib/BSEC_1.4.7.2_GCC_CortexA7_20190225/algo/bin/Normal_version/Cortex_A7
 }
 
 
