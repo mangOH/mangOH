@@ -9,7 +9,6 @@
 
 #include "$LEGATO_ROOT/modules/WiFi/wifi.sdef"
 #include "sinc/module/${LEGATO_TARGET}.sinc"
-#include "sinc/board/${MANGOH_BOARD}.sinc"
 
 buildVars:
 {
