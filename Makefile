@@ -61,9 +61,11 @@ define cyp_bld
 	fi
 endef
 
-# Rule to build the Legato framework, unless $(LEGATO) is 0.
-# Note: setting LEGATO=0 when using leaf with a pre-built Legato framework can save a few seconds.
-LEGATO ?= 1
+# Rule to build the Legato framework, if $(LEGATO) is not 0.
+# WARNING: Do not use LEGATO=1 when using a Legato provided by leaf. This will result in the
+# modification of files within ~/leaf-data which may be shared between many leaf workspaces and leaf
+# profiles.
+LEGATO ?= 0
 .PHONY: legato_%
 legato_%:
 	$(eval export LEGATO_TARGET := $(subst legato_,,$@))
