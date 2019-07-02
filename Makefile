@@ -11,8 +11,11 @@
 # By default, the Legato framework will be built before building the mangOH software.
 # Set LEGATO=0 to skip this step.
 
+UPDATE_FILE_DIR = build/update_files
+LEAF_DATA = ../leaf-data/current
+
 # Arguments passed to mksys whenever it is invoked.
-MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=build/update_files/$@
+MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=$(UPDATE_FILE_DIR)
 
 MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
@@ -32,6 +35,10 @@ BOARDS = green red yellow
 
 # List of all supported Sierra Wireless WP-series modules.
 MODULES = wp85 wp750x wp76xx wp77xx
+
+# Toolchain-related variables that are needed when not using leaf.
+TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* dir)
+TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* prefix)
 
 # List of goals for each board, in the form $(board)_$(module), like green_wp85.
 GREEN_GOALS = $(foreach module,$(MODULES),green_$(module))
@@ -93,23 +100,24 @@ $(MISSING_LEGATO_TARGET):
 # findtoolchain script will be used to try to find the approriate build toolchain.
 
 $(GREEN_GOALS): green_%: legato_%
-	# NOTE: When using leaf, these TOOLCHAIN_X variables aren't needed.
-	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* dir) \
-	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* prefix) \
+	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
+	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
+	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
 	mksys -t $* $(MKSYS_ARGS_COMMON) green.sdef
 
 $(RED_GOALS): red_%: legato_%
-	# NOTE: When using leaf, these TOOLCHAIN_X variables aren't needed.
-	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* dir) \
-	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* prefix) \
+	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
+	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
+	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
 	mksys -t $* $(MKSYS_ARGS_COMMON) red.sdef
 
 $(YELLOW_GOALS): yellow_%: legato_%
 	# Build the Cypress WiFi driver.
 	$(call cyp_bld,$@)
-	# NOTE: When using leaf, these TOOLCHAIN_X variables aren't needed.
-	TOOLCHAIN_DIR=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* dir) \
-	TOOLCHAIN_PREFIX=$(shell $(LEGATO_ROOT)/bin/findtoolchain $* prefix) \
+	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
+	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
+	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+	find build/$@/modules/cypwifi -name '*.ko' | xargs $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PREFIX)strip && \
 	mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
 
 # The cleaning goal.
@@ -129,3 +137,27 @@ endif
 		  --object-dir=build/$(TEST_BUILD_ID) \
 		  --output-dir=build/update_files/$(TEST_BUILD_ID) \
 	      $@.sdef
+
+# Rule for generating legato.cwe files from .update files.
+CWE_FILES = $(foreach board,$(BOARDS),build/$(board)_$(LEGATO_TARGET)/legato.cwe)
+$(CWE_FILES): build/%_$(LEGATO_TARGET)/legato.cwe: $(UPDATE_FILE_DIR)/%.$(LEGATO_TARGET).update
+	systoimg -s $(LEGATO_TARGET) $< build/yellow_wp76xx
+
+# Goals, like "yellow_spk", for building complete .spk files for factory programming.
+# The names of the resulting .spk files are of the form build/yellow_wp76xx.spk.
+# NOTE: This requires leaf.
+# NOTE: Sadly, there's some inconsistencies in the naming of leaf packages that means the rules
+#       have to be hand-written for each supported board_module combination.
+FACTORY_SPK_GOALS = $(foreach board,$(BOARDS),$(board)_spk)
+.PHONY: $(FACTORY_SPK_GOALS)
+$(FACTORY_SPK_GOALS): %_spk: % build/%_$(LEGATO_TARGET).spk
+
+build/yellow_wp76xx.spk: build/yellow_wp76xx/legato.cwe
+	swicwe -c $(LEAF_DATA)/wp76-linux-image/linux.cwe \
+			$(LEAF_DATA)/wp76-modem-image/9999999_9907152_SWI9X07Y_02.28.03.01_00_GENERIC_002.064_000.spk \
+			$< \
+			-o $@
+
+# Default rule that will get run for .spk files that we don't support yet.
+build/%.spk:
+	$(error Factory .spk file generation not yet supported for "$*")
