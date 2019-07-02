@@ -11,6 +11,8 @@ buildVars:
 {
     MANGOH_BOARD = yellow
 
+    LEGATO_WIFI_PA = ${CURDIR}/linux_kernel_modules/cypwifi/scripts/pa_wifi.sh
+
 #if ${MANGOH_WP_CHIPSET_9X07} = 1
     MANGOH_BME680_I2C_BUS = 6
 #elif ${MANGOH_WP_CHIPSET_9X15} = 1
