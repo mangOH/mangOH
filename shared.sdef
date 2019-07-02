@@ -15,7 +15,6 @@ buildVars:
     MANGOH_ROOT = $CURDIR
 
     LEGATO_WIFI_ROOT = ${LEGATO_ROOT}/modules/WiFi
-    LEGATO_WIFI_PA = ${CURDIR}/linux_kernel_modules/cypwifi/scripts/pa_wifi.sh
 }
 
 apps:
