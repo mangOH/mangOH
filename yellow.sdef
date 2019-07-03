@@ -25,6 +25,7 @@ apps:
 {
     apps/YellowSensorToCloud/imu
     apps/YellowSensorToCloud/light
+    apps/YellowSensorToCloud/button
     apps/Bme680EnvironmentalSensor/environment
     apps/DataHub-Buzzer/buzzer
     apps/YellowOnBoardActuators/leds
@@ -39,6 +40,8 @@ bindings:
 {
     battery.dhubIO -> dataHub.io
     light.dhubIO -> dataHub.io
+    button.dhubIO -> dataHub.io
+    button.gpio -> gpioService.le_gpioPin25
     environment.dhubIO -> dataHub.io
 }
 

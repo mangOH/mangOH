@@ -1,0 +1,20 @@
+executables:
+{
+    button = ( components/sensors/button )
+}
+
+processes:
+{
+    run:
+    {
+        ( button )
+    }
+
+    faultAction: restart
+}
+
+extern:
+{
+    button.button.dhubIO
+    button.button.gpio
+}

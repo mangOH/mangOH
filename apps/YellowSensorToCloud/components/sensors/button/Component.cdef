@@ -1,0 +1,13 @@
+sources:
+{
+    button.c
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+        gpio = le_gpio.api
+    }
+}
