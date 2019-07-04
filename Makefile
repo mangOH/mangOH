@@ -154,7 +154,7 @@ $(FACTORY_SPK_GOALS): %_spk: % build/%_$(LEGATO_TARGET).spk
 
 build/yellow_wp76xx.spk: build/yellow_wp76xx/legato.cwe
 	swicwe -c $(LEAF_DATA)/wp76-linux-image/linux.cwe \
-			$(LEAF_DATA)/wp76-modem-image/9999999_9907152_SWI9X07Y_02.28.03.01_00_GENERIC_002.064_000.spk \
+			$(LEAF_DATA)/wp76-modem-image/*_GENERIC_*.spk \
 			$< \
 			-o $@
 
