@@ -135,7 +135,7 @@ endif
 	$(call cyp_bld,$*_$(LEGATO_TARGET))
 	mksys -t $(LEGATO_TARGET) \
 		  --object-dir=build/$(TEST_BUILD_ID) \
-		  --output-dir=build/update_files/$(TEST_BUILD_ID) \
+		  --output-dir=build/update_files \
 	      $@.sdef
 
 # Rule for generating legato.cwe files from .update files.
