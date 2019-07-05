@@ -21,7 +21,7 @@ MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
 # Export a default location for the BSEC library if one isn't already defined by the environment.
 # This variable is only relevant during yellow builds.
-export BSEC_DIR ?= $(MAKEFILE_DIR)/components/boschBsec/BSEC_1.4.7.2_GCC_CortexA7_20190225/algo/bin/Normal_version/Cortex_A7
+export BSEC_DIR ?= $(MAKEFILE_DIR)components/boschBsec/BSEC_1.4.7.2_GCC_CortexA7_20190225/algo/bin/Normal_version/Cortex_A7
 
 # The comments below are for Developer Studio integration. Do not remove them.
 # DS_CLONE_ROOT(CURDIR)
@@ -112,6 +112,14 @@ $(RED_GOALS): red_%: legato_%
 	mksys -t $* $(MKSYS_ARGS_COMMON) red.sdef
 
 $(YELLOW_GOALS): yellow_%: legato_%
+	@if ! [ -e "$(BSEC_DIR)" ] ; then \
+		echo "*" ; \
+		echo "* WARNING: Bosch bsec library not found at BSEC_DIR ($(BSEC_DIR))." ; \
+		echo "*          See components/boschBsec/README.md ." >&2 ; \
+		echo "*" ; \
+		echo "Hit enter to continue." >&2 ; \
+		read ; \
+	fi
 	# Build the Cypress WiFi driver.
 	$(call cyp_bld,$@)
 	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
