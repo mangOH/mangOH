@@ -117,7 +117,7 @@ $(YELLOW_GOALS): yellow_%: legato_%
 	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
 	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
 	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
-	find build/$@/modules/cypwifi -name '*.ko' | xargs $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PREFIX)strip && \
+	find build/$@/modules/cypwifi -name '*.ko' | xargs $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PREFIX)strip --strip-debug && \
 	mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
 
 # The cleaning goal.
