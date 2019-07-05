@@ -14,7 +14,7 @@ requires:
 
     file:
     {
-        /legato/systems/current/lib/libjansson.so /usr/lib/
+        /legato/systems/current/lib/libjansson.so.4 /usr/lib/
     }
 }
 
