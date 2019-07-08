@@ -114,11 +114,10 @@ $(RED_GOALS): red_%: legato_%
 $(YELLOW_GOALS): yellow_%: legato_%
 	@if ! [ -e "$(BSEC_DIR)" ] ; then \
 		echo "*" ; \
-		echo "* WARNING: Bosch bsec library not found at BSEC_DIR ($(BSEC_DIR))." ; \
-		echo "*          See components/boschBsec/README.md ." >&2 ; \
+		echo "* ERROR: Bosch bsec library not found at BSEC_DIR ($(BSEC_DIR))." ; \
+		echo "*        See components/boschBsec/README.md ." >&2 ; \
 		echo "*" ; \
-		echo "Hit enter to continue." >&2 ; \
-		read ; \
+		false ; \
 	fi
 	# Build the Cypress WiFi driver.
 	$(call cyp_bld,$@)
