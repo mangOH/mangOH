@@ -1,0 +1,11 @@
+sources:
+{
+    cmdLine.c
+}
+
+requires:
+{
+    api:
+    {
+    }
+}

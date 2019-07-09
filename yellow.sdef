@@ -32,6 +32,8 @@ apps:
     apps/BatteryService/battery
     apps/VegasMode/vegasMode
 
+    apps/Welcome/helloYellow
+
     $LEGATO_ROOT/apps/tools/devMode
 }
 
@@ -43,6 +45,13 @@ bindings:
     button.dhubIO -> dataHub.io
     button.gpio -> gpioService.le_gpioPin25
     environment.dhubIO -> dataHub.io
+    vegasMode.dhubIO -> dataHub.io
+}
+
+
+commands:
+{
+    hello = helloYellow:/bin/hello
 }
 
 
