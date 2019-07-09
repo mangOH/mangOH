@@ -1,11 +1,6 @@
 
 #include "yellow.sdef"
 
-buildVars:
-{
-    VEGAS_MODE_USLEEP = 1000000
-}
-
 apps:
 {
     apps/test/YellowEnvironment/dataLogger

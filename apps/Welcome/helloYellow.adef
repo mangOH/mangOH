@@ -1,0 +1,28 @@
+// Out-of-box experience app for the mangOH Yellow.
+//
+// This app is intended to provide some instant gratification when powering up a newly un-boxed
+// mangOH Yellow (even if there's no RF reception) and provide some useful bootstrapping functions,
+// like joining a WiFi network, checking for and installing updates, and registering with a
+// cellular connectivity and/or device management provider.
+//
+// Copyright (C) Sierra Wireless Inc.
+
+executables:
+{
+    instaGrat = ( components/yellowInstantGratification )
+    hello = ( components/yellowCommandLine )
+}
+
+processes:
+{
+    run:
+    {
+        ( instaGrat )
+    }
+}
+
+bindings:
+{
+    instaGrat.yellowInstantGratification.dhubAdmin -> dataHub.admin
+//    hello.yellowCommandLine.dhubAdmin -> dataHub.admin
+}
