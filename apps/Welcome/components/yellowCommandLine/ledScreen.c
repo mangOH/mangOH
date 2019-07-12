@@ -68,13 +68,13 @@ static void Draw
 //--------------------------------------------------------------------------------------------------
 static void HandleInput
 (
-    char input
+    const char* inputStr
 )
 //--------------------------------------------------------------------------------------------------
 {
     if (VegasModeEnableState == BOOL_ON)
     {
-        if (input == '1')
+        if (inputStr[0] == '1')
         {
             dhubAdmin_SetBooleanOverride("/app/vegasMode/continuous/enable", false);
             VegasModeEnableState = BOOL_OFF;
@@ -89,7 +89,7 @@ static void HandleInput
     else
     {
         // Continuous Vegas Mode is OFF. Manual LED control options are available.
-        switch (input)
+        switch (inputStr[0])
         {
             case '1':
                 dhubAdmin_SetBooleanOverride("/app/vegasMode/continuous/enable", true);

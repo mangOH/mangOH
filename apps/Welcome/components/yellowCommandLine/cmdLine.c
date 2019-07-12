@@ -60,8 +60,8 @@ static enum
 }
 InputProcessingMode = INPUT_MODE_MENU;
 
-/// Text prompt to display when in text entry mode or password entry mode.
-static char Prompt[32];
+/// Pointer to the text prompt to display when in text entry mode or password entry mode.
+static const char* PromptPtr;
 
 /// Buffer containing text entered by the user but not yet submitted.
 /// In password entry mode, this just contains '*' characters, and the password is kept in
@@ -70,6 +70,10 @@ static char TextEntryBuffer[1024];
 
 /// Buffer containing actual password characters entered by the user. This must never be displayed.
 // static char PasswordBuffer[128];
+
+/// Timer used to wait for further characters after an ESC character, in case it was caused by
+/// a non-ESC key press, such as the arrow keys.
+static le_timer_Ref_t EscapeTimer;
 
 
 //--------------------------------------------------------------------------------------------------
@@ -129,13 +133,14 @@ void cmdLine_Refresh
         case INPUT_MODE_PASSWORD_ENTRY:
 
             printf("\n"
-                   "%s %s\n"
-                   "\n"
                    "Press ENTER to submit your %s or\n"
-                   "press ESC to return to the previous screen.\n",
-                   Prompt,
-                   TextEntryBuffer,
-                   Prompt);
+                   "press ESC to return to the previous screen.\n"
+                   "\n"
+                   "%s> %s",
+                   PromptPtr,
+                   PromptPtr,
+                   TextEntryBuffer);
+            fflush(stdout);
             break;
     }
 }
@@ -177,6 +182,27 @@ void cmdLine_MenuMode
 
 //--------------------------------------------------------------------------------------------------
 /**
+ * Put the input processing into text entry mode.
+ * In this mode, ESC will cause the screen's Leave function to be called,
+ * other keys will be applied to the TextEntryBuffer and the contents of that buffer will be
+ * echoed to the screen.  When ENTER is pressed, the contents of the TextEntryBuffer will be
+ * passed to the screen's input processing function.
+ */
+//--------------------------------------------------------------------------------------------------
+void cmdLine_TextEntryMode
+(
+    const char* promptStr ///< The name of the item to be entered. E.g., "buzzer period".
+)
+//--------------------------------------------------------------------------------------------------
+{
+    InputProcessingMode = INPUT_MODE_TEXT_ENTRY;
+    PromptPtr = promptStr;
+    memset(TextEntryBuffer, 0, sizeof(TextEntryBuffer));
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
  * @return true if the given character is the ESC key character.
  */
 //--------------------------------------------------------------------------------------------------
@@ -207,8 +233,70 @@ static void HandleMenuInput
     }
     else if ((input >= '1') && (input <= '9'))
     {
-        CurrentScreenPtr->inputProcessingFunc(input);
+        TextEntryBuffer[0] = input;
+        TextEntryBuffer[1] = '\0';
+        CurrentScreenPtr->inputProcessingFunc(TextEntryBuffer);
     }
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Handle a character of input while in Text Entry Mode.
+ */
+//--------------------------------------------------------------------------------------------------
+static void HandleTextInput
+(
+    char input
+)
+//--------------------------------------------------------------------------------------------------
+{
+    // Handle backspace
+    if (input == EraseChar)
+    {
+        size_t len = strnlen(TextEntryBuffer, sizeof(TextEntryBuffer));
+
+        if (len > 0)
+        {
+            TextEntryBuffer[len - 1] = '\0';
+
+            cmdLine_Refresh();
+        }
+    }
+    // Check for newline or carriage return, and treat those as ENTER, passing the string
+    // to the screen for processing.
+    else if ((input == '\n') || (input == '\r'))
+    {
+        CurrentScreenPtr->inputProcessingFunc(TextEntryBuffer);
+    }
+    // Ignore all non-printable characters.
+    else if (isprint(input))
+    {
+        size_t len = strnlen(TextEntryBuffer, sizeof(TextEntryBuffer));
+        if (len < (sizeof(TextEntryBuffer) - 1))
+        {
+            TextEntryBuffer[len] = input;
+        }
+
+        cmdLine_Refresh();
+    }
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * ESC key timer expiry handler function.  If this expires, it means that no other characters
+ * were received after an ESC key, so it must have actually been an ESC key press and not something
+ * like an arrow key press.
+ */
+//--------------------------------------------------------------------------------------------------
+static void HandleEscapeTimerExpiry
+(
+    le_timer_Ref_t timer
+)
+//--------------------------------------------------------------------------------------------------
+{
+    CurrentScreenPtr->leaveFunc();
 }
 
 
@@ -233,13 +321,19 @@ static void InputHandler
 
         if (bytesRead == sizeof(input))
         {
+            LE_INFO("Received char: %d", (int)input);
+
+            // If the escape key timer is running, stop it.
+            le_timer_Stop(EscapeTimer);
+
             if (input == EndOfFileChar)
             {
                 cmdLine_Exit();
             }
             else if (input == EscapeChar)
             {
-                CurrentScreenPtr->leaveFunc();
+                // Start the ESC key timer.
+                le_timer_Start(EscapeTimer);
             }
             else
             {
@@ -250,7 +344,7 @@ static void InputHandler
                         break;
 
                     case INPUT_MODE_TEXT_ENTRY:
-                        LE_FATAL("Text entry mode not implemented.");
+                        HandleTextInput(input);
                         break;
 
                     case INPUT_MODE_PASSWORD_ENTRY:
@@ -322,11 +416,18 @@ static void ConfigureTerminal
     // Remember what the terminal's EOF and backspace characters are so we can check for them later.
     EndOfFileChar = termSettings.c_cc[VEOF];
     EraseChar = termSettings.c_cc[VERASE];
+
+    LE_INFO("End of file char = %d.", EndOfFileChar);
+    LE_INFO("Erase char = %d.", EraseChar);
 }
 
 
 COMPONENT_INIT
 {
+    EscapeTimer = le_timer_Create("ESC timer");
+    le_timer_SetMsInterval(EscapeTimer, 100);
+    le_timer_SetHandler(EscapeTimer, HandleEscapeTimerExpiry);
+
     ConfigureTerminal();
 
     // Initialize all the screens.

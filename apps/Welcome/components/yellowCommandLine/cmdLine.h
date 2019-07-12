@@ -26,12 +26,16 @@ typedef void (*DrawFunc_t)
 //--------------------------------------------------------------------------------------------------
 /**
  * Screen input processing functions look like this.  The screen's input processing function is
- * called to pass each character of input to the screen for processing.
+ * called to pass input to the screen for processing.
+ *
+ * In Menu Mode, each character will be passed one at a time as soon as the user hits a key.
+ *
+ * In other modes, input is passed as a complete line of characters, when the user hits ENTER.
  */
 //--------------------------------------------------------------------------------------------------
 typedef void (*InputProcessingFunc_t)
 (
-    char input
+    const char* inputStr  ///< Null-terminated string of one or more input characters.
 );
 
 //--------------------------------------------------------------------------------------------------
@@ -114,6 +118,20 @@ void cmdLine_Exit
 void cmdLine_MenuMode
 (
     void
+);
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Put the input processing into text entry mode.
+ * In this mode, ESC will cause the screen's Leave function to be called,
+ * other keys will be applied to the TextEntryBuffer and the contents of that buffer will be
+ * echoed to the screen.  When ENTER is pressed, the contents of the TextEntryBuffer will be
+ * passed to the screen's input processing function.
+ */
+//--------------------------------------------------------------------------------------------------
+void cmdLine_TextEntryMode
+(
+    const char* promptStr ///< The name of the item to be entered. E.g., "buzzer period".
 );
 
 

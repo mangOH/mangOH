@@ -37,11 +37,11 @@ static void DrawMainMenu
 //--------------------------------------------------------------------------------------------------
 static void HandleMainMenuInput
 (
-    char input
+    const char* inputStr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    switch (input)
+    switch (inputStr[0])
     {
         case '1':
 
