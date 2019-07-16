@@ -80,7 +80,7 @@ static int ws_eink_send_cmd(struct ws_eink_fb_par *par, u8 cmd, const u8 *data,
 	struct spi_device *spi = par->spi;
 	struct device *dev = &spi->dev;
 
-	gpio_set_value(par->dc, 0);
+	gpio_set_value_cansleep(par->dc, 0);
 	ret = spi_write(spi, &cmd, 1);
 	if (ret) {
 		dev_err(dev,
@@ -89,7 +89,7 @@ static int ws_eink_send_cmd(struct ws_eink_fb_par *par, u8 cmd, const u8 *data,
 		return ret;
 	}
 
-	gpio_set_value(par->dc, 1);
+	gpio_set_value_cansleep(par->dc, 1);
 	ret = spi_write(spi, data, data_size);
 	if (ret)
 		dev_err(dev,
@@ -101,15 +101,15 @@ static int ws_eink_send_cmd(struct ws_eink_fb_par *par, u8 cmd, const u8 *data,
 
 static void wait_until_idle(struct ws_eink_fb_par *par)
 {
-	while (gpio_get_value(par->busy) != 0)
+	while (gpio_get_value_cansleep(par->busy) != 0)
 		mdelay(100);
 }
 
 static void ws_eink_reset(struct ws_eink_fb_par *par)
 {
-	gpio_set_value(par->rst, 0);
+	gpio_set_value_cansleep(par->rst, 0);
 	mdelay(200);
-	gpio_set_value(par->rst, 1);
+	gpio_set_value_cansleep(par->rst, 1);
 	mdelay(200);
 }
 
