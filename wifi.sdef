@@ -1,0 +1,30 @@
+//--------------------------------------------------------------------------------------------------
+// Sample system definition that includes essential services and WiFi-related services and sample
+// applications.
+//
+// Copyright (C) Sierra Wireless Inc.
+//--------------------------------------------------------------------------------------------------
+
+#include "default.sdef"
+
+buildVars:
+{
+    LEGATO_WIFI_ROOT=${LEGATO_ROOT}/modules/WiFi
+    // File is selected by users, replace "ti" with "qca" to support qca chipset
+    LEGATO_WIFI_PA=${LEGATO_WIFI_ROOT}/service/platformAdaptor/ti/pa_wifi.sh
+}
+
+apps:
+{
+    // WiFi services
+    $LEGATO_WIFI_ROOT/service/wifiService.adef
+    $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
+    $LEGATO_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
+    $LEGATO_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
+    $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi.adef
+}
+
+commands:
+{
+    wifi = wifi:/bin/wifi
+}

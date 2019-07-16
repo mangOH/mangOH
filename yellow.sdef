@@ -60,6 +60,7 @@ interfaceSearch:
     apps/BatteryService
     apps/Bme680EnvironmentalSensor
     apps/YellowSensorToCloud/interfaces
+    $LEGATO_ROOT/interfaces/wifi
 }
 
 
@@ -85,4 +86,5 @@ kernelModules:
     linux_kernel_modules/expander/expander
     linux_kernel_modules/cypwifi/cypwifi
     linux_kernel_modules/cp2130/cp2130
+    linux_kernel_modules/spisvc/spisvc
 }
