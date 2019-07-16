@@ -86,3 +86,4 @@ kernelModules:
     linux_kernel_modules/cypwifi/cypwifi
     linux_kernel_modules/cp2130/cp2130
 }
+
