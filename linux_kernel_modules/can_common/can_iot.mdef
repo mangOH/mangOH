@@ -33,7 +33,9 @@ requires:
 #if ${MANGOH_WP_CHIPSET_9X15} = 1
         $CURDIR/../can_9x15/mcp251x
 #elif ${MANGOH_WP_CHIPSET_9X07} = 1
-        $CURDIR/../can_9x07/mcp251x
+        #if ${MANGOH_BOARD} = red
+             $CURDIR/../can_9x07/mcp251x
+        #endif
 #endif  // MANGOH_WP_CHIPSET_?
     }
 }

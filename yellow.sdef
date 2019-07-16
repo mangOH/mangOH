@@ -86,3 +86,6 @@ kernelModules:
     linux_kernel_modules/cypwifi/cypwifi
     linux_kernel_modules/cp2130/cp2130
 }
+
+// Uncomment to include support for the CAN IoT card
+// #include "sinc/can_iot_card.sinc"

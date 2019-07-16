@@ -12,7 +12,9 @@
 
 buildVars:
 {
-#if ${MANGOH_BOARD} = red
+#if ${MANGOH_BOARD} = yellow
+    MANGOH_CAN_IOT_SLOT = 0
+#elif ${MANGOH_BOARD} = red
     MANGOH_CAN_IOT_SLOT = 0
 #elif ${MANGOH_BOARD} = green
     MANGOH_CAN_IOT_SLOT = 1
@@ -23,6 +25,7 @@ buildVars:
 kernelModules:
 {
     $CURDIR/../linux_kernel_modules/can_common/can_iot
+// TODO: we need to fix what's below for WP85 yellow with meta-mangoh
 #if ${MANGOH_WP_CHIPSET_9X15} = 1
     $CURDIR/../linux_kernel_modules/can_9x15/can
     $CURDIR/../linux_kernel_modules/can_9x15/can-bcm
@@ -31,6 +34,9 @@ kernelModules:
     $CURDIR/../linux_kernel_modules/can_9x15/vcan
     $CURDIR/../linux_kernel_modules/can_9x15/mcp251x
 #elif ${MANGOH_WP_CHIPSET_9X07} = 1
-    $CURDIR/../linux_kernel_modules/can_9x07/mcp251x
+    // Its possible to fix what's below for red with meta-mangoh
+    #if ${MANGOH_BOARD} = red
+         $CURDIR/../linux_kernel_modules/can_9x07/mcp251x
+    #endif
 #endif  // MANGOH_WP_CHIPSET_?
 }

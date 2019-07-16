@@ -7,7 +7,7 @@
 # Thus, we remove the inserted chip driver and bring it back.
 
 usage () {
-    echo "\"$0 board [slot]\" where board is \"green\" or \"red\" and slot is \"0\" or \"1\""
+    echo "\"$0 board [slot]\" where board is \"green\" or \"red\" or \"yellow\" and slot is \"0\" or \"1\""
 }
 
 if [ "$#" -lt 1 ]; then
@@ -54,7 +54,7 @@ if [ "$board" = "green" ]; then
 	exit 1
     fi
 
-elif [ "$board" = "red" ]; then
+elif [ "$board" = "red" ] || [ "$board" = "yellow" ]; then
     # Enable level shifter on the CAN IoT card by driving IoT GPIO2 high
     echo 13 > /sys/class/gpio/export
     echo out > /sys/class/gpio/gpio13/direction
@@ -67,8 +67,16 @@ elif [ "$board" = "red" ]; then
 
     # Give a bit of time for the IoT card to come out of reset before loading drivers
     sleep 1
+else
+    usage()
+    exit 1
 fi
 
+
+# For Yellow we have the meta-mangoh Yocto layer including the loadable module
+if [ "$board" = "yellow" ]; then
+    modprobe mcp251x
+fi
 
 # Bring driver back & iproute2 add in CAN
 kmod load $drv
