@@ -10,6 +10,7 @@
 #include "mainMenu.h"
 #include "ledScreen.h"
 #include "buzzerScreen.h"
+#include "octaveScreen.h"
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -22,43 +23,51 @@ static void DrawMainMenu
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= MAIN MENU =\n"
-           "\n"
-           "1. LEDs\n"
-           "2. Buzzer\n"
-           );
+    printf("\n= MAIN MENU =\n");
 }
 
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Handle a character of input while in the main menu.
+ * Handle the "LEDs" menu option selection.
  */
 //--------------------------------------------------------------------------------------------------
-static void HandleMainMenuInput
+static void HandleLedsSelection
 (
-    const char* inputStr
+    void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    switch (inputStr[0])
-    {
-        case '1':
+    ledScreen_Enter();
+}
 
-            ledScreen_Enter();
-            break;
 
-        case '2':
+//--------------------------------------------------------------------------------------------------
+/**
+ * Handle the "Buzzer" menu option selection.
+ */
+//--------------------------------------------------------------------------------------------------
+static void HandleBuzzerSelection
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    buzzerScreen_Enter();
+}
 
-            buzzerScreen_Enter();
-            break;
-
-        default:
-            // Eat the invalid selection.
-            return;
-    }
-
-    cmdLine_Refresh();
+//--------------------------------------------------------------------------------------------------
+/**
+ * Handle the "Octave" menu option selection.
+ */
+//--------------------------------------------------------------------------------------------------
+static void HandleOctaveSelection
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    octaveScreen_Enter();
 }
 
 
@@ -73,6 +82,7 @@ static void Leave
 )
 //--------------------------------------------------------------------------------------------------
 {
+    // No place to go but back to the shell.
     cmdLine_Exit();
 }
 
@@ -84,9 +94,8 @@ static void Leave
 //--------------------------------------------------------------------------------------------------
 static Screen_t MainMenu =
 {
-    drawFunc: DrawMainMenu,
-    inputProcessingFunc: HandleMainMenuInput,
-    leaveFunc: Leave
+    .drawFunc = DrawMainMenu,
+    .leaveFunc = Leave
 };
 
 
@@ -117,5 +126,8 @@ void mainMenu_Enter
 //--------------------------------------------------------------------------------------------------
 {
     cmdLine_MenuMode();
+    cmdLine_AddMenuEntry("LEDs", HandleLedsSelection, NULL);
+    cmdLine_AddMenuEntry("Buzzer", HandleBuzzerSelection, NULL);
+    cmdLine_AddMenuEntry("Octave", HandleOctaveSelection, NULL);
     cmdLine_SetCurrentScreen(&MainMenu);
 }

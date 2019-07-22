@@ -3,14 +3,9 @@
  * Implementation of the command-line program "hello" for the mangOH Yellow.  This is part of the
  * initial mangOH Yellow user experience.  It provides a menu-driven interface to users, allowing
  * them to
+ * - Control sensors and actuators
+ * - View sensor readings
  * - Join/leave a WiFi network
- * - Check for software updates (when an Internet connection is available)
- *
- * In particular, joining a WiFi network and checking for updates is key because the time between
- * manufacturing and delivery to the customer will sometimes be many months, which virtually
- * guarantees that the software/firmware delivered on-board the device will be out of date and
- * likely to contain known defects that could degrade the initial user experience and/or leave the
- * device vulnerable to remote attack.
  *
  * = Design =
  *
@@ -18,16 +13,36 @@
  * is used to receive notification when input is available for processing.  Output intended for the
  * user is written to stdout.
  *
- * The main user interface construct is a screen.  The user interface is essentially a tree of
- * screens, rooted at the Main Menu screen.
+ * The main user interface construct is a screen.  The user interface appears as essentially
+ * a tree of screens, rooted at the Main Menu screen.
  *
  * Each screen has static Screen_t instance, which contains a draw function (which is expected to
- * write to stdout) and an input processing function (to which input from stdin will be passed for
- * processing).
+ * write to stdout) and a "leave" function, which is to be called when the user wants to leave
+ * the screen (e.g., when the user presses the ESC key).
  *
  * The CurrentScreenPtr variable holds a pointer to the screen object for current screen.
  *
  * Movement between screens is done by calling cmdLine_SetCurrentScreen().
+ *
+ * The UI can operate in several different modes.
+ *
+ * - In menu mode, a menu of between 1 and 9 options are presented to the user and they are asked
+ *   to choose one.  This mode is switched to when a screen calls cmdLine_MenuMode(). The screen
+ *   is expected to follow their call to cmdLine_MenuMode() with calls to cmdLine_AddMenuEntry()
+ *   to add entries to the menu.  The input processing is done by the cmdLine module, who calls
+ *   the menu entry selection call-back when an entry is selected.
+ *
+ * - In text entry mode, the input processing code will buffer and display text entered by the user,
+ *   allowing them to edit that text before hitting ENTER to submit the full string for processing
+ *   by the screen's entry processing function.  The user can also hit ESC to leave the screen.
+ *
+ * - Password entry mode (not yet implemented) would be the same as text entry mode, except that
+ *   the text entered is masked, appearing as a set of '*' characters.
+ *
+ * During all modes, an Error Message can be displayed.  cmdLine_SetErrorMsg() and
+ * cmdLine_ClearErrorMsg() are used to control this.  The error message is also cleared
+ * automatically when changing screens or when a valid menu selection is made or a text or
+ * password entry is submitted.
  *
  * Copyright (C) Sierra Wireless Inc.
  */
@@ -38,6 +53,7 @@
 #include "mainMenu.h"
 #include "ledScreen.h"
 #include "buzzerScreen.h"
+#include "octaveScreen.h"
 
 /// The character that represents end-of-file on this terminal.
 static int EndOfFileChar = 4;
@@ -47,6 +63,9 @@ static int EscapeChar = 27;
 
 /// The character that represents the backspace key on this terminal.
 static int EraseChar = 127;
+
+/// The character that is received when someone presses CTRL-R.
+static int CtrlR = 18;
 
 /// Pointer to the Screen object for the current screen.
 static const Screen_t* CurrentScreenPtr;
@@ -60,8 +79,37 @@ static enum
 }
 InputProcessingMode = INPUT_MODE_MENU;
 
-/// Pointer to the text prompt to display when in text entry mode or password entry mode.
-static const char* PromptPtr;
+/// Buffer containing the error message to be displayed on the screen.
+static char ErrorMsg[256] = "";
+
+/// Timer used to wait for further characters after an ESC character, in case it was caused by
+/// a non-ESC key press, such as the arrow keys.
+static le_timer_Ref_t EscapeTimer;
+
+/// Object in which a single menu entry is stored.
+typedef struct
+{
+    char text[80];   ///< The menu entry's text string (null-terminated).
+    cmdLine_MenuSelectionFunc selectionFunc; ///< Function to be called when entry is selected.
+    void* contextPtr;   ///< Opaque pointer value to be passed to the selectionFunc.
+}
+MenuEntry_t;
+
+/// List of Menu Entries.  Index is menu option number minus 1.
+static MenuEntry_t MenuEntryList[9];
+
+/// The number of options in the current menu when in menu mode.
+static uint NumMenuOptions = 0;
+
+/// Buffer containing the text prompt to display when in text entry mode or password entry mode.
+static char Prompt[64];
+
+/// Function to be called to process a completed text or password entry when the user hits
+/// ENTER in text entry mode or password entry mode.
+static cmdLine_TextEntryHandlerFunc_t TextEntryHandlerFunc = NULL;
+
+/// Opaque pointer to be passed to the TextEntryHandlerFunc when it is called.
+static void* TextEntryHandlerContextPtr = NULL;
 
 /// Buffer containing text entered by the user but not yet submitted.
 /// In password entry mode, this just contains '*' characters, and the password is kept in
@@ -71,9 +119,45 @@ static char TextEntryBuffer[1024];
 /// Buffer containing actual password characters entered by the user. This must never be displayed.
 // static char PasswordBuffer[128];
 
-/// Timer used to wait for further characters after an ESC character, in case it was caused by
-/// a non-ESC key press, such as the arrow keys.
-static le_timer_Ref_t EscapeTimer;
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Draw the current menu.
+ */
+//--------------------------------------------------------------------------------------------------
+static void DrawMenu
+(
+    void
+)
+//--------------------------------------------------------------------------------------------------
+{
+    printf("\n");
+
+    for (uint i = 0; i < NumMenuOptions; i++)
+    {
+        printf("%u. %s\n", i + 1, MenuEntryList[i].text);
+    }
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Draw the error message, if there is one.
+ */
+//--------------------------------------------------------------------------------------------------
+static void DrawErrorMsg
+(
+    void
+)
+//--------------------------------------------------------------------------------------------------
+{
+    if (ErrorMsg[0] != '\0')
+    {
+        printf("\n"
+               "%s\n",
+               ErrorMsg);
+    }
+}
 
 
 //--------------------------------------------------------------------------------------------------
@@ -88,6 +172,7 @@ void cmdLine_SetCurrentScreen
 //--------------------------------------------------------------------------------------------------
 {
     CurrentScreenPtr = screenPtr;
+    cmdLine_ClearErrorMsg();
     cmdLine_Refresh();
 }
 
@@ -118,11 +203,14 @@ void cmdLine_Refresh
 )
 //--------------------------------------------------------------------------------------------------
 {
-    CurrentScreenPtr->drawFunc();
+    CurrentScreenPtr->drawFunc(); // WARNING: This may change the input mode and/or menu options.
 
     switch (InputProcessingMode)
     {
         case INPUT_MODE_MENU:
+
+            DrawMenu();
+            DrawErrorMsg();
 
             printf("\n"
                    "Please make a selection,\n"
@@ -132,15 +220,17 @@ void cmdLine_Refresh
         case INPUT_MODE_TEXT_ENTRY:
         case INPUT_MODE_PASSWORD_ENTRY:
 
+            DrawErrorMsg();
+
             printf("\n"
                    "Press ENTER to submit your %s or\n"
                    "press ESC to return to the previous screen.\n"
                    "\n"
                    "%s> %s",
-                   PromptPtr,
-                   PromptPtr,
+                   Prompt,
+                   Prompt,
                    TextEntryBuffer);
-            fflush(stdout);
+            fflush(stdout); // Have to flush because there's no newline at end of what we printed.
             break;
     }
 }
@@ -166,8 +256,12 @@ void cmdLine_Exit
 /**
  * Put the input processing into menu selection mode.
  * In this mode, 'q' or 'Q' will quit, ESC will cause the screen's Leave function to be called,
- * the numbers '1' through '9' will be passed to the screen's input processing function.
- * Everything else will be ignored.
+ * the numbers '1' through '9' will be handled as menu selections, triggering a call-back to
+ * the menu selection handler function or reporting an invalid selection error, depending on the
+ * current menu configuration (see cmdLine_AddMenuEntry()).  All other keypresses will be ignored.
+ *
+ * @note After calling this function, the menu will be empty.  Call cmdLine_AddMenuEntry() to add
+ *       entries to the menu.
  */
 //--------------------------------------------------------------------------------------------------
 void cmdLine_MenuMode
@@ -177,6 +271,35 @@ void cmdLine_MenuMode
 //--------------------------------------------------------------------------------------------------
 {
     InputProcessingMode = INPUT_MODE_MENU;
+
+    // Delete all menu entries.
+    NumMenuOptions = 0;
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Add an entry to the menu.
+ */
+//--------------------------------------------------------------------------------------------------
+void cmdLine_AddMenuEntry
+(
+    const char* text, ///< Null-terminated string containing the text of the entry (will be copied).
+    cmdLine_MenuSelectionFunc selectionFunc, ///< Function to be called when entry is selected.
+    void* contextPtr  ///< Opaque pointer value to be passed to the selectionFunc.
+)
+//--------------------------------------------------------------------------------------------------
+{
+    LE_ASSERT(NumMenuOptions < 9);
+
+    MenuEntry_t* entryPtr = MenuEntryList + NumMenuOptions;
+
+    le_result_t code = le_utf8_Copy(entryPtr->text, text, sizeof(entryPtr->text), NULL);
+    LE_WARN_IF(code != LE_OK, "Failed (%s) to copy menu entry '%s'.", LE_RESULT_TXT(code), text);
+    entryPtr->selectionFunc = selectionFunc;
+    entryPtr->contextPtr = contextPtr;
+
+    NumMenuOptions++;
 }
 
 
@@ -186,33 +309,52 @@ void cmdLine_MenuMode
  * In this mode, ESC will cause the screen's Leave function to be called,
  * other keys will be applied to the TextEntryBuffer and the contents of that buffer will be
  * echoed to the screen.  When ENTER is pressed, the contents of the TextEntryBuffer will be
- * passed to the screen's input processing function.
+ * passed to the provided handler function.
  */
 //--------------------------------------------------------------------------------------------------
 void cmdLine_TextEntryMode
 (
-    const char* promptStr ///< The name of the item to be entered. E.g., "buzzer period".
+    const char* promptStr, ///< The name of the item to be entered. E.g., "buzzer period".
+    cmdLine_TextEntryHandlerFunc_t handlerFunc, ///< Function to be called when ENTER is pressed.
+    void* contextPtr ///< Opaque pointer to be passed to the handlerFunc when it is called.
 )
 //--------------------------------------------------------------------------------------------------
 {
     InputProcessingMode = INPUT_MODE_TEXT_ENTRY;
-    PromptPtr = promptStr;
+    (void)snprintf(Prompt, sizeof(Prompt), "%s", promptStr);
+    TextEntryHandlerFunc = handlerFunc;
+    TextEntryHandlerContextPtr = contextPtr;
     memset(TextEntryBuffer, 0, sizeof(TextEntryBuffer));
 }
 
 
 //--------------------------------------------------------------------------------------------------
 /**
- * @return true if the given character is the ESC key character.
+ * Set the error message (displayed at the bottom of the screen) to a specific string.
  */
 //--------------------------------------------------------------------------------------------------
-bool cmdLine_IsEscapeChar
+void cmdLine_SetErrorMsg
 (
-    char input
+    const char* msgPtr  ///< Ptr to the null-terminated message string (which will be copied).
 )
 //--------------------------------------------------------------------------------------------------
 {
-    return (input == EscapeChar);
+    (void)snprintf(ErrorMsg, sizeof(ErrorMsg), "** ERROR: %s", msgPtr);
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Clear the error message.
+ */
+//--------------------------------------------------------------------------------------------------
+void cmdLine_ClearErrorMsg
+(
+    void
+)
+//--------------------------------------------------------------------------------------------------
+{
+    ErrorMsg[0] = '\0';
 }
 
 
@@ -227,15 +369,23 @@ static void HandleMenuInput
 )
 //--------------------------------------------------------------------------------------------------
 {
+    char highestValidOption = '0' + NumMenuOptions;
+
     if ((input == 'q') || (input == 'Q'))
     {
         cmdLine_Exit();
     }
-    else if ((input >= '1') && (input <= '9'))
+    else if ((input >= '1') && (input <= highestValidOption))
     {
-        TextEntryBuffer[0] = input;
-        TextEntryBuffer[1] = '\0';
-        CurrentScreenPtr->inputProcessingFunc(TextEntryBuffer);
+        cmdLine_ClearErrorMsg();
+
+        MenuEntry_t* entryPtr = &(MenuEntryList[input - '1']);
+        entryPtr->selectionFunc(entryPtr->contextPtr);
+    }
+    else if ((input > highestValidOption) && (input <= '9'))
+    {
+        cmdLine_SetErrorMsg("Invalid selection. Please choose again.");
+        cmdLine_Refresh();
     }
 }
 
@@ -267,7 +417,9 @@ static void HandleTextInput
     // to the screen for processing.
     else if ((input == '\n') || (input == '\r'))
     {
-        CurrentScreenPtr->inputProcessingFunc(TextEntryBuffer);
+        cmdLine_ClearErrorMsg();
+
+        TextEntryHandlerFunc(TextEntryBuffer, TextEntryHandlerContextPtr);
     }
     // Ignore all non-printable characters.
     else if (isprint(input))
@@ -321,8 +473,6 @@ static void InputHandler
 
         if (bytesRead == sizeof(input))
         {
-            LE_INFO("Received char: %d", (int)input);
-
             // If the escape key timer is running, stop it.
             le_timer_Stop(EscapeTimer);
 
@@ -334,6 +484,10 @@ static void InputHandler
             {
                 // Start the ESC key timer.
                 le_timer_Start(EscapeTimer);
+            }
+            else if (input == CtrlR)
+            {
+                cmdLine_Refresh();
             }
             else
             {
@@ -434,6 +588,7 @@ COMPONENT_INIT
     mainMenu_Init();
     ledScreen_Init();
     buzzerScreen_Init();
+    octaveScreen_Init();
 
     // Print a friendly welcome message followed by the main menu.
     printf("\n"

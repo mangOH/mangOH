@@ -20,22 +20,18 @@ static double Period = 0;
 /// The buzzer's duty cycle percentage.
 static double Percent = 0;
 
-/// Pointer to an error message string to be displayed on the configuration sub-screen.
-/// NULL if no error.
-static const char* ErrorMsg = NULL;
-
 static void DrawMain(void);
 static void DrawPeriod(void);
 static void DrawPercent(void);
 
-static void HandleInputMain(const char* inputStr);
-static void HandleInputPeriod(const char* inputStr);
-static void HandleInputPercent(const char* inputStr);
+static void HandleInputPeriod(const char* inputStr, void* contextPtr);
+static void HandleInputPercent(const char* inputStr, void* contextPtr);
 
 static void LeaveMain(void);
 static void LeaveSubScreen(void);
 
-static void EnterSubScreen(const Screen_t* screenPtr);
+static void EnterSubScreen(void* contextPtr);
+
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -44,9 +40,8 @@ static void EnterSubScreen(const Screen_t* screenPtr);
 //--------------------------------------------------------------------------------------------------
 static const Screen_t MainScreen =
 {
-    drawFunc: DrawMain,
-    inputProcessingFunc: HandleInputMain,
-    leaveFunc: LeaveMain
+    .drawFunc = DrawMain,
+    .leaveFunc = LeaveMain
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -56,9 +51,8 @@ static const Screen_t MainScreen =
 //--------------------------------------------------------------------------------------------------
 static const Screen_t PeriodScreen =
 {
-    drawFunc: DrawPeriod,
-    inputProcessingFunc: HandleInputPeriod,
-    leaveFunc: LeaveSubScreen
+    .drawFunc = DrawPeriod,
+    .leaveFunc = LeaveSubScreen
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -68,10 +62,39 @@ static const Screen_t PeriodScreen =
 //--------------------------------------------------------------------------------------------------
 static const Screen_t PercentScreen =
 {
-    drawFunc: DrawPercent,
-    inputProcessingFunc: HandleInputPercent,
-    leaveFunc: LeaveSubScreen
+    .drawFunc = DrawPercent,
+    .leaveFunc = LeaveSubScreen
 };
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Activate the buzzer.
+ */
+//--------------------------------------------------------------------------------------------------
+static void ActivateBuzzer
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    dhubAdmin_PushBoolean("/app/buzzer/enable", 0, true);
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Deactivate the buzzer.
+ */
+//--------------------------------------------------------------------------------------------------
+static void DeactivateBuzzer
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    dhubAdmin_PushBoolean("/app/buzzer/enable", 0, false);
+}
 
 
 //--------------------------------------------------------------------------------------------------
@@ -89,53 +112,22 @@ static void DrawMain
            "\n"
            "Current state of the buzzer: %s\n"
            "   Period:     %.3lf seconds\n"
-           "   Duty Cycle: %lf %%\n"
-           "\n",
+           "   Duty Cycle: %lf %%\n",
            boolState_GetString(EnableState),
            Period,
            Percent);
 
-    printf("1. %s the buzzer\n"
-           "2. Set the period\n"
-           "3. Set the duty cycle percentage\n",
-           EnableState == BOOL_ON ? "DEACTIVATE" : "ACTIVATE");
-}
-
-
-//--------------------------------------------------------------------------------------------------
-/**
- * Handle a character of input while in the main buzzer screen.
- */
-//--------------------------------------------------------------------------------------------------
-static void HandleInputMain
-(
-    const char* inputStr
-)
-//--------------------------------------------------------------------------------------------------
-{
-    switch (inputStr[0])
+    cmdLine_MenuMode();
+    if (EnableState == BOOL_OFF)
     {
-        case '1':
-
-            dhubAdmin_PushBoolean("/app/buzzer/enable", 0, EnableState != BOOL_ON);
-            EnableState = ((EnableState != BOOL_ON) ? BOOL_ON : BOOL_OFF);
-            break;
-
-        case '2':
-            EnterSubScreen(&PeriodScreen);
-            break;
-
-        case '3':
-            EnterSubScreen(&PercentScreen);
-            break;
-
-        default:
-
-            // Eat the invalid selection.
-            return;
+        cmdLine_AddMenuEntry("ACTIVATE the buzzer", ActivateBuzzer, NULL);
     }
-
-    cmdLine_Refresh();
+    else
+    {
+        cmdLine_AddMenuEntry("DEACTIVATE the buzzer", DeactivateBuzzer, NULL);
+    }
+    cmdLine_AddMenuEntry("Set the period", EnterSubScreen, &PeriodScreen);
+    cmdLine_AddMenuEntry("Set the duty cycle percentage", EnterSubScreen, &PercentScreen);
 }
 
 
@@ -161,23 +153,20 @@ static void LeaveMain
 //--------------------------------------------------------------------------------------------------
 static void EnterSubScreen
 (
-    const Screen_t* screenPtr
+    void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    ErrorMsg = NULL;    // Clear any error from before.
+    const Screen_t* screenPtr = contextPtr;
 
-    const char* promptStr;
     if (screenPtr == &PeriodScreen)
     {
-        promptStr = "buzzer period";
+        cmdLine_TextEntryMode("buzzer period", HandleInputPeriod, NULL);
     }
     else if (screenPtr == &PercentScreen)
     {
-        promptStr = "buzzer duty cycle percentage";
+        cmdLine_TextEntryMode("buzzer duty cycle percentage", HandleInputPercent, NULL);
     }
-
-    cmdLine_TextEntryMode(promptStr);  // Change to text entry mode.
 
     cmdLine_SetCurrentScreen(screenPtr);
 }
@@ -194,8 +183,6 @@ static void LeaveSubScreen
 )
 //--------------------------------------------------------------------------------------------------
 {
-    cmdLine_MenuMode();  // Change back to menu mode.
-
     cmdLine_SetCurrentScreen(&MainScreen);
 }
 
@@ -215,11 +202,8 @@ static void DrawPeriod
            "\n"
            "Current buzzer cycle period: %.3lf seconds\n"
            "\n"
-           "Please enter the new buzzer duty cycle period, in seconds.\n"
-           "\n"
-           "%s\n",
-           Period,
-           ErrorMsg ? ErrorMsg : "");
+           "Please enter the new buzzer duty cycle period, in seconds.\n",
+           Period);
 }
 
 
@@ -230,7 +214,8 @@ static void DrawPeriod
 //--------------------------------------------------------------------------------------------------
 static void HandleInputPeriod
 (
-    const char* inputStr
+    const char* inputStr,
+    void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
@@ -240,18 +225,23 @@ static void HandleInputPeriod
     double period = strtod(inputStr, &endPtr);
     if (errno != 0)
     {
-        ErrorMsg = "** ERROR: Number entered is out of range (too big or too small).";
+        cmdLine_SetErrorMsg("Number entered is out of range (too big or too small).");
         cmdLine_Refresh();
     }
     else if (*endPtr != '\0')
     {
-        ErrorMsg = "** ERROR: Invalid characters in number entered.";
+        cmdLine_SetErrorMsg("Invalid characters in number entered.");
         cmdLine_Refresh();
     }
     else if (endPtr == inputStr)
     {
         // Empty string.  Just exit back to buzzer menu.
         LeaveSubScreen();
+    }
+    else if (period < 0.001)
+    {
+        cmdLine_SetErrorMsg("Period entered is less than 1 ms.");
+        cmdLine_Refresh();
     }
     else
     {
@@ -276,11 +266,8 @@ static void DrawPercent
            "\n"
            "Current duty cycle: %lf %%\n"
            "\n"
-           "Please enter the new buzzer duty cycle percentage (a number from 0 - 100).\n"
-           "\n"
-           "%s\n",
-           Percent,
-           ErrorMsg ? ErrorMsg : "");
+           "Please enter the new buzzer duty cycle percentage (a number from 0 - 100).\n",
+           Percent);
 }
 
 
@@ -291,7 +278,8 @@ static void DrawPercent
 //--------------------------------------------------------------------------------------------------
 static void HandleInputPercent
 (
-    const char* inputStr
+    const char* inputStr,
+    void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
@@ -301,18 +289,28 @@ static void HandleInputPercent
     double percent = strtod(inputStr, &endPtr);
     if (errno != 0)
     {
-        ErrorMsg = "** ERROR: Number entered is out of range (too big or too small).";
+        cmdLine_SetErrorMsg("Number entered is out of range (too big or too small).");
         cmdLine_Refresh();
     }
     else if (*endPtr != '\0')
     {
-        ErrorMsg = "** ERROR: Invalid characters in number entered.";
+        cmdLine_SetErrorMsg("Invalid characters in number entered.");
         cmdLine_Refresh();
     }
     else if (endPtr == inputStr)
     {
         // Empty string.  Just exit back to buzzer menu.
         LeaveSubScreen();
+    }
+    else if (percent > 100.0)
+    {
+        cmdLine_SetErrorMsg("Number entered is greater than 100%.");
+        cmdLine_Refresh();
+    }
+    else if (percent < 0.0)
+    {
+        cmdLine_SetErrorMsg("Number entered is less than 0%.");
+        cmdLine_Refresh();
     }
     else
     {
@@ -404,6 +402,5 @@ void buzzerScreen_Enter
 )
 //--------------------------------------------------------------------------------------------------
 {
-    cmdLine_MenuMode();
     cmdLine_SetCurrentScreen(&MainScreen);
 }

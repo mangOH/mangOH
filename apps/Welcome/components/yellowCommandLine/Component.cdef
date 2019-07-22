@@ -5,6 +5,7 @@ sources:
     mainMenu.c
     ledScreen.c
     buzzerScreen.c
+    octaveScreen.c
 }
 
 requires:
@@ -12,6 +13,9 @@ requires:
     api:
     {
         dhubAdmin = admin.api
+        le_info.api
+        le_sim.api
+        le_cfg.api
     }
 
     lib:
