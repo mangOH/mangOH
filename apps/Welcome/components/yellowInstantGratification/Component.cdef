@@ -8,5 +8,7 @@ requires:
     api:
     {
         dhubAdmin = admin.api
+        le_cfg.api
+        le_pm.api
     }
 }
