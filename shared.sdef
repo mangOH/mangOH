@@ -43,3 +43,8 @@ componentSearch:
     components
     apps/DataHub/components
 }
+
+kernelModules:
+{
+    linux_kernel_modules/spisvc/spisvc
+}
