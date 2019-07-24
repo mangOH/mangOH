@@ -55,6 +55,13 @@
 #include "buzzerScreen.h"
 #include "octaveScreen.h"
 
+/// The maximum number of menu items allowed.
+/// This is limited by the number of single digits from 1 to 9, inclusive.
+/// We don't want to add keypresses for selecting double-digit menu items.
+/// We could add 0 as an option, but it is unusual to see an item number 0
+/// in a numbered list, and 0 is on the opposite end of the keyboard from 1.
+#define MAX_MENU_OPTIONS 9
+
 /// The character that represents end-of-file on this terminal.
 static int EndOfFileChar = 4;
 
@@ -96,7 +103,7 @@ typedef struct
 MenuEntry_t;
 
 /// List of Menu Entries.  Index is menu option number minus 1.
-static MenuEntry_t MenuEntryList[9];
+static MenuEntry_t MenuEntryList[MAX_MENU_OPTIONS];
 
 /// The number of options in the current menu when in menu mode.
 static uint NumMenuOptions = 0;
@@ -290,7 +297,7 @@ void cmdLine_AddMenuEntry
 )
 //--------------------------------------------------------------------------------------------------
 {
-    LE_ASSERT(NumMenuOptions < 9);
+    LE_ASSERT(NumMenuOptions < MAX_MENU_OPTIONS);
 
     MenuEntry_t* entryPtr = MenuEntryList + NumMenuOptions;
 
