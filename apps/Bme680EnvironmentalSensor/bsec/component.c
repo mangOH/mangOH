@@ -29,9 +29,9 @@
 
 /// Sample JSON value to report to the Data Hub for auto-discovery by administrative tools.
 #define VALUE_EXAMPLE "{\"timestamp\":87455639412210,\"iaqValue\":25.0,\"iaqAccuracy\":0," \
-                      "\"co2EquivalentValue\":500.0,\"co2EquivalentAccuracy\":0,\"breathVocValue\""\
-                      ":0.49999994039535522,\"breathVocAccuracy\":0,\"pressure\":101621.0," \
-                      "\"temperature\":21.949438095092773,\"humidity\":50.673931121826172}"
+                      "\"co2EquivalentValue\":500.000000,\"co2EquivalentAccuracy\":0," \
+                      "\"breathVocValue\":0.499999,\"breathVocAccuracy\":0," \
+                      "\"pressure\":101621,\"temperature\":21.949438,\"humidity\":50.673931}"
 
 /// true if at least one ambient temperature sample has been received.
 static bool AmbientTempReceived = false;
@@ -117,7 +117,7 @@ static void SensorReadingHandler
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"pressure\":%lf",
+                        ",\"pressure\":%.0lf",
                         reading->pressure.value);
     }
 
