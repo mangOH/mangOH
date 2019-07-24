@@ -28,7 +28,7 @@
 #define RES_PATH_CONFIG       "config"
 
 /// Sample JSON value to report to the Data Hub for auto-discovery by administrative tools.
-#define VALUE_EXAMPLE "{\"timestamp\":87455639412210,\"iaqValue\":25.0,\"iaqAccuracy\":0," \
+#define VALUE_EXAMPLE "{\"iaqValue\":25.0,\"iaqAccuracy\":0," \
                       "\"co2EquivalentValue\":500.000000,\"co2EquivalentAccuracy\":0," \
                       "\"breathVocValue\":0.499999,\"breathVocAccuracy\":0," \
                       "\"pressure\":101621,\"temperature\":21.949438,\"humidity\":50.673931}"
@@ -83,63 +83,81 @@ static void SensorReadingHandler
 )
 {
     char value[512];
-
-    size_t len = snprintf(value, sizeof(value), "{\"timestamp\":%lld", reading->timestamp);
+    size_t len = 0;
+    char prefixChar = '{';
 
     if ((reading->iaq.valid) && (len < sizeof(value)))
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"iaqValue\":%lf,\"iaqAccuracy\":%d",
+                        "%c\"iaqValue\":%lf,\"iaqAccuracy\":%d",
+                        prefixChar,
                         reading->iaq.value,
                         reading->iaq.accuracy);
+        prefixChar = ',';
     }
 
     if ((reading->co2Equivalent.valid) && (len < sizeof(value)))
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"co2EquivalentValue\":%lf,\"co2EquivalentAccuracy\":%d",
+                        "%c\"co2EquivalentValue\":%lf,\"co2EquivalentAccuracy\":%d",
+                        prefixChar,
                         reading->co2Equivalent.value,
                         reading->co2Equivalent.accuracy);
+        prefixChar = ',';
     }
 
     if ((reading->breathVoc.valid) && (len < sizeof(value)))
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"breathVocValue\":%lf,\"breathVocAccuracy\":%d",
+                        "%c\"breathVocValue\":%lf,\"breathVocAccuracy\":%d",
+                        prefixChar,
                         reading->breathVoc.value,
                         reading->breathVoc.accuracy);
+        prefixChar = ',';
     }
 
     if ((reading->pressure.valid) && (len < sizeof(value)))
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"pressure\":%.0lf",
+                        "%c\"pressure\":%.0lf",
+                        prefixChar,
                         reading->pressure.value);
+        prefixChar = ',';
     }
 
     if ((reading->temperature.valid) && (len < sizeof(value)))
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"temperature\":%lf",
+                        "%c\"temperature\":%lf",
+                        prefixChar,
                         reading->temperature.value);
+        prefixChar = ',';
     }
 
     if ((reading->humidity.valid) && (len < sizeof(value)))
     {
         len += snprintf(value + len,
                         sizeof(value) - len,
-                        ",\"humidity\":%lf",
+                        "%c\"humidity\":%lf",
+                        prefixChar,
                         reading->humidity.value);
     }
 
     if (len < sizeof(value))
     {
-        len += snprintf(value + len, sizeof(value) - len, "}");
+        if (len == 0)
+        {
+            len = snprintf(value, sizeof(value), "{}");
+        }
+        else
+        {
+            len += snprintf(value + len, sizeof(value) - len, "}");
+        }
     }
 
     LE_ASSERT(len < sizeof(value));
