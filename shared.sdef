@@ -19,7 +19,7 @@ buildVars:
 
 apps:
 {
-    apps/DataHub/dataHub
+    $CURDIR/apps/DataHub/dataHub
     {
         maxFileBytes: 4000K
     }
@@ -32,19 +32,19 @@ commands:
 
 interfaceSearch:
 {
-    interfaces
-    apps/LedService
-    apps/DataHub
-    apps/DataHub/components/periodicSensor
+    $CURDIR/interfaces
+    $CURDIR/apps/LedService
+    $CURDIR/apps/DataHub
+    $CURDIR/apps/DataHub/components/periodicSensor
 }
 
 componentSearch:
 {
-    components
-    apps/DataHub/components
+    $CURDIR/components
+    $CURDIR/apps/DataHub/components
 }
 
 kernelModules:
 {
-    linux_kernel_modules/spisvc/spisvc
+    $CURDIR/linux_kernel_modules/spisvc/spisvc
 }

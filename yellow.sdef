@@ -23,16 +23,16 @@ buildVars:
 
 apps:
 {
-    apps/YellowSensorToCloud/imu
-    apps/YellowSensorToCloud/light
-    apps/YellowSensorToCloud/button
-    apps/Bme680EnvironmentalSensor/environment
-    apps/DataHub-Buzzer/buzzer
-    apps/YellowOnBoardActuators/leds
-    apps/BatteryService/battery
-    apps/VegasMode/vegasMode
+    $CURDIR/apps/YellowSensorToCloud/imu
+    $CURDIR/apps/YellowSensorToCloud/light
+    $CURDIR/apps/YellowSensorToCloud/button
+    $CURDIR/apps/Bme680EnvironmentalSensor/environment
+    $CURDIR/apps/DataHub-Buzzer/buzzer
+    $CURDIR/apps/YellowOnBoardActuators/leds
+    $CURDIR/apps/BatteryService/battery
+    $CURDIR/apps/VegasMode/vegasMode
 
-    apps/Welcome/helloYellow
+    $CURDIR/apps/Welcome/helloYellow
 
     $LEGATO_ROOT/apps/tools/devMode
 }
@@ -57,33 +57,33 @@ commands:
 
 interfaceSearch:
 {
-    apps/BatteryService
-    apps/Bme680EnvironmentalSensor
-    apps/YellowSensorToCloud/interfaces
+    $CURDIR/apps/BatteryService
+    $CURDIR/apps/Bme680EnvironmentalSensor
+    $CURDIR/apps/YellowSensorToCloud/interfaces
     $LEGATO_ROOT/interfaces/wifi
 }
 
 
 componentSearch:
 {
-    apps/BatteryService
-    apps/YellowSensorToCloud/components
+    $CURDIR/apps/BatteryService
+    $CURDIR/apps/YellowSensorToCloud/components
 }
 
 
 kernelModules:
 {
-    linux_kernel_modules/mangoh/mangoh_yellow_dev
-    linux_kernel_modules/bmi160/bmi160-i2c
-    linux_kernel_modules/bmi160/bmi160
-    linux_kernel_modules/bmm150/bmc150_magn_i2c
-    linux_kernel_modules/bmm150/bmc150_magn
-    linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
-    linux_kernel_modules/rtc_sync/rtc_sync
-    linux_kernel_modules/bq25601/bq25601
-    linux_kernel_modules/bq27xxx/bq27xxx_battery
-    linux_kernel_modules/opt300x/opt300x
-    linux_kernel_modules/expander/expander
-    linux_kernel_modules/cypwifi/cypwifi
-    linux_kernel_modules/cp2130/cp2130
+    $CURDIR/linux_kernel_modules/mangoh/mangoh_yellow_dev
+    $CURDIR/linux_kernel_modules/bmi160/bmi160-i2c
+    $CURDIR/linux_kernel_modules/bmi160/bmi160
+    $CURDIR/linux_kernel_modules/bmm150/bmc150_magn_i2c
+    $CURDIR/linux_kernel_modules/bmm150/bmc150_magn
+    $CURDIR/linux_kernel_modules/rtc-pcf85063/rtc-pcf85063
+    $CURDIR/linux_kernel_modules/rtc_sync/rtc_sync
+    $CURDIR/linux_kernel_modules/bq25601/bq25601
+    $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
+    $CURDIR/linux_kernel_modules/opt300x/opt300x
+    $CURDIR/linux_kernel_modules/expander/expander
+    $CURDIR/linux_kernel_modules/cypwifi/cypwifi
+    $CURDIR/linux_kernel_modules/cp2130/cp2130
 }

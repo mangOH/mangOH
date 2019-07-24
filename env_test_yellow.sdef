@@ -1,7 +1,17 @@
+#---------------------------------------------------------------------------------------------------
+# System definition for use with mangOH Yellow when running it in the environmental test chamber.
+# This just logs a bunch of the sensor readings to flash.
+#
+# In addition, it is recommended that /etc/syslog-startup.conf be configured to log syslog
+# to flash (/home/root/syslog) instead of to circular RAM buffer, to allow post-mortem
+# troubleshooting in case something goes wrong.
+#
+# Copyright (C) Sierra Wireless Inc.
+#---------------------------------------------------------------------------------------------------
 
 #include "yellow.sdef"
 
 apps:
 {
-    apps/test/YellowEnvironment/dataLogger
+    $CURDIR/apps/test/YellowEnvironment/dataLogger
 }
