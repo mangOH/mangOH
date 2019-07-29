@@ -1,11 +1,31 @@
 sources:
 {
     cmdLine.c
+    boolState.c
+    mainMenu.c
+    ledScreen.c
+    buzzerScreen.c
+    octaveScreen.c
 }
 
 requires:
 {
     api:
     {
+        dhubAdmin = admin.api
+        le_info.api
+        le_sim.api
+        le_cfg.api
+    }
+
+    lib:
+    {
+        ncurses
+    }
+
+    file:
+    {
+        /lib/libncurses.so.5 /lib/
+        /lib/libtinfo.so.5 /lib/
     }
 }

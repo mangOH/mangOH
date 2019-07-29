@@ -24,5 +24,17 @@ processes:
 bindings:
 {
     instaGrat.yellowInstantGratification.dhubAdmin -> dataHub.admin
-//    hello.yellowCommandLine.dhubAdmin -> dataHub.admin
+    instaGrat.yellowInstantGratification.le_pm -> powerMgr.le_pm
+    hello.yellowCommandLine.dhubAdmin -> dataHub.admin
+    hello.yellowCommandLine.le_info -> modemService.le_info
+    hello.yellowCommandLine.le_sim -> modemService.le_sim
+
+}
+
+requires:
+{
+    configTree:
+    {
+        [w] .
+    }
 }
