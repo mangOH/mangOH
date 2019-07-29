@@ -6,9 +6,7 @@
 #include <linux/spi/spi.h>
 #include <linux/gpio/driver.h>
 
-#if defined(CONFIG_ARCH_MSM9615) /* For WPX5XX */
-#include <../arch/arm/mach-msm/board-9615.h>
-#elif defined(CONFIG_ARCH_MDM9607) /* For WP76XX */
+#if defined(CONFIG_ARCH_MDM9607) /* For WP76XX, WP77XX */
 #include <../arch/arm/mach-msm/include/mach/swimcu.h>
 #endif
 
@@ -26,13 +24,8 @@ const char eink_device_name[] = "waveshare_213";
 static struct spi_device *eink_device;
 
 /* On the Yellow the busy gpio is off the IO expander unlike the Red */
-/* WP85 will not be supported on Yellow for now. */
-#if defined(CONFIG_ARCH_MSM9615)
-#define CF3_GPIO35	SWIMCU_GPIO_TO_SYS(1)
-#define CF3_GPIO40	SWIMCU_GPIO_TO_SYS(6)
-#define GPIO_OFFSET	1
-#elif defined(CONFIG_ARCH_MDM9607)
-#define CF3_GPIO35	 (37)
+#if defined(CONFIG_ARCH_MDM9607)
+#define CF3_GPIO35	(37)
 #define CF3_GPIO40	SWIMCU_GPIO_TO_SYS(3)
 #define GPIO_OFFSET	1
 #endif
@@ -45,9 +38,9 @@ static struct waveshare_eink_platform_data ws213_pdata = {
 
 static int gpiochip_match_name(struct gpio_chip *chip, void *data)
 {
-        const char *name = data;
+	const char *name = data;
 
-        return !strcmp(chip->label, name);
+	return !strcmp(chip->label, name);
 }
 
 static int __init add_ws213fb_device_to_bus(void)
@@ -77,15 +70,14 @@ static int __init add_ws213fb_device_to_bus(void)
 	eink_device->bits_per_word = 8;
 	eink_device->irq = -1;
 
-        /* If we find the expander for the busy GPIO we are ok */
-        expander_gpiop = gpiochip_find((void *) "sx1509q", gpiochip_match_name);
-        if (expander_gpiop == NULL) {
+	/* If we find the expander for the busy GPIO we are ok */
+	expander_gpiop = gpiochip_find((void *) "sx1509q", gpiochip_match_name);
+	if (expander_gpiop == NULL) {
 		printk(KERN_ALERT "Finding our gpiochip for the busy gpio failed\n");
 		status = -1;
 		goto put_master;
-        }
-        else
-                ws213_pdata.busy_gpio = expander_gpiop->base + GPIO_OFFSET;
+	}
+	ws213_pdata.busy_gpio = expander_gpiop->base + GPIO_OFFSET;
 
 	eink_device->dev.platform_data = &ws213_pdata;
 	eink_device->controller_state = NULL;
