@@ -216,6 +216,8 @@ void cmdLine_Refresh
 )
 //--------------------------------------------------------------------------------------------------
 {
+    printf("\n\n\n==== %s ====\n\n", CurrentScreenPtr->title);
+
     CurrentScreenPtr->drawFunc(); // WARNING: This may change the input mode and/or menu options.
 
     switch (InputProcessingMode)
@@ -600,8 +602,6 @@ COMPONENT_INIT
     buzzerScreen_Init();
     octaveScreen_Init();
 
-    // Print a friendly welcome message followed by the main menu.
-    printf("\n"
-           "Welcome to mangOH Yellow!\n");
+    // Display the main menu.
     mainMenu_Enter();
 }

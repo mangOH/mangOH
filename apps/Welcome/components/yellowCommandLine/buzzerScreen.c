@@ -41,7 +41,8 @@ static void EnterSubScreen(void* contextPtr);
 static const Screen_t MainScreen =
 {
     .drawFunc = DrawMain,
-    .leaveFunc = LeaveMain
+    .leaveFunc = LeaveMain,
+    .title = "Buzzer Control"
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -52,7 +53,8 @@ static const Screen_t MainScreen =
 static const Screen_t PeriodScreen =
 {
     .drawFunc = DrawPeriod,
-    .leaveFunc = LeaveSubScreen
+    .leaveFunc = LeaveSubScreen,
+    .title = "Buzzer Period Configuration"
 };
 
 //--------------------------------------------------------------------------------------------------
@@ -63,7 +65,8 @@ static const Screen_t PeriodScreen =
 static const Screen_t PercentScreen =
 {
     .drawFunc = DrawPercent,
-    .leaveFunc = LeaveSubScreen
+    .leaveFunc = LeaveSubScreen,
+    .title = "Buzzer Duty Cycle Percentage Configuration"
 };
 
 
@@ -108,9 +111,8 @@ static void DrawMain
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= Buzzer Control =\n"
+    printf("Current state of the buzzer: %s\n"
            "\n"
-           "Current state of the buzzer: %s\n"
            "   Period:     %.3lf seconds\n"
            "   Duty Cycle: %lf %%\n",
            boolState_GetString(EnableState),
@@ -198,9 +200,7 @@ static void DrawPeriod
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= Buzzer Period Configuration =\n"
-           "\n"
-           "Current buzzer cycle period: %.3lf seconds\n"
+    printf("Current buzzer cycle period: %.3lf seconds\n"
            "\n"
            "Please enter the new buzzer duty cycle period, in seconds.\n",
            Period);
@@ -262,9 +262,7 @@ static void DrawPercent
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= Buzzer Duty Cycle Percentage Configuration =\n"
-           "\n"
-           "Current duty cycle: %lf %%\n"
+    printf("Current duty cycle: %lf %%\n"
            "\n"
            "Please enter the new buzzer duty cycle percentage (a number from 0 - 100).\n",
            Percent);

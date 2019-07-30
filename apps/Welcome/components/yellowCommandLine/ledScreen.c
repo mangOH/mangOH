@@ -137,9 +137,7 @@ static void Draw
             break;
     }
 
-    printf("\n==== LED Control ====\n"
-           "\n"
-           "Continuous Vegas Mode is %s\n",
+    printf("Continuous Vegas Mode is %s\n",
            vegasEnableString);
 
     cmdLine_MenuMode();
@@ -202,7 +200,8 @@ static void Leave
 static const Screen_t Screen =
 {
     .drawFunc = Draw,
-    .leaveFunc = Leave
+    .leaveFunc = Leave,
+    .title = "LED Control"
 };
 
 

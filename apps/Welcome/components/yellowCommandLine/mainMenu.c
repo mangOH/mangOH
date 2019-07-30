@@ -23,7 +23,7 @@ static void DrawMainMenu
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= MAIN MENU =\n");
+    printf("Welcome to mangOH Yellow!\n");
 }
 
 
@@ -95,7 +95,8 @@ static void Leave
 static Screen_t MainMenu =
 {
     .drawFunc = DrawMainMenu,
-    .leaveFunc = Leave
+    .leaveFunc = Leave,
+    .title = "MAIN MENU"
 };
 
 

@@ -122,11 +122,10 @@ static void Draw
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= Octave(tm) =\n"
-           "\n"
-           "You may need the following information to register\n"
+    printf("You may need the following information to register\n"
            "your device with the Sierra Wireless Octave IoT data\n"
            "orchestration service:\n"
+           "\n"
            "   IMEI:  %s\n"
            "   ICCID: %s\n"
            "\n",
@@ -177,7 +176,8 @@ static void Leave
 static const Screen_t Screen =
 {
     .drawFunc = Draw,
-    .leaveFunc = Leave
+    .leaveFunc = Leave,
+    .title = "Octave(tm)"
 };
 
 
