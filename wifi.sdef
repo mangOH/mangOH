@@ -18,9 +18,9 @@ apps:
 {
     // WiFi services
     $LEGATO_WIFI_ROOT/service/wifiService.adef
-    $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
-    $LEGATO_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
-    $LEGATO_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
+//    $LEGATO_WIFI_ROOT/apps/sample/wifiClientTest/wifiClientTest.adef
+//    $LEGATO_WIFI_ROOT/apps/sample/wifiApTest/wifiApTest.adef
+//    $LEGATO_WIFI_ROOT/apps/sample/wifiWebAp/wifiWebAp.adef
     $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi.adef
 }
 
