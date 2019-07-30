@@ -138,12 +138,18 @@ static void DrawMenu
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n");
+    printf("\n"
+           "Please make a selection from the following:\n"
+           "\n");
 
     for (uint i = 0; i < NumMenuOptions; i++)
     {
-        printf("%u. %s\n", i + 1, MenuEntryList[i].text);
+        printf("  %u. %s\n", i + 1, MenuEntryList[i].text);
     }
+
+    printf("\n"
+           "or press ESC to leave the screen or Q to quit.\n");
+
 }
 
 
@@ -216,12 +222,9 @@ void cmdLine_Refresh
     {
         case INPUT_MODE_MENU:
 
-            DrawMenu();
             DrawErrorMsg();
+            DrawMenu();
 
-            printf("\n"
-                   "Please make a selection,\n"
-                   "or press ESC to leave the screen or Q to quit.\n");
             break;
 
         case INPUT_MODE_TEXT_ENTRY:
