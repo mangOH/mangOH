@@ -11,21 +11,7 @@
 #include "ledScreen.h"
 #include "buzzerScreen.h"
 #include "octaveScreen.h"
-
-//--------------------------------------------------------------------------------------------------
-/**
- * Draw the main menu.
- */
-//--------------------------------------------------------------------------------------------------
-static void DrawMainMenu
-(
-    void
-)
-//--------------------------------------------------------------------------------------------------
-{
-    printf("Welcome to mangOH Yellow!\n");
-}
-
+#include "instantGratification.h"
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -68,6 +54,68 @@ static void HandleOctaveSelection
 //--------------------------------------------------------------------------------------------------
 {
     octaveScreen_Enter();
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Handle selection of "Enable out-of-box experience".
+ */
+//--------------------------------------------------------------------------------------------------
+static void EnableOutOfBoxExperience
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    instantGratification_Enable();
+    cmdLine_Refresh();
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Handle selection of "Disable out-of-box experience".
+ */
+//--------------------------------------------------------------------------------------------------
+static void DisableOutOfBoxExperience
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    instantGratification_Disable();
+    cmdLine_Refresh();
+}
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Draw the main menu.
+ */
+//--------------------------------------------------------------------------------------------------
+static void DrawMainMenu
+(
+    void
+)
+//--------------------------------------------------------------------------------------------------
+{
+    printf("Welcome to mangOH Yellow!\n");
+
+    cmdLine_MenuMode();
+
+    if (instantGratification_IsEnabled())
+    {
+        cmdLine_AddMenuEntry("DISABLE out-of-box experience", DisableOutOfBoxExperience, NULL);
+    }
+    else
+    {
+        cmdLine_AddMenuEntry("ENABLE out-of-box experience", EnableOutOfBoxExperience, NULL);
+    }
+
+    cmdLine_AddMenuEntry("LEDs", HandleLedsSelection, NULL);
+    cmdLine_AddMenuEntry("Buzzer", HandleBuzzerSelection, NULL);
+    cmdLine_AddMenuEntry("Octave", HandleOctaveSelection, NULL);
 }
 
 
@@ -126,9 +174,5 @@ void mainMenu_Enter
 )
 //--------------------------------------------------------------------------------------------------
 {
-    cmdLine_MenuMode();
-    cmdLine_AddMenuEntry("LEDs", HandleLedsSelection, NULL);
-    cmdLine_AddMenuEntry("Buzzer", HandleBuzzerSelection, NULL);
-    cmdLine_AddMenuEntry("Octave", HandleOctaveSelection, NULL);
     cmdLine_SetCurrentScreen(&MainMenu);
 }

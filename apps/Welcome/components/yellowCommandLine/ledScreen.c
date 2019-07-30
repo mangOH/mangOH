@@ -10,6 +10,7 @@
 #include "ledScreen.h"
 #include "mainMenu.h"
 #include "boolState.h"
+#include "instantGratification.h"
 
 static boolState_t VegasModeEnableState = BOOL_UNKNOWN;
 static boolState_t GenericLedState = BOOL_UNKNOWN;
@@ -110,6 +111,21 @@ static void ToggleBlue
     dhubAdmin_PushBoolean("/app/leds/tri/blue/enable", 0, newState);
 }
 
+//--------------------------------------------------------------------------------------------------
+/**
+ * Enable instant gratification interaction features.
+ */
+//--------------------------------------------------------------------------------------------------
+static void EnableInstantGratification
+(
+    void* contextPtr
+)
+//--------------------------------------------------------------------------------------------------
+{
+    instantGratification_Enable();
+    cmdLine_Refresh();
+}
+
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -122,46 +138,59 @@ static void Draw
 )
 //--------------------------------------------------------------------------------------------------
 {
-    const char* vegasEnableString = NULL;
-
-    switch (VegasModeEnableState)
-    {
-        case BOOL_OFF:
-            vegasEnableString = "DISABLED";
-            break;
-        case BOOL_ON:
-            vegasEnableString = "ENABLED";
-            break;
-        case BOOL_UNKNOWN:
-            vegasEnableString = "in an unknown state";
-            break;
-    }
-
-    printf("Continuous Vegas Mode is %s\n",
-           vegasEnableString);
-
     cmdLine_MenuMode();
     cmdLine_AddMenuEntry("Toggle Generic LED", ToggleGenericLed, NULL);
     cmdLine_AddMenuEntry("Toggle Tri-color LED's Red", ToggleRed, NULL);
     cmdLine_AddMenuEntry("Toggle Tri-color LED's Green", ToggleGreen, NULL);
     cmdLine_AddMenuEntry("Toggle Tri-color LED's Blue", ToggleBlue, NULL);
 
-    if (VegasModeEnableState != BOOL_ON)
-    {
-        printf("\n"
-               "The LEDs are now under manual control.\n");
+    const char* vegasEnableString = NULL;
 
-        cmdLine_AddMenuEntry("ENABLE Continuous Vegas Mode", EnableVegasMode, NULL);
+    if (instantGratification_IsEnabled())
+    {
+        switch (VegasModeEnableState)
+        {
+            case BOOL_OFF:
+                vegasEnableString = "DISABLED";
+                break;
+            case BOOL_ON:
+                vegasEnableString = "ENABLED";
+                break;
+            case BOOL_UNKNOWN:
+                vegasEnableString = "in an unknown state";
+                break;
+        }
+
+        printf("Continuous Vegas Mode is %s\n",
+               vegasEnableString);
+
+        if (VegasModeEnableState != BOOL_ON)
+        {
+            printf("\n"
+                   "The LEDs are now under manual control.\n");
+
+            cmdLine_AddMenuEntry("ENABLE Continuous Vegas Mode", EnableVegasMode, NULL);
+        }
+        else if (VegasModeEnableState == BOOL_ON)
+        {
+            printf("\n"
+                   "The LEDs are being automatically controlled by\n"
+                   "Continuous Vegas Mode.  Manual control of the LEDs\n"
+                   "using the menu below will disable Continuous Vegas\n"
+                   "Mode.\n");
+
+            cmdLine_AddMenuEntry("DISABLE Continuous Vegas Mode", DisableVegasMode, NULL);
+        }
     }
-    else if (VegasModeEnableState == BOOL_ON)
+    else
     {
-        printf("\n"
-               "The LEDs are being automatically controlled by\n"
-               "Continuous Vegas Mode.  Manual control of the LEDs\n"
-               "using the menu below will disable Continuous Vegas\n"
-               "Mode.\n");
+        printf("NOTE: Interactive out-of-box experience features are DISABLED.\n"
+               "      Vegas mode will not work until these features are re-enabled.\n"
+               "      Manual control is still available, however.\n");
 
-        cmdLine_AddMenuEntry("DISABLE Continuous Vegas Mode", DisableVegasMode, NULL);
+        cmdLine_AddMenuEntry("ENABLE interactive out-of-box experience features",
+                             EnableInstantGratification,
+                             NULL);
     }
 
     printf("\n"

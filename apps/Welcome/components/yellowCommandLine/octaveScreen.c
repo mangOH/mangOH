@@ -9,10 +9,7 @@
 #include "cmdLine.h"
 #include "octaveScreen.h"
 #include "mainMenu.h"
-
-
-/// Instant gratification enable/disable configuration path within the Config Tree.
-static const char ConfigPath[] = "enableInstantGrat";
+#include "instantGratification.h"
 
 
 //--------------------------------------------------------------------------------------------------
@@ -51,14 +48,23 @@ static const char* GetIccid
 )
 //--------------------------------------------------------------------------------------------------
 {
+    le_sim_Id_t simId = le_sim_GetSelectedCard();
+
     // Buffer to hold the ICCID (which is normally up to 20 characters long).
     static char Iccid[32] = "unknown";
 
-    le_result_t result = le_sim_GetICCID(le_sim_GetSelectedCard(), Iccid, sizeof(Iccid));
-
-    if (result != LE_OK)
+    if (!le_sim_IsPresent(simId))
     {
-        (void)snprintf(Iccid, sizeof(Iccid), "ERROR (%s)", LE_RESULT_TXT(result));
+        (void)snprintf(Iccid, sizeof(Iccid), "ERROR: SIM card not detected");
+    }
+    else
+    {
+        le_result_t result = le_sim_GetICCID(simId, Iccid, sizeof(Iccid));
+
+        if (result != LE_OK)
+        {
+            (void)snprintf(Iccid, sizeof(Iccid), "ERROR (%s)", LE_RESULT_TXT(result));
+        }
     }
 
     return Iccid;
@@ -76,7 +82,7 @@ static void EnableInstantGratification
 )
 //--------------------------------------------------------------------------------------------------
 {
-    le_cfg_QuickSetBool(ConfigPath, true);
+    instantGratification_Enable();
     cmdLine_Refresh();
 }
 
@@ -91,23 +97,8 @@ static void DisableInstantGratification
 )
 //--------------------------------------------------------------------------------------------------
 {
-    le_cfg_QuickSetBool(ConfigPath, false);
+    instantGratification_Disable();
     cmdLine_Refresh();
-}
-
-
-//--------------------------------------------------------------------------------------------------
-/**
- * @return true if the instant gratification interaction features are enabled.
- */
-//--------------------------------------------------------------------------------------------------
-static bool IsInstantGratificationEnabled
-(
-    void
-)
-//--------------------------------------------------------------------------------------------------
-{
-    return le_cfg_QuickGetBool(ConfigPath, true);
 }
 
 
@@ -132,20 +123,24 @@ static void Draw
            GetImei(),
            GetIccid());
 
-    if (IsInstantGratificationEnabled())
+    if (instantGratification_IsEnabled())
     {
-        printf("To improve your experience with Octave, you may wish to\n"
+        printf("Interactive out-of-box experience is ENABLED.\n"
+               "\n"
+               "To improve your experience with Octave, you may wish to\n"
                "disable the interactive mangOH Yellow out-of-box\n"
-               "experience features (blinking lights and button control):\n");
+               "experience features (blinking lights and button control).\n");
 
         cmdLine_MenuMode();
         cmdLine_AddMenuEntry("DISABLE out-of-box experience", DisableInstantGratification, NULL);
     }
     else
     {
-        printf("The interactive mangOH Yellow out-of-box experience\n"
+        printf("Interactive out-of-box experience is DISABLED.\n"
+               "\n"
+               "The interactive mangOH Yellow out-of-box experience\n"
                "features (blinking lights and button control) are\n"
-               "currently disabled.\n");
+               "currently disabled. Press 1 to re-enable these features.\n");
 
         cmdLine_MenuMode();
         cmdLine_AddMenuEntry("ENABLE out-of-box experience", EnableInstantGratification, NULL);
