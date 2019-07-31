@@ -245,7 +245,7 @@ static void HandleInputPeriod
     }
     else
     {
-        dhubAdmin_SetNumericOverride("/app/buzzer/period", period);
+        dhubAdmin_PushNumeric("/app/buzzer/period", 0, period);
         LeaveSubScreen();
     }
 }
@@ -312,7 +312,7 @@ static void HandleInputPercent
     }
     else
     {
-        dhubAdmin_SetNumericOverride("/app/buzzer/percent", percent);
+        dhubAdmin_PushNumeric("/app/buzzer/percent", 0, percent);
         LeaveSubScreen();
     }
 }
