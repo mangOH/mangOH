@@ -10,6 +10,7 @@
 #include "ledScreen.h"
 #include "mainMenu.h"
 #include "boolState.h"
+#include "instantGratification.h"
 
 static boolState_t VegasModeEnableState = BOOL_UNKNOWN;
 static boolState_t GenericLedState = BOOL_UNKNOWN;
@@ -20,7 +21,7 @@ static boolState_t TriColourBlueState = BOOL_UNKNOWN;
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Enable continuous Vegas Mode.
+ * Enable continuous Vegas Mode.  This is a menu selection call-back.
  */
 //--------------------------------------------------------------------------------------------------
 static void EnableVegasMode
@@ -34,7 +35,7 @@ static void EnableVegasMode
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Disable continuous Vegas Mode.
+ * Disable continuous Vegas Mode.  This is a menu selection call-back.
  */
 //--------------------------------------------------------------------------------------------------
 static void DisableVegasMode
@@ -48,115 +49,83 @@ static void DisableVegasMode
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Turn on the generic LED.
+ * Toggle the generic LED.
  */
 //--------------------------------------------------------------------------------------------------
-static void TurnGenericLedOn
+static void ToggleGenericLed
 (
     void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    dhubAdmin_PushBoolean("/app/leds/mono/enable", 0, true);
+    DisableVegasMode(NULL);
+    bool newState = GenericLedState != BOOL_ON ? true : false;
+    dhubAdmin_PushBoolean("/app/leds/mono/enable", 0, newState);
 }
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Turn off the generic LED.
+ * Toggle the red in the tri-colour LED.
  */
 //--------------------------------------------------------------------------------------------------
-static void TurnGenericLedOff
+static void ToggleRed
 (
     void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    dhubAdmin_PushBoolean("/app/leds/mono/enable", 0, false);
+    DisableVegasMode(NULL);
+    bool newState = TriColourRedState != BOOL_ON ? true : false;
+    dhubAdmin_PushBoolean("/app/leds/tri/red/enable", 0, newState);
 }
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Turn on the red in the tri-colour LED.
+ * Toggle the green in the tri-colour LED.
  */
 //--------------------------------------------------------------------------------------------------
-static void TurnRedOn
+static void ToggleGreen
 (
     void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    dhubAdmin_PushBoolean("/app/leds/tri/red/enable", 0, true);
+    DisableVegasMode(NULL);
+    bool newState = TriColourGreenState != BOOL_ON ? true : false;
+    dhubAdmin_PushBoolean("/app/leds/tri/green/enable", 0, newState);
 }
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Turn off the red in the tri-colour LED.
+ * Toggle the blue in the tri-colour LED.
  */
 //--------------------------------------------------------------------------------------------------
-static void TurnRedOff
+static void ToggleBlue
 (
     void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    dhubAdmin_PushBoolean("/app/leds/tri/red/enable", 0, false);
+    DisableVegasMode(NULL);
+    bool newState = TriColourBlueState != BOOL_ON ? true : false;
+    dhubAdmin_PushBoolean("/app/leds/tri/blue/enable", 0, newState);
 }
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Turn on the green in the tri-colour LED.
+ * Enable instant gratification interaction features.
  */
 //--------------------------------------------------------------------------------------------------
-static void TurnGreenOn
+static void EnableInstantGratification
 (
     void* contextPtr
 )
 //--------------------------------------------------------------------------------------------------
 {
-    dhubAdmin_PushBoolean("/app/leds/tri/green/enable", 0, true);
+    instantGratification_Enable();
+    cmdLine_Refresh();
 }
 
-//--------------------------------------------------------------------------------------------------
-/**
- * Turn off the green in the tri-colour LED.
- */
-//--------------------------------------------------------------------------------------------------
-static void TurnGreenOff
-(
-    void* contextPtr
-)
-//--------------------------------------------------------------------------------------------------
-{
-    dhubAdmin_PushBoolean("/app/leds/tri/green/enable", 0, false);
-}
-
-//--------------------------------------------------------------------------------------------------
-/**
- * Turn on the blue in the tri-colour LED.
- */
-//--------------------------------------------------------------------------------------------------
-static void TurnBlueOn
-(
-    void* contextPtr
-)
-//--------------------------------------------------------------------------------------------------
-{
-    dhubAdmin_PushBoolean("/app/leds/tri/blue/enable", 0, true);
-}
-
-//--------------------------------------------------------------------------------------------------
-/**
- * Turn off the blue in the tri-colour LED.
- */
-//--------------------------------------------------------------------------------------------------
-static void TurnBlueOff
-(
-    void* contextPtr
-)
-//--------------------------------------------------------------------------------------------------
-{
-    dhubAdmin_PushBoolean("/app/leds/tri/blue/enable", 0, false);
-}
 
 //--------------------------------------------------------------------------------------------------
 /**
@@ -169,8 +138,62 @@ static void Draw
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n= LED Control =\n"
-           "\n"
+    cmdLine_MenuMode();
+    cmdLine_AddMenuEntry("Toggle Generic LED", ToggleGenericLed, NULL);
+    cmdLine_AddMenuEntry("Toggle Tri-color LED's Red", ToggleRed, NULL);
+    cmdLine_AddMenuEntry("Toggle Tri-color LED's Green", ToggleGreen, NULL);
+    cmdLine_AddMenuEntry("Toggle Tri-color LED's Blue", ToggleBlue, NULL);
+
+    const char* vegasEnableString = NULL;
+
+    if (instantGratification_IsEnabled())
+    {
+        switch (VegasModeEnableState)
+        {
+            case BOOL_OFF:
+                vegasEnableString = "DISABLED";
+                break;
+            case BOOL_ON:
+                vegasEnableString = "ENABLED";
+                break;
+            case BOOL_UNKNOWN:
+                vegasEnableString = "in an unknown state";
+                break;
+        }
+
+        printf("Continuous Vegas Mode is %s\n",
+               vegasEnableString);
+
+        if (VegasModeEnableState != BOOL_ON)
+        {
+            printf("\n"
+                   "The LEDs are now under manual control.\n");
+
+            cmdLine_AddMenuEntry("ENABLE Continuous Vegas Mode", EnableVegasMode, NULL);
+        }
+        else if (VegasModeEnableState == BOOL_ON)
+        {
+            printf("\n"
+                   "The LEDs are being automatically controlled by\n"
+                   "Continuous Vegas Mode.  Manual control of the LEDs\n"
+                   "using the menu below will disable Continuous Vegas\n"
+                   "Mode.\n");
+
+            cmdLine_AddMenuEntry("DISABLE Continuous Vegas Mode", DisableVegasMode, NULL);
+        }
+    }
+    else
+    {
+        printf("NOTE: Interactive out-of-box experience features are DISABLED.\n"
+               "      Vegas mode will not work until these features are re-enabled.\n"
+               "      Manual control is still available, however.\n");
+
+        cmdLine_AddMenuEntry("ENABLE interactive out-of-box experience features",
+                             EnableInstantGratification,
+                             NULL);
+    }
+
+    printf("\n"
            "Current state of LEDs:\n"
            "   Generic Green:   %s\n"
            "   Tri-color Red:   %s\n"
@@ -180,57 +203,6 @@ static void Draw
            boolState_GetString(TriColourRedState),
            boolState_GetString(TriColourGreenState),
            boolState_GetString(TriColourBlueState));
-
-    if (VegasModeEnableState != BOOL_OFF)
-    {
-        cmdLine_MenuMode();
-        cmdLine_AddMenuEntry("DISABLE Continuous Vegas Mode", DisableVegasMode, NULL);
-
-        printf("\n"
-               "NOTE: Other options become available when continuous\n"
-               "      Vegas Mode is disabled.\n");
-    }
-    else
-    {
-        cmdLine_MenuMode();
-        cmdLine_AddMenuEntry("ENABLE Continuous Vegas Mode", EnableVegasMode, NULL);
-
-        if (GenericLedState == BOOL_ON)
-        {
-            cmdLine_AddMenuEntry("Turn Generic LED OFF", TurnGenericLedOff, NULL);
-        }
-        else
-        {
-            cmdLine_AddMenuEntry("Turn Generic LED ON", TurnGenericLedOn, NULL);
-        }
-
-        if (TriColourRedState == BOOL_ON)
-        {
-            cmdLine_AddMenuEntry("Turn Tri-color LED's Red OFF", TurnRedOff, NULL);
-        }
-        else
-        {
-            cmdLine_AddMenuEntry("Turn Tri-color LED's Red ON", TurnRedOn, NULL);
-        }
-
-        if (TriColourGreenState == BOOL_ON)
-        {
-            cmdLine_AddMenuEntry("Turn Tri-color LED's Green OFF", TurnGreenOff, NULL);
-        }
-        else
-        {
-            cmdLine_AddMenuEntry("Turn Tri-color LED's Green ON", TurnGreenOn, NULL);
-        }
-
-        if (TriColourBlueState == BOOL_ON)
-        {
-            cmdLine_AddMenuEntry("Turn Tri-color LED's Blue OFF", TurnBlueOff, NULL);
-        }
-        else
-        {
-            cmdLine_AddMenuEntry("Turn Tri-color LED's Blue ON", TurnBlueOn, NULL);
-        }
-    }
 }
 
 
@@ -257,7 +229,8 @@ static void Leave
 static const Screen_t Screen =
 {
     .drawFunc = Draw,
-    .leaveFunc = Leave
+    .leaveFunc = Leave,
+    .title = "LED Control"
 };
 
 

@@ -45,6 +45,7 @@ typedef struct
 {
     DrawFunc_t drawFunc;    /// Function that gets called to draw the screen.
     LeaveFunc_t leaveFunc;  /// Function that gets called when the user wants to leave the screen.
+    const char* title;      /// Pointer to null-terminated string containing the screen's title.
 }
 Screen_t;
 

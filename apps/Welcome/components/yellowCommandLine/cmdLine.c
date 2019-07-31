@@ -138,12 +138,18 @@ static void DrawMenu
 )
 //--------------------------------------------------------------------------------------------------
 {
-    printf("\n");
+    printf("\n"
+           "Please make a selection from the following:\n"
+           "\n");
 
     for (uint i = 0; i < NumMenuOptions; i++)
     {
-        printf("%u. %s\n", i + 1, MenuEntryList[i].text);
+        printf("  %u. %s\n", i + 1, MenuEntryList[i].text);
     }
+
+    printf("\n"
+           "or press ESC to leave the screen or Q to quit.\n");
+
 }
 
 
@@ -210,18 +216,17 @@ void cmdLine_Refresh
 )
 //--------------------------------------------------------------------------------------------------
 {
+    printf("\n\n\n==== %s ====\n\n", CurrentScreenPtr->title);
+
     CurrentScreenPtr->drawFunc(); // WARNING: This may change the input mode and/or menu options.
 
     switch (InputProcessingMode)
     {
         case INPUT_MODE_MENU:
 
-            DrawMenu();
             DrawErrorMsg();
+            DrawMenu();
 
-            printf("\n"
-                   "Please make a selection,\n"
-                   "or press ESC to leave the screen or Q to quit.\n");
             break;
 
         case INPUT_MODE_TEXT_ENTRY:
@@ -597,8 +602,6 @@ COMPONENT_INIT
     buzzerScreen_Init();
     octaveScreen_Init();
 
-    // Print a friendly welcome message followed by the main menu.
-    printf("\n"
-           "Welcome to mangOH Yellow!\n");
+    // Display the main menu.
     mainMenu_Enter();
 }

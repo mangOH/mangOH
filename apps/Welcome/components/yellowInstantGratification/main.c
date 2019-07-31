@@ -41,7 +41,7 @@ static void EnableInstantGratification
     dhubAdmin_SetSource("/app/buzzer/enable", "/app/button/value");
 
     // Set the buzzer to 100% duty cycle, so it stays on as long as the button is held down.
-    dhubAdmin_SetNumericOverride("/app/buzzer/percent", 100.0);
+    dhubAdmin_PushNumeric("/app/buzzer/percent", 0, 100.0);
 
     // Route LED states from the vegasMode app to the LED control outputs.
     dhubAdmin_SetSource("/app/leds/mono/enable", "/app/vegasMode/led/0");
@@ -50,7 +50,7 @@ static void EnableInstantGratification
     dhubAdmin_SetSource("/app/leds/tri/blue/enable", "/app/vegasMode/led/3");
 
     // Enable continuous (slow) Vegas Mode.
-    dhubAdmin_SetBooleanOverride("/app/vegasMode/continuous/enable", true);
+    dhubAdmin_PushBoolean("/app/vegasMode/continuous/enable", 0, true);
 }
 
 
@@ -69,11 +69,7 @@ static void DisableInstantGratification
     dhubAdmin_RemoveSource("/app/vegasMode/triggered/trigger");
     dhubAdmin_RemoveSource("/app/buzzer/enable");
 
-    // Remove buzzer duty cycle override.
-    dhubAdmin_RemoveOverride("/app/buzzer/percent");
-
     // Disable continuous (slow) Vegas Mode.
-    dhubAdmin_RemoveOverride("/app/vegasMode/continuous/enable");
     dhubAdmin_PushBoolean("/app/vegasMode/continuous/enable", 0, false);
 
     // Remove routings from vegasMode app to the LED control outputs.

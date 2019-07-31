@@ -6,6 +6,7 @@ sources:
     ledScreen.c
     buzzerScreen.c
     octaveScreen.c
+    instantGratification.c
 }
 
 requires:
