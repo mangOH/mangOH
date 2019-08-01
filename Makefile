@@ -15,7 +15,7 @@ UPDATE_FILE_DIR = build/update_files
 LEAF_DATA = ../leaf-data/current
 
 # Arguments passed to mksys whenever it is invoked.
-MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=$(UPDATE_FILE_DIR)
+MKSYS_ARGS_COMMON = -v -C -O2 --object-dir=build/$@ --output-dir=$(UPDATE_FILE_DIR)
 
 MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
