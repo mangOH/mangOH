@@ -96,20 +96,22 @@ static le_result_t SaveState(void)
     uint8_t bsecState[BSEC_MAX_STATE_BLOB_SIZE];
     uint8_t workBuffer[BSEC_MAX_STATE_BLOB_SIZE];
     uint32_t bsecStateLen = 0;
-    bsec_library_return_t bsecStatus = bsec_get_state(
-        0, bsecState, sizeof(bsecState), workBuffer, sizeof(workBuffer), &bsecStateLen);
+    bsec_library_return_t bsecStatus = bsec_get_state(0,
+                                                      bsecState,
+                                                      sizeof(bsecState),
+                                                      workBuffer,
+                                                      sizeof(workBuffer),
+                                                      &bsecStateLen);
     if (bsecStatus != BSEC_OK)
     {
         LE_ERROR("Couldn't get state out of BSEC");
-        ret = LE_FAULT;
-        goto done;
+        return LE_FAULT;
     }
 
     int fd = open(BSEC_STATE_FILE, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR);
     if (fd == -1) {
         LE_ERROR("Couldn't open \"%s\" for writing - %s\n", BSEC_STATE_FILE, strerror(errno));
-        ret = LE_FAULT;
-        goto done;
+        return LE_FAULT;
     }
 
     unsigned int numWritten = 0;
