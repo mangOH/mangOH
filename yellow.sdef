@@ -20,6 +20,8 @@ buildVars:
 #endif
 }
 
+#include "sinc/octave_full.sinc"
+
 
 apps:
 {

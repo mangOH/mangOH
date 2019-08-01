@@ -1,0 +1,6 @@
+apps:
+{
+    $CURDIR/../apps/octave/actions.${LEGATO_TARGET}.app
+    $CURDIR/../apps/octave/virtual.${LEGATO_TARGET}.app
+    $CURDIR/../apps/octave/cloudInterface.${LEGATO_TARGET}.app
+}
