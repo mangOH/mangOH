@@ -20,6 +20,9 @@ buildVars:
 #endif
 }
 
+#if ${OCTAVE} = 1
+#include "sinc/octave_full.sinc"
+#endif
 
 apps:
 {

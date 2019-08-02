@@ -1,0 +1,6 @@
+apps:
+{
+    $OCTAVE_ROOT/actions.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/virtual.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/cloudInterface.${LEGATO_TARGET}.app
+}

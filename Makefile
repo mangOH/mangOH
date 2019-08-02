@@ -15,7 +15,7 @@ UPDATE_FILE_DIR = build/update_files
 LEAF_DATA = ../leaf-data/current
 
 # Arguments passed to mksys whenever it is invoked.
-MKSYS_ARGS_COMMON = --object-dir=build/$@ --output-dir=$(UPDATE_FILE_DIR)
+MKSYS_ARGS_COMMON = -v -C -O2 --object-dir=build/$@ --output-dir=$(UPDATE_FILE_DIR)
 
 MAKEFILE_DIR := $(dir $(realpath $(firstword $(MAKEFILE_LIST))))
 
@@ -82,6 +82,9 @@ else
 	$(MAKE) -C $(LEGATO_ROOT) framework_$(LEGATO_TARGET)
 endif
 
+# Default to including octave for mangOH Yellow builds
+yellow_%: OCTAVE ?= 1
+
 # Build goals that get the target WP module type from the LEGATO_TARGET environment variable.
 # If LEGATO_TARGET is defined (e.g., when using leaf), then you can run 'make yellow', for example.
 .PHONY: $(BOARDS)
@@ -125,7 +128,7 @@ $(YELLOW_GOALS): yellow_%: legato_%
 	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
 	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
 	find build/$@/modules/cypwifi -name '*.ko' | xargs $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PREFIX)strip --strip-debug && \
-	mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
+	OCTAVE=$(OCTAVE) mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
 
 # The cleaning goal.
 .PHONY: clean
