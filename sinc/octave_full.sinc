@@ -2,11 +2,11 @@
 
 apps:
 {
-    $CURDIR/../apps/octave/io.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/io.${LEGATO_TARGET}.app
 #if ${MANGOH_BOARD} = red
-    $CURDIR/../apps/octave/lcd.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/lcd.${LEGATO_TARGET}.app
 #endif
-    $CURDIR/../apps/octave/location.${LEGATO_TARGET}.app
-    $CURDIR/../apps/octave/modbus.${LEGATO_TARGET}.app
-    $CURDIR/../apps/octave/remote.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/location.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/modbus.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/remote.${LEGATO_TARGET}.app
 }
