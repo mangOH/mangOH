@@ -156,17 +156,29 @@ $(CWE_FILES): build/%_$(LEGATO_TARGET)/legato.cwe: $(UPDATE_FILE_DIR)/%.$(LEGATO
 # Goals, like "yellow_spk", for building complete .spk files for factory programming.
 # The names of the resulting .spk files are of the form build/yellow_wp76xx.spk.
 # NOTE: This requires leaf.
-# NOTE: Sadly, there's some inconsistencies in the naming of leaf packages that means the rules
-#       have to be hand-written for each supported board_module combination.
 FACTORY_SPK_GOALS = $(foreach board,$(BOARDS),$(board)_spk)
 .PHONY: $(FACTORY_SPK_GOALS)
 $(FACTORY_SPK_GOALS): %_spk: % build/%_$(LEGATO_TARGET).spk
 
-build/yellow_wp76xx.spk: build/yellow_wp76xx/legato.cwe
-	swicwe -c $(LEAF_DATA)/wp76-linux-image/linux.cwe \
-			$(LEAF_DATA)/wp76-modem-image/*_GENERIC_*.spk \
-			$< \
-			-o $@
+# Select the modem firmware image as follows:
+# - Prefer the one specific to Sierra Wireless SIMs
+# - Fall back to the first "Generic" version found, if no Sierra version available.
+# NOTE: This can be overridden on the command line or in the environment.
+MODEM_FIRMWARE ?= $(firstword $(wildcard $(LEAF_DATA)/*-modem-image/*_SIERRA_*.spk) \
+                              $(wildcard $(LEAF_DATA)/*-modem-image/*_GENERIC_*.spk) )
+
+LINUX_IMAGE ?= $(wildcard $(LEAF_DATA)/*-linux-image/linux.cwe)
+
+build/%_$(LEGATO_TARGET).spk: build/%_$(LEGATO_TARGET)/legato.cwe
+	swicwe -c $(LINUX_IMAGE) \
+	          $(MODEM_FIRMWARE) \
+	          $< \
+	       -o $@
+	@echo "Factory .spk generated using:"
+	@echo "  modem firmware = $(MODEM_FIRMWARE)"
+	@echo "  Linux kernel and root file system = $(LINUX_IMAGE)"
+	@echo "  Legato framework and apps = $<"
+	@echo "Output written to $@"
 
 # Default rule that will get run for .spk files that we don't support yet.
 build/%.spk:
