@@ -179,7 +179,3 @@ build/%_$(LEGATO_TARGET).spk: build/%_$(LEGATO_TARGET)/legato.cwe
 	@echo "  Linux kernel and root file system = $(LINUX_IMAGE)"
 	@echo "  Legato framework and apps = $<"
 	@echo "Output written to $@"
-
-# Default rule that will get run for .spk files that we don't support yet.
-build/%.spk:
-	$(error Factory .spk file generation not yet supported for "$*")
