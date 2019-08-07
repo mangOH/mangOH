@@ -77,13 +77,18 @@ LEGATO ?= 0
 legato_%:
 	$(eval export LEGATO_TARGET := $(subst legato_,,$@))
 ifeq ($(LEGATO),0)
-	echo "Not building LEGATO due to \$$LEGATO == 0"
+	@echo "Not building LEGATO due to \$$LEGATO == 0"
 else
 	$(MAKE) -C $(LEGATO_ROOT) framework_$(LEGATO_TARGET)
 endif
 
-# Default to including octave for mangOH Yellow builds
-yellow_%: OCTAVE ?= 1
+# If OCTAVE_ROOT is defined, include Octave for mangOH Yellow builds by default.
+ifdef OCTAVE_ROOT
+  yellow_%: OCTAVE ?= 1
+else
+  $(warning ==== OCTAVE_ROOT not defined ====)
+  yellow_%: OCTAVE ?= 0
+endif
 
 # Build goals that get the target WP module type from the LEGATO_TARGET environment variable.
 # If LEGATO_TARGET is defined (e.g., when using leaf), then you can run 'make yellow', for example.
@@ -120,6 +125,13 @@ $(YELLOW_GOALS): yellow_%: legato_%
 		echo "* ERROR: Bosch bsec library not found at BSEC_DIR ($(BSEC_DIR))." ; \
 		echo "*        See components/boschBsec/README.md ." >&2 ; \
 		echo "*" ; \
+		false ; \
+	fi
+	@if [ "$(OCTAVE)" == "1" -a "$(OCTAVE_ROOT)" == "" ]; then \
+		echo "* ERROR: OCTAVE_ROOT not defined. Cannot build Octave support." >&2 ; \
+		echo "*        Set OCTAVE_ROOT to the directory in which the Octave .app" >&2 ; \
+		echo "*        files can be found, or set OCTAVE=0 (or unset OCTAVE) to" >&2 ; \
+		echo "*        build without Octave." >&2 ; \
 		false ; \
 	fi
 	# Build the Cypress WiFi driver.
