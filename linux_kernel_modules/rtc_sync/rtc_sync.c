@@ -40,7 +40,7 @@ static int rtc_hctosys(void)
 	struct rtc_device *rtc = rtc_class_open("rtc1");
 	if (rtc == NULL) {
 		printk("%s: unable to open rtc device (rtc1) for rtc_hctosys\n",
-			__FILE__);
+			__func__);
 		return -ENODEV;
 	}
 
@@ -93,7 +93,7 @@ static int systohc(struct timespec now)
 
 	if (rtc == NULL) {
 		printk("%s: unable to open rtc device (rtc1) for systohc\n",
-			__FILE__);
+			__func__);
 		return res;
 	}
 
