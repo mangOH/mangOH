@@ -1,0 +1,180 @@
+# Build script for application 'NtagDhubIf'
+
+# == Auto-generated file.  Do not edit. ==
+
+builddir =/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx
+
+cFlags = -I /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx -I/home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/interfaces -I/home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/framework/include -I/home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/build/wp76xx/framework/include -I/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf
+
+cxxFlags = -I /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx -I/home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/interfaces -I/home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/framework/include -I/home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/build/wp76xx/framework/include -I/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf
+
+ldFlags =
+
+target = wp76xx
+
+ifgenFlags =  --import-dir /home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/interfaces --import-dir /home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/framework/include --import-dir /home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/build/wp76xx/framework/include --import-dir /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf
+
+rule CompileC
+  description = Compiling C source
+  depfile = $out.d
+  command =  /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc --sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi -MMD -MF $out.d -c $in -o $out -DLE_FILENAME=`basename $in` -Wall -Werror -fvisibility=hidden -DMK_TOOLS_BUILD  -DLEGATO_EMBEDDED -fPIC $cFlags
+
+rule CompileCxx
+  description = Compiling C++ source
+  depfile = $out.d
+  command =  /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-g++ --sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi -MMD -MF $out.d -c $in -o $out -DLE_FILENAME=`basename $in` -Wall -Werror -fvisibility=hidden -DMK_TOOLS_BUILD  -DLEGATO_EMBEDDED -fPIC $cxxFlags
+
+rule ProcessConfig
+  description = Merging config file
+  depfile = $in.d
+  command = /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-cpp -MMD -MF $in.d -MQ $out -P -I $builddir -E $in -o $out
+
+rule BuildExternal
+  description = Running external build step
+  command = cd $builddir/$workingdir && $
+            export CFLAGS="--sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi $cFlags" $
+            CXXFLAGS="--sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi $cxxFlags" $
+            LDFLAGS="--sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi $ldFlags" $
+            CPPFLAGS="--sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi $cppFlags" $
+            PATH="$${LEGATO_ROOT}/bin:/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi:/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin:/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/bin:/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/sbin:$$PATH" $
+            && $
+            $externalCommand
+
+rule GenInterfaceCode
+  description = Generating IPC interface code
+  command = ifgen --output-dir $outputDir $ifgenFlags $in
+
+rule GenPyApiCExtension
+  description = Generating Python API C Extension
+  command = cextgenerator.py $in -o $workDir > /dev/null
+rule CopyFile
+  description = Copying file
+  command = cp -d -f -T $in $out
+
+rule RegenNinjaScript
+  description = Regenerating build script
+  generator = 1
+  command = mkapp --dont-run-ninja "-t" "wp76xx" "NtagDhubIf.adef"
+
+rule LinkCLib
+  description = Linking C library
+  command = /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc --sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi -shared -o $out $in $ldFlags
+
+rule LinkCxxLib
+  description = Linking C++ library
+  command = /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-g++ --sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi -shared -o $out $in $ldFlags
+
+rule LinkCExe
+  description = Linking C executable
+  command = /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-gcc --sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi -fPIE -pie -o $out $in $ldFlags
+
+rule LinkCxxExe
+  description = Linking C++ executable
+  command = /home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/x86_64-pokysdk-linux/usr/bin/arm-poky-linux-gnueabi/arm-poky-linux-gnueabi-g++ --sysroot=/home/zahid/leaf/leaf-data/wp76_please_work/wp76-toolchain/sysroots/armv7a-neon-poky-linux-gnueabi -fPIE -pie -o $out $in $ldFlags
+
+rule CompileJava
+  description = Compiling Java source
+  command = javac -cp $classPath -d `dirname $out` $in && touch $out
+
+rule MakeJar
+  description = Making JAR file
+  command = INDIR=`dirname $in`; find $$INDIR -name '*.class' -printf "-C $$INDIR\n%P\n"|xargs jar -cf $out
+
+rule MakeKernelModule
+  description = Build kernel driver module
+  depfile = $out.d
+  command = make -C $in
+
+rule BundleFile
+  description = Bundling file
+  command = legato-install -m $modeFlags $in $out
+
+rule MakeAppInfoProperties
+  description = Creating info.properties
+  command = rm -f $out && $
+            md5=$$( ( cd $workingDir/staging && $
+                      find -P -print0 |LC_ALL=C sort -z && $
+                      find -P -type f -print0 |LC_ALL=C sort -z |xargs -0 md5sum && $
+                      find -P -type l -print0 |LC_ALL=C sort -z |xargs -0 -r -n 1 readlink $
+                    ) | md5sum) && $
+            md5=$${md5%% *} && $
+            ( echo "app.name=$name" && $
+              echo "app.md5=$$md5" && $
+              echo "app.version=$version" && $
+              echo "legato.version=`cat $$LEGATO_ROOT/version`" $
+            ) > $out
+
+rule PackApp
+  description = Packaging app
+  command = $
+            mtime=`stat -c %Y $adefPath` && $
+            find $workingDir/staging -exec touch --no-dereference --date=@$$mtime {} \; && $
+            (cd $workingDir/staging && find . -print0 | LC_ALL=C sort -z |tar --no-recursion --null -T - -cjf - ) > $workingDir/$name.$target && $
+            tarballSize=`stat -c '%s' $workingDir/$name.$target` && $
+            md5=`grep '^app.md5=' $in | sed 's/^app.md5=//'` && $
+            ( printf '{\n' && $
+              printf '"command":"updateApp",\n' && $
+              printf '"name":"$name",\n' && $
+              printf '"version":"$version",\n' && $
+              printf '"md5":"%s",\n' "$$md5" && $
+              printf '"size":%s\n' "$$tarballSize" && $
+              printf '}' && $
+              cat $workingDir/$name.$target $
+            ) > $out
+
+rule BinPackApp
+  description = Packaging app for distribution.
+  command = cp -r $stagingDir/* $workingDir/ && $
+            rm $workingDir/info.properties $workingDir/root.cfg && $
+            mtime=`stat -c %Y $adefPath` && $
+            find $workingDir -exec touch  --no-dereference --date=@$$mtime {} \; && $
+            (cd $workingDir/ && find . -print0 |LC_ALL=C sort -z  |tar --no-recursion --null -T - -cjf - ) > $out
+
+build $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_commonclient.c.o: CompileC $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_commonclient.c | $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_messages.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_common.h
+  cFlags = $cFlags
+
+build $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_commonclient.c $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_common.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_messages.h: GenInterfaceCode /home/zahid/.leaf/wp76-legato_19.04.0-201905310149/interfaces/le_gpio.api |
+  ifgenFlags = --gen-common-client --gen-common-interface --gen-messages $ifgenFlags
+  outputDir = $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3
+
+build $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_client.c.o: CompileC $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_client.c | $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_service.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_interface.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_common.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_messages.h
+  cFlags = $cFlags -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3
+
+build $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_client.c $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_interface.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_service.h: GenInterfaceCode /home/zahid/.leaf/wp76-legato_19.04.0-201905310149/interfaces/le_gpio.api |
+  ifgenFlags = --gen-client --gen-interface --gen-local --name-prefix le_gpioPin23 $ifgenFlags
+  outputDir = $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client
+
+build /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj/libComponent_NtagDhubIfComponent.so: LinkCLib $builddir/component/0beb0765b16d8a205b99e825b23ed8e8/obj/ce3e89a01830aad020c99091bab1d9fe.o $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_client.c.o $builddir/component/0beb0765b16d8a205b99e825b23ed8e8/obj/_componentMain.c.o $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_commonclient.c.o | /home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/build/wp76xx/framework/lib/liblegato.so
+  ldFlags =  -Wl,--enable-new-dtags,-rpath="\$$ORIGIN/../lib" "-L$$LEGATO_BUILD/framework/lib" -llegato -lpthread -lrt -lm
+
+build $builddir/component/0beb0765b16d8a205b99e825b23ed8e8/obj/ce3e89a01830aad020c99091bab1d9fe.o: CompileC /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/NtagDhubIfComponent/NtagDhubIf.c || $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_common.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_messages.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_interface.h $builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_service.h 
+  cFlags = $cFlags -I$builddir/component/0beb0765b16d8a205b99e825b23ed8e8/src -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3 -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3 -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client -DLE_COMPONENT_NAME=NtagDhubIfComponent "-DCOMPONENT_INIT=LE_CI_LINKAGE LE_SHARED void _NtagDhubIfComponent_COMPONENT_INIT()" "-DCOMPONENT_INIT_ONCE=LE_CI_LINKAGE LE_SHARED void _NtagDhubIfComponent_COMPONENT_INIT_ONCE()" -DLE_LOG_SESSION=NtagDhubIfComponent_LogSession  -DLE_LOG_LEVEL_FILTER_PTR=NtagDhubIfComponent_LogLevelFilterPtr  "-std=c99"
+
+build $builddir/component/0beb0765b16d8a205b99e825b23ed8e8/obj/_componentMain.c.o: CompileC $builddir/component/0beb0765b16d8a205b99e825b23ed8e8/src/_componentMain.c
+  cFlags = $cFlags -I$builddir/component/0beb0765b16d8a205b99e825b23ed8e8/src -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3 -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3 -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client -I$builddir/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client -DLE_COMPONENT_NAME=NtagDhubIfComponent "-DCOMPONENT_INIT=LE_CI_LINKAGE LE_SHARED void _NtagDhubIfComponent_COMPONENT_INIT()" "-DCOMPONENT_INIT_ONCE=LE_CI_LINKAGE LE_SHARED void _NtagDhubIfComponent_COMPONENT_INIT_ONCE()" -DLE_LOG_SESSION=NtagDhubIfComponent_LogSession  -DLE_LOG_LEVEL_FILTER_PTR=NtagDhubIfComponent_LogLevelFilterPtr 
+
+build $builddir/app/NtagDhubIf/obj/NtagDhubIf/_main.c.o: CompileC /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/app/NtagDhubIf/src/NtagDhubIf/_main.c
+  cFlags = $cFlags  -DLE_COMPONENT_NAME=NtagDhubIf_exe "-DCOMPONENT_INIT=LE_CI_LINKAGE LE_SHARED void _NtagDhubIf_exe_COMPONENT_INIT()" "-DCOMPONENT_INIT_ONCE=LE_CI_LINKAGE LE_SHARED void NtagDhubIf_exe_COMPONENT_INIT_ONCE()" -DLE_LOG_SESSION=NtagDhubIf_exe_LogSession  -DLE_LOG_LEVEL_FILTER_PTR=NtagDhubIf_exe_LogLevelFilterPtr 
+
+build $builddir/app/NtagDhubIf/obj/NtagDhubIf/NtagDhubIf: LinkCExe $builddir/app/NtagDhubIf/obj/NtagDhubIf/_main.c.o | /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj/libComponent_NtagDhubIfComponent.so /home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/build/wp76xx/framework/lib/liblegato.so /home/zahid/leaf/leaf-data/wp76_please_work/wp76-legato/build/$target/framework/lib/liblegato.so
+  ldFlags = -rdynamic -Wl,--enable-new-dtags,-rpath="\$$ORIGIN/../lib" -L "-L/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj" -lComponent_NtagDhubIfComponent "-L/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj" -lComponent_NtagDhubIfComponent "-L$$LEGATO_BUILD/framework/lib" -llegato -lpthread -lrt -ldl -lm $ldFlags
+
+build $builddir/app/NtagDhubIf/staging/read-only/lib/libComponent_NtagDhubIfComponent.so : BundleFile /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj/libComponent_NtagDhubIfComponent.so
+  modeFlags = u+rw+x,g+r+x,o+x+r-w
+
+build $builddir/app/NtagDhubIf/staging/read-only/bin/NtagDhubIf : BundleFile $builddir/app/NtagDhubIf/obj/NtagDhubIf/NtagDhubIf
+  modeFlags = u+rw+x,g+r+x,o+x+r-w
+
+build $builddir/app/NtagDhubIf/staging/info.properties : MakeAppInfoProperties | $builddir/app/NtagDhubIf/staging/read-only/lib/libComponent_NtagDhubIfComponent.so $builddir/app/NtagDhubIf/staging/read-only/bin/NtagDhubIf $builddir/app/NtagDhubIf/staging/root.cfg
+  name = NtagDhubIf
+  version = 
+  workingDir = $builddir/app/NtagDhubIf
+
+build NtagDhubIf.$target.update: PackApp $builddir/app/NtagDhubIf/staging/info.properties
+  name = NtagDhubIf
+  adefPath = /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/NtagDhubIf.adef
+  version = 
+  workingDir = $builddir/app/NtagDhubIf
+
+build /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/build.ninja: RegenNinjaScript | /home/zahid/.leaf/wp76-legato_19.04.0-201905310149/interfaces/le_gpio.api /home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/NtagDhubIfComponent/Component.cdef
+

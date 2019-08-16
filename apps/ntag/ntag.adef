@@ -1,0 +1,13 @@
+sandboxed: false
+start: manual
+
+executables:
+{
+    ntag = (arduinoNtag)
+}
+
+extern:
+{
+    ntag.arduinoNtag.dhubIO  // required API
+}
+

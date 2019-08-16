@@ -1,0 +1,18 @@
+# ninja log v5
+0	58	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj/_componentMain.c.o	747222e148ba545e
+0	58	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/app/NtagDhubIf/obj/NtagDhubIf/_main.c.o	e2bf1c28eda28a97
+0	187	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_client.c	29aa69dc84333b11
+0	187	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_interface.h	29aa69dc84333b11
+0	187	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_service.h	29aa69dc84333b11
+0	204	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_commonclient.c	f4664dbc93c2cd1c
+0	204	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_common.h	f4664dbc93c2cd1c
+0	204	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_messages.h	f4664dbc93c2cd1c
+205	264	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj/ce3e89a01830aad020c99091bab1d9fe.o	6ac0f35d67c1220f
+205	273	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/client/le_gpioPin23_client.c.o	2bc07a37ecb8c901
+205	310	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/api/9e4bac98e1c1b270b8a82caf7a4c66e3/le_gpio_commonclient.c.o	369dde546849576b
+310	327	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/component/0beb0765b16d8a205b99e825b23ed8e8/obj/libComponent_NtagDhubIfComponent.so	e721043596c2d289
+328	330	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/app/NtagDhubIf/staging/read-only/lib/libComponent_NtagDhubIfComponent.so	b3009f9f1c252383
+327	345	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/app/NtagDhubIf/obj/NtagDhubIf/NtagDhubIf	d77efaa3b958fed
+345	347	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/app/NtagDhubIf/staging/read-only/bin/NtagDhubIf	5030839c8db5f552
+347	353	0	/home/zahid/leaf/swi-wp76_4.0.0/NFC/mangOH/apps/NtagDhubIf/_build_NtagDhubIf/wp76xx/app/NtagDhubIf/staging/info.properties	196a7064ad67ca4a
+353	367	0	NtagDhubIf.wp76xx.update	41ee15c4b8011bf5

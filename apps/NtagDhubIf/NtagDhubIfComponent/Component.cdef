@@ -1,0 +1,18 @@
+requires:
+{
+    api:
+    {
+        le_gpioPin23 = le_gpio.api
+        dhubIO = io.api
+    }
+}
+
+cflags:
+{
+    "-std=c99"
+}
+
+sources:
+{
+    NtagDhubIf.c
+}
