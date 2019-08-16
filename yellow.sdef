@@ -37,6 +37,8 @@ apps:
 
     $CURDIR/apps/Welcome/helloYellow
 
+    $CURDIR/samples/BluetoothSensorTag/bluetoothSensorTag
+
     $LEGATO_ROOT/apps/tools/devMode
 }
 
