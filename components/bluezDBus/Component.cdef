@@ -1,0 +1,43 @@
+externalBuild:
+{
+    // Sourcing the environment script is required so that the correct pkg-config is run
+    ". $LEGATO_SYSROOT/../../environment-setup-armv7a-neon-poky-linux-gnueabi && cmake -G Ninja $CURDIR"
+    ". $LEGATO_SYSROOT/../../environment-setup-armv7a-neon-poky-linux-gnueabi && cmake --build ."
+}
+
+bundles:
+{
+    file:
+    {
+        $BUILDDIR/libBluezDBus.so /lib/
+    }
+}
+ 
+provides:
+{
+/*
+    lib:
+    {
+        $BUILDDIR/libBluezDBus.so
+    }
+    */
+
+    headerDir:
+    {
+        $BUILDDIR
+    }
+}
+ 
+requires:
+{
+    lib:
+    {
+        libBluezDBus.so
+    }
+}
+
+ldflags:
+{
+    -L${BUILDDIR}
+}
+
