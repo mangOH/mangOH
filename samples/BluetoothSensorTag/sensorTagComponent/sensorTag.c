@@ -127,46 +127,6 @@ static gboolean LegatoFdHandler
     return TRUE;
 }
 
-/*
-static void BluezInterfaceAddedHandler
-(
-    GDBusObjectManager *manager,
-    GDBusObject *object,
-    GDBusInterface *interface,
-    gpointer userData
-)
-{
-    LE_INFO("In BluezInerfaceAddedHandler");
-    LE_INFO("  object_path=%s", g_dbus_object_get_object_path(object));
-    LE_INFO("  interface=%p", interface);
-    LE_INFO("  interface_info=%p", g_dbus_interface_get_info(interface));
-    LE_INFO("  interface_name=%p", g_dbus_interface_get_info(interface)->name);
-    LE_INFO(
-        "interface-added: obj=%s, intf=%s",
-        g_dbus_object_get_object_path(object),
-        g_dbus_interface_get_info(interface)->name);
-}
-
-static void BluezInterfaceRemovedHandler
-(
-    GDBusObjectManager *manager,
-    GDBusObject *object,
-    GDBusInterface *interface,
-    gpointer userData
-)
-{
-    LE_INFO("In BluezInerfaceRemovedHandler");
-    LE_INFO("  object_path=%s", g_dbus_object_get_object_path(object));
-    LE_INFO("  interface=%p", interface);
-    LE_INFO("  interface_info=%p", g_dbus_interface_get_info(interface));
-    LE_INFO("  interface_name=%p", g_dbus_interface_get_info(interface)->name);
-    LE_INFO(
-        "interface-removed: obj=%s, intf=%s",
-        g_dbus_object_get_object_path(object),
-        g_dbus_interface_get_info(interface)->name);
-}
-*/
-
 
 static BluezDevice1 *TryCreateSensorTagDeviceProxy
 (
@@ -282,7 +242,7 @@ static void DataCharacteristicPropertiesChangedHandler
         const double objTemp = ((valArray[0] << 0) + (valArray[1] << 8)) / divider;
         const double ambTemp = ((valArray[2] << 0) + (valArray[3] << 8)) / divider;
         g_variant_unref(value);
-        LE_INFO("Received value - objTemp=%f, ambTemp=%f", objTemp, ambTemp);
+        LE_DEBUG("Received value - objTemp=%f, ambTemp=%f", objTemp, ambTemp);
     }
 }
 
@@ -746,8 +706,10 @@ static void HandleIrTempPeriodPush
             if (AppState == APP_STATE_SAMPLING)
             {
                 IrTemperatureSetPeriod(period);
-                // If the enable is already true, but the old period was
-                // invalid, then we need to perform an enable
+                /*
+                 * If the enable is already true, but the old period was invalid (because it had
+                 * never been set before), then we need to perform an enable.
+                 */
                 if (DHubState.irTemp.enable)
                 {
                     const bool oldPeriodValid =
