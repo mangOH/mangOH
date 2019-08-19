@@ -1,0 +1,22 @@
+sources:
+{
+    dtostrf.c
+    itoa.c
+    WString.cpp
+    start.cpp
+}
+
+cxxflags:
+{
+    -std=c++11
+    -I$CURDIR
+    -D_GNU_SOURCE
+    -fvisibility=default
+}
+
+cflags:
+{
+    -I$CURDIR
+    -D_GNU_SOURCE
+}
+

@@ -1,0 +1,18 @@
+requires:
+{
+    api:
+    {
+        fieldDetectGpio = le_gpio.api
+        dhubIO = io.api
+    }
+}
+
+cflags:
+{
+    "-std=c99"
+}
+
+sources:
+{
+    NtagDhubIf.c
+}

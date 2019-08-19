@@ -1,0 +1,28 @@
+sandboxed: false
+
+executables:
+{
+    NtagDhubIf = (NtagDhubIfComponent)
+}
+
+bindings:
+{
+    NtagDhubIf.NtagDhubIfComponent.fieldDetectGpio -> gpioService.le_gpioPin23
+}
+
+extern:
+{
+    NtagDhubIf.NtagDhubIfComponent.dhubIO  // required API
+}
+
+processes:
+{
+
+    run:
+    {
+        ( NtagDhubIf )
+    }
+
+    faultAction: stopApp
+}
+
