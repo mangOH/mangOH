@@ -2,6 +2,7 @@
 
 apps:
 {
+    $OCTAVE_ROOT/canopen.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/io.${LEGATO_TARGET}.app
 #if ${MANGOH_BOARD} = red
     $OCTAVE_ROOT/lcd.${LEGATO_TARGET}.app
