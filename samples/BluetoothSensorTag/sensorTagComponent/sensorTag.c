@@ -68,11 +68,13 @@ static struct
 } DHubState;
 
 
-GType BluezProxyTypeFunc(
+GType BluezProxyTypeFunc
+(
     GDBusObjectManagerClient *manager,
     const gchar *objectPath,
     const gchar *interfaceName,
-    gpointer userData)
+    gpointer userData
+)
 {
     LE_DEBUG("Handling request for objectPath=%s, interfaceName=%s", objectPath, interfaceName);
     if (interfaceName == NULL)
@@ -104,7 +106,12 @@ GType BluezProxyTypeFunc(
     return g_dbus_proxy_get_type();
 }
 
-static gboolean LegatoFdHandler(GIOChannel *source, GIOCondition condition, gpointer data)
+static gboolean LegatoFdHandler
+(
+    GIOChannel *source,
+    GIOCondition condition,
+    gpointer data
+)
 {
     while (true)
     {
@@ -117,13 +124,17 @@ static gboolean LegatoFdHandler(GIOChannel *source, GIOCondition condition, gpoi
         LE_ASSERT_OK(r);
     }
 
-    // TODO: should this be FALSE?
     return TRUE;
 }
 
 /*
-static void BluezInterfaceAddedHandler(
-    GDBusObjectManager *manager, GDBusObject *object, GDBusInterface *interface, gpointer userData)
+static void BluezInterfaceAddedHandler
+(
+    GDBusObjectManager *manager,
+    GDBusObject *object,
+    GDBusInterface *interface,
+    gpointer userData
+)
 {
     LE_INFO("In BluezInerfaceAddedHandler");
     LE_INFO("  object_path=%s", g_dbus_object_get_object_path(object));
@@ -136,8 +147,13 @@ static void BluezInterfaceAddedHandler(
         g_dbus_interface_get_info(interface)->name);
 }
 
-static void BluezInterfaceRemovedHandler(
-    GDBusObjectManager *manager, GDBusObject *object, GDBusInterface *interface, gpointer userData)
+static void BluezInterfaceRemovedHandler
+(
+    GDBusObjectManager *manager,
+    GDBusObject *object,
+    GDBusInterface *interface,
+    gpointer userData
+)
 {
     LE_INFO("In BluezInerfaceRemovedHandler");
     LE_INFO("  object_path=%s", g_dbus_object_get_object_path(object));
@@ -152,7 +168,10 @@ static void BluezInterfaceRemovedHandler(
 */
 
 
-static BluezDevice1 *TryCreateSensorTagDeviceProxy(GDBusObject *object)
+static BluezDevice1 *TryCreateSensorTagDeviceProxy
+(
+    GDBusObject *object
+)
 {
     BluezDevice1* dev = BLUEZ_DEVICE1(g_dbus_object_get_interface(object, "org.bluez.Device1"));
     if (dev != NULL)
@@ -206,7 +225,10 @@ static enum PeriodValidity ValidateIrTempPeriod
     return PERIOD_VALIDITY_OK;
 }
 
-static void IrTemperatureSetEnable(bool enable)
+static void IrTemperatureSetEnable
+(
+    bool enable
+)
 {
     LE_ASSERT(AppState == APP_STATE_SAMPLING);
     GError *error = NULL;
@@ -221,7 +243,10 @@ static void IrTemperatureSetEnable(bool enable)
     LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
 }
 
-static void IrTemperatureSetPeriod(double period)
+static void IrTemperatureSetPeriod
+(
+    double period
+)
 {
     LE_ASSERT(AppState == APP_STATE_SAMPLING);
     LE_ASSERT(period >= IR_TEMP_PERIOD_MIN && period <= IR_TEMP_PERIOD_MAX);
@@ -239,8 +264,13 @@ static void IrTemperatureSetPeriod(double period)
 }
 
 
-static void DataCharacteristicPropertiesChangedHandler(
-    GDBusProxy *proxy, GVariant *changedProperties, GStrv invalidatedProperties, gpointer userData)
+static void DataCharacteristicPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
 {
     GVariant *value = g_variant_lookup_value(changedProperties, "Value", G_VARIANT_TYPE_BYTESTRING);
     if (value != NULL)
@@ -256,7 +286,10 @@ static void DataCharacteristicPropertiesChangedHandler(
     }
 }
 
-static void IOSetValue(void)
+static void IOSetValue
+(
+    void
+)
 {
     LE_ASSERT(AppState == APP_STATE_SAMPLING);
     GError *error = NULL;
@@ -275,7 +308,10 @@ static void IOSetValue(void)
     LE_FATAL_IF(error, "Failed while writing IO data - %s", error->message);
 }
 
-static void IOSetConfig(void)
+static void IOSetConfig
+(
+    void
+)
 {
     LE_ASSERT(AppState == APP_STATE_SAMPLING);
     GError *error = NULL;
@@ -290,7 +326,10 @@ static void IOSetConfig(void)
     LE_FATAL_IF(error, "Failed while writing IO config - %s", error->message);
 }
 
-static void AllAttributesFoundHandler(void)
+static void AllAttributesFoundHandler
+(
+    void
+)
 {
     AppState = APP_STATE_SAMPLING;
     GError *error = NULL;
@@ -320,7 +359,11 @@ static void AllAttributesFoundHandler(void)
     LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
 }
 
-static void TryProcessAsAttribute(GDBusObject *object, const gchar *devicePath)
+static void TryProcessAsAttribute
+(
+    GDBusObject *object,
+    const gchar *devicePath
+)
 {
     bool found = false;
     BluezGattService1 *serviceProxy = NULL;
@@ -449,7 +492,9 @@ static void SensorTagFoundHandler(void)
     gchar *devicePath = NULL;
     g_object_get(SensorTagDeviceInterface, "g-object-path", &devicePath, NULL);
     GList *bluezObjects = g_dbus_object_manager_get_objects(BluezObjectManager);
-    for (GList *node = bluezObjects; node != NULL && SensorTagDeviceInterface == NULL; node = node->next)
+    for (GList *node = bluezObjects;
+         node != NULL && SensorTagDeviceInterface == NULL;
+         node = node->next)
     {
         GDBusObject *obj = node->data;
         TryProcessAsAttribute(obj, devicePath);
@@ -468,7 +513,9 @@ static void BeginSensorTagSearch(void)
     LE_FATAL_IF(error != NULL, "Couldn't start discovery - %s", error->message);
 
     GList *bluezObjects = g_dbus_object_manager_get_objects(BluezObjectManager);
-    for (GList *node = bluezObjects; node != NULL && SensorTagDeviceInterface == NULL; node = node->next)
+    for (GList *node = bluezObjects;
+         node != NULL && SensorTagDeviceInterface == NULL;
+         node = node->next)
     {
         GDBusObject *obj = node->data;
         SensorTagDeviceInterface = TryCreateSensorTagDeviceProxy(obj);
@@ -481,13 +528,19 @@ static void BeginSensorTagSearch(void)
 }
 
 
-static void AdapterPropertiesChangedHandler(
-    GDBusProxy *proxy, GVariant *changedProperties, GStrv invalidatedProperties, gpointer userData)
+static void AdapterPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
 {
     LE_DEBUG("%s - AppState=%d", __func__, AppState);
     if (AppState == APP_STATE_POWERING_ON_ADAPTER)
     {
-        GVariant *poweredVal = g_variant_lookup_value(changedProperties, "Powered", G_VARIANT_TYPE_BOOLEAN);
+        GVariant *poweredVal =
+            g_variant_lookup_value(changedProperties, "Powered", G_VARIANT_TYPE_BOOLEAN);
         if (poweredVal != NULL)
         {
             gboolean powered = g_variant_get_boolean(poweredVal);
@@ -509,7 +562,11 @@ static void AdapterFoundHandler(void)
     {
         AppState = APP_STATE_POWERING_ON_ADAPTER;
         LE_DEBUG("Adapter not powered - powering on");
-        g_signal_connect(AdapterInterface, "g-properties-changed", G_CALLBACK(AdapterPropertiesChangedHandler), NULL);
+        g_signal_connect(
+            AdapterInterface,
+            "g-properties-changed",
+            G_CALLBACK(AdapterPropertiesChangedHandler),
+            NULL);
         bluez_adapter1_set_powered(AdapterInterface, TRUE);
     }
     else
@@ -520,13 +577,18 @@ static void AdapterFoundHandler(void)
 }
 
 
-static void BluezObjectAddedHandler(
-    GDBusObjectManager *manager, GDBusObject *object, gpointer userData)
+static void BluezObjectAddedHandler
+(
+    GDBusObjectManager *manager,
+    GDBusObject *object,
+    gpointer userData
+)
 {
     switch (AppState)
     {
     case APP_STATE_SEARCHING_FOR_ADAPTER:
-        AdapterInterface = BLUEZ_ADAPTER1(g_dbus_object_get_interface(object, "org.bluez.Adapter1"));
+        AdapterInterface =
+            BLUEZ_ADAPTER1(g_dbus_object_get_interface(object, "org.bluez.Adapter1"));
         if (AdapterInterface != NULL)
         {
             AdapterFoundHandler();
@@ -553,16 +615,25 @@ static void BluezObjectAddedHandler(
         break;
 
     default:
-        LE_DEBUG("Received \"object-added\" signal - object_path=%s, state=%d", g_dbus_object_get_object_path(object), AppState);
+        LE_DEBUG(
+            "Received \"object-added\" signal - object_path=%s, state=%d",
+            g_dbus_object_get_object_path(object),
+            AppState);
         break;
     }
 }
 
 
-static void BluezObjectRemovedHandler(
-    GDBusObjectManager *manager, GDBusObject *object, gpointer userData)
+static void BluezObjectRemovedHandler
+(
+    GDBusObjectManager *manager,
+    GDBusObject *object,
+    gpointer userData
+)
 {
-    LE_DEBUG("Received \"object-removed\" signal - object_path=%s", g_dbus_object_get_object_path(object));
+    LE_DEBUG(
+        "Received \"object-removed\" signal - object_path=%s",
+        g_dbus_object_get_object_path(object));
 }
 
 
@@ -584,14 +655,19 @@ static void SearchForAdapter(void)
 }
 
 
-static void BluezObjectManagerCreateCallback(GObject *sourceObject, GAsyncResult *res, gpointer user_data)
+static void BluezObjectManagerCreateCallback
+(
+    GObject *sourceObject,
+    GAsyncResult *res,
+    gpointer user_data)
 {
     GError *error = NULL;
     BluezObjectManager = g_dbus_object_manager_client_new_for_bus_finish(res, &error);
     LE_FATAL_IF(error != NULL, "Couldn't create Bluez object manager - %s", error->message);
 
     g_signal_connect(BluezObjectManager, "object-added", G_CALLBACK(BluezObjectAddedHandler), NULL);
-    g_signal_connect(BluezObjectManager, "object-removed", G_CALLBACK(BluezObjectRemovedHandler), NULL);
+    g_signal_connect(
+        BluezObjectManager, "object-removed", G_CALLBACK(BluezObjectRemovedHandler), NULL);
 
     SearchForAdapter();
 }
@@ -607,8 +683,16 @@ static void GlibInit(void *deferredArg1, void *deferredArg2)
     g_io_add_watch(channel, G_IO_IN, LegatoFdHandler, userData);
 
     g_dbus_object_manager_client_new_for_bus(
-        G_BUS_TYPE_SYSTEM, G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE, "org.bluez", "/", BluezProxyTypeFunc, NULL,
-        NULL, NULL, BluezObjectManagerCreateCallback, NULL);
+        G_BUS_TYPE_SYSTEM,
+        G_DBUS_OBJECT_MANAGER_CLIENT_FLAGS_NONE,
+        "org.bluez",
+        "/",
+        BluezProxyTypeFunc,
+        NULL,
+        NULL,
+        NULL,
+        BluezObjectManagerCreateCallback,
+        NULL);
 
     g_main_loop_run(glibMainLoop);
 
@@ -690,11 +774,17 @@ static void HandleIrTempPeriodPush
 }
 
 
-static le_result_t ExtractBoolFromJson(const char *jsonValue, const char *extractionSpec, bool *value)
+static le_result_t ExtractBoolFromJson
+(
+    const char *jsonValue,
+    const char *extractionSpec,
+    bool *value
+)
 {
     char jsonBuffer[8]; // big enough for a bool
     json_DataType_t valueType;
-    le_result_t res = json_Extract(jsonBuffer, sizeof(jsonBuffer), jsonValue, extractionSpec, &valueType);
+    le_result_t res = json_Extract(
+        jsonBuffer, sizeof(jsonBuffer), jsonValue, extractionSpec, &valueType);
     if (res != LE_OK)
     {
         LE_WARN("Couldn't extract %s from JSON", extractionSpec);
