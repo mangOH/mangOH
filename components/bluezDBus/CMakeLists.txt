@@ -1,5 +1,3 @@
-# Not sure what this should be set to - 2.6 comes from cmake tutorial
-cmake_minimum_required (VERSION 2.6)
 project (libBluezDBus)
 
 find_package(PkgConfig REQUIRED)
