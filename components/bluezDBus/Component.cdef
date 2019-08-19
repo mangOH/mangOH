@@ -15,7 +15,12 @@ bundles:
  
 provides:
 {
-/*
+    /*
+     * Legato's provides lib functionality has a bug described in LE-12987. Once this bug is fixed,
+     * this provides/lib section can be uncommented and the requires/lib section below can be
+     * removed.
+     */
+    /*
     lib:
     {
         $BUILDDIR/libBluezDBus.so
