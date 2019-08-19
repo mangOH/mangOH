@@ -1,0 +1,26 @@
+sources:
+{
+    ntag_main.cpp
+}
+
+cxxflags:
+{
+    -std=c++11
+    -I$CURDIR/../arduinoLibs
+    -I$CURDIR/../arduinoNtag
+    -D_GNU_SOURCE
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+    component:
+    {
+	$CURDIR/../arduinoNtag
+	$CURDIR/../arduinoLibs
+    }
+}
+

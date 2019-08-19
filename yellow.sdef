@@ -37,6 +37,9 @@ apps:
 
     $CURDIR/apps/Welcome/helloYellow
 
+    $CURDIR/apps/ntag/ntag
+    $CURDIR/apps/NtagDhubIf/NtagDhubIf
+
     $LEGATO_ROOT/apps/tools/devMode
 }
 
@@ -49,12 +52,16 @@ bindings:
     button.gpio -> gpioService.le_gpioPin25
     environment.dhubIO -> dataHub.io
     vegasMode.dhubIO -> dataHub.io
+    ntag.dhubIO -> dataHub.io
+    ntag.dhubio2 -> dataHub.io
+    NtagDhubIf.dhubIO -> dataHub.io
 }
 
 
 commands:
 {
     hello = helloYellow:/bin/hello
+    ntag  = ntag:/bin/ntag
 }
 
 

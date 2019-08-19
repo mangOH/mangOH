@@ -1,0 +1,14 @@
+sandboxed: false
+start: manual
+
+executables:
+{
+    ntag = (arduinoNtag arduinoLibs ntagCmdApp)
+}
+
+extern:
+{
+    ntag.arduinoNtag.dhubIO  // required API
+    dhubio2 = ntag.ntagCmdApp.dhubIO  // required API
+}
+

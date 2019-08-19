@@ -1,0 +1,51 @@
+sources:
+{
+    start.cpp
+    smbus.c
+    ArduinoWire.cpp
+    arduino_types.c
+    ntag.cpp
+    ntagadapter.cpp
+    ntagsramadapter.cpp
+    ntageepromadapter.cpp
+    NDEF/NfcTag.cpp
+    NDEF/NdefMessage.cpp
+    NDEF/NdefRecord.cpp
+    NDEF/Ndef.cpp
+    examples/ReadTagExtended/ReadTagExtended.cpp
+    examples/WriteTagMultipleRecords/WriteTagMultipleRecords.cpp
+    examples/WriteTag/WriteTag.cpp
+    examples/EraseTag/EraseTag.cpp
+    examples/CleanTag/CleanTag.cpp
+    examples/ReadTag/ReadTag.cpp
+}
+
+cxxflags:
+{
+    -std=c++11
+    -I$CURDIR
+    -I$CURDIR/NDEF
+    -I$CURDIR/../arduinoLibs
+    -D_GNU_SOURCE
+    -fvisibility=default
+}
+
+cflags:
+{
+    "-std=c99"
+    -I$CURDIR/../arduinoLibs
+    -D_GNU_SOURCE
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+    component:
+    {
+	$CURDIR/../arduinoLibs
+    }
+}
+
