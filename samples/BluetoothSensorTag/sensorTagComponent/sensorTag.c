@@ -696,8 +696,7 @@ static void GlibInit(void *deferredArg1, void *deferredArg2)
 
     g_main_loop_run(glibMainLoop);
 
-    LE_ERROR("GLib main loop has returned");
-    exit(1);
+    LE_FATAL("GLib main loop has returned");
 }
 
 static void HandleIrTempEnablePush
