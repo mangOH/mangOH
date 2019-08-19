@@ -1,5 +1,4 @@
 sandboxed: false
-version: 0.1
 start: manual
 
 executables:
@@ -16,7 +15,7 @@ processes:
     faultAction: stopApp
     envVars:
     {
-        LE_LOG_LEVEL = DEBUG
+        // LE_LOG_LEVEL = DEBUG
     }
 }
 
