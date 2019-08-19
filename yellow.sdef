@@ -18,6 +18,14 @@ buildVars:
 #elif ${MANGOH_WP_CHIPSET_9X15} = 1
     MANGOH_BME680_I2C_BUS = 2
 #endif
+
+    // Exclude a few big libraries from the Legato apps to save space in the legato.cwe.
+    // These libraries are available in the root file system, but by default they also
+    // get added to some apps to prevent potential version mismatches when running on older
+    // root file systems.
+    USE_ROOTFS_CURL = 1
+    USE_ROOTFS_OPENSSL = 1
+    USE_ROOTFS_ZLIB = 1
 }
 
 #if ${OCTAVE} = 1
