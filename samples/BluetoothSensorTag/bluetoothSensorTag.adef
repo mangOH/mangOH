@@ -1,0 +1,25 @@
+sandboxed: false
+start: manual
+
+executables:
+{
+    bluetoothSensorTag = ( sensorTagComponent )
+}
+
+processes:
+{
+    run:
+    {
+        ( bluetoothSensorTag )
+    }
+    faultAction: stopApp
+    envVars:
+    {
+        // LE_LOG_LEVEL = DEBUG
+    }
+}
+
+bindings:
+{
+    bluetoothSensorTag.sensorTagComponent.io -> dataHub.io
+}
