@@ -319,56 +319,51 @@ static void AllAttributesFoundHandler
     LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
 }
 
-static void TryProcessAsAttribute
+static bool TryProcessAsService
 (
     GDBusObject *object,
+    const gchar *objectPath,
     const gchar *devicePath
 )
 {
-    bool found = false;
-    BluezGattService1 *serviceProxy = NULL;
-    BluezGattCharacteristic1 *characteristicProxy = NULL;
-    gchar *unknownObjectPath = NULL;
-    g_object_get(object, "g-object-path", &unknownObjectPath, NULL);
-    const bool childOfDevice = g_str_has_prefix(unknownObjectPath, devicePath);
-    if (!childOfDevice)
-    {
-        goto done;
-    }
-
-    serviceProxy = BLUEZ_GATT_SERVICE1(
-        g_dbus_object_get_interface(object, "org.bluez.GattService1"));
+    BluezGattService1 *serviceProxy =
+        BLUEZ_GATT_SERVICE1(g_dbus_object_get_interface(object, "org.bluez.GattService1"));
     if (serviceProxy == NULL)
     {
-        goto not_service;
+        return false;
     }
 
     if (g_strcmp0(bluez_gatt_service1_get_uuid(serviceProxy), SERVICE_UUID_IR_TEMP) == 0)
     {
-        LE_DEBUG("IR temperature service found at: %s", unknownObjectPath);
+        LE_DEBUG("IR temperature service found at: %s", objectPath);
         IRTemperatureSensorService = serviceProxy;
-        found = true;
-        goto done;
-    }
-    else if (g_strcmp0(bluez_gatt_service1_get_uuid(serviceProxy), SERVICE_UUID_IO) == 0)
-    {
-        LE_DEBUG("IO service found at: %s", unknownObjectPath);
-        IOService = serviceProxy;
-        found = true;
-        goto done;
-    }
-    else
-    {
-        LE_DEBUG("Ignoring discovered service");
-        g_clear_object(&serviceProxy);
+        return true;
     }
 
-not_service:
-    characteristicProxy = BLUEZ_GATT_CHARACTERISTIC1(
+    if (g_strcmp0(bluez_gatt_service1_get_uuid(serviceProxy), SERVICE_UUID_IO) == 0)
+    {
+        LE_DEBUG("IO service found at: %s", objectPath);
+        IOService = serviceProxy;
+        return true;
+    }
+
+    LE_DEBUG("Ignoring discovered service");
+    g_clear_object(&serviceProxy);
+    return false;
+}
+
+static bool TryProcessAsCharacteristic
+(
+    GDBusObject *object,
+    const gchar *objectPath,
+    const gchar *devicePath
+)
+{
+    BluezGattCharacteristic1 *characteristicProxy = BLUEZ_GATT_CHARACTERISTIC1(
         g_dbus_object_get_interface(object, "org.bluez.GattCharacteristic1"));
     if (characteristicProxy == NULL)
     {
-        goto not_characteristic;
+        return false;
     }
     const gchar *characteristicUuid = bluez_gatt_characteristic1_get_uuid(characteristicProxy);
 
@@ -377,26 +372,23 @@ not_service:
         if (IRTemperatureCharacteristicData == NULL &&
             g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_DATA) == 0)
         {
-            LE_DEBUG("IR temperature data characteristic found at: %s", unknownObjectPath);
+            LE_DEBUG("IR temperature data characteristic found at: %s", objectPath);
             IRTemperatureCharacteristicData = characteristicProxy;
-            found = true;
-            goto done;
+            return true;
         }
-        else if (IRTemperatureCharacteristicConfig == NULL &&
+        if (IRTemperatureCharacteristicConfig == NULL &&
                  g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_CONFIG) == 0)
         {
-            LE_DEBUG("IR temperature config characteristic found at: %s", unknownObjectPath);
+            LE_DEBUG("IR temperature config characteristic found at: %s", objectPath);
             IRTemperatureCharacteristicConfig = characteristicProxy;
-            found = true;
-            goto done;
+            return true;
         }
-        else if (IRTemperatureCharacteristicPeriod == NULL &&
+        if (IRTemperatureCharacteristicPeriod == NULL &&
                  g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_PERIOD) == 0)
         {
-            LE_DEBUG("IR temperature period characteristic found at: %s", unknownObjectPath);
+            LE_DEBUG("IR temperature period characteristic found at: %s", objectPath);
             IRTemperatureCharacteristicPeriod = characteristicProxy;
-            found = true;
-            goto done;
+            return true;
         }
     }
     else if (IsCharacteristicInService(IOService, characteristicProxy))
@@ -404,29 +396,44 @@ not_service:
         if (IOCharacteristicData == NULL &&
             g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IO_DATA) == 0)
         {
-            LE_DEBUG("IO data characteristic found at: %s", unknownObjectPath);
+            LE_DEBUG("IO data characteristic found at: %s", objectPath);
             IOCharacteristicData = characteristicProxy;
-            found = true;
-            goto done;
+            return true;
         }
-        else if (IOCharacteristicConfig == NULL &&
+        if (IOCharacteristicConfig == NULL &&
                  g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IO_CONFIG) == 0)
         {
-            LE_DEBUG("IO temperature config characteristic found at: %s", unknownObjectPath);
+            LE_DEBUG("IO temperature config characteristic found at: %s", objectPath);
             IOCharacteristicConfig = characteristicProxy;
-            found = true;
-            goto done;
+            return true;
         }
     }
 
+    LE_DEBUG("Ignoring discovered characteristic");
     g_clear_object(&characteristicProxy);
+    return false;
+}
 
-not_characteristic:
-done:
-    g_free(unknownObjectPath);
+
+static void TryProcessAsAttribute
+(
+    GDBusObject *object,
+    const gchar *devicePath
+)
+{
+    gchar *unknownObjectPath = NULL;
+    g_object_get(object, "g-object-path", &unknownObjectPath, NULL);
+    const bool childOfDevice = g_str_has_prefix(unknownObjectPath, devicePath);
+    if (!childOfDevice)
+    {
+        goto done;
+    }
 
     if (
-        found &&
+        (
+            TryProcessAsService(object, unknownObjectPath, devicePath) ||
+            TryProcessAsCharacteristic(object, unknownObjectPath, devicePath)
+        ) &&
         IRTemperatureSensorService &&
         IRTemperatureCharacteristicData &&
         IRTemperatureCharacteristicConfig &&
@@ -438,6 +445,9 @@ done:
         LE_DEBUG("Found all attributes");
         AllAttributesFoundHandler();
     }
+
+done:
+    g_free(unknownObjectPath);
 }
 
 
