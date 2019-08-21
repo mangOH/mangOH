@@ -137,7 +137,8 @@ static BluezDevice1 *TryCreateSensorTagDeviceProxy
     if (dev != NULL)
     {
         const gchar *deviceName = bluez_device1_get_name(dev);
-        if (g_strcmp0("CC2650 SensorTag", deviceName) != 0)
+        if (g_strcmp0("CC2650 SensorTag", deviceName) != 0 &&
+            g_strcmp0("CC1350 SensorTag", deviceName) != 0)
         {
             // Not a match, so dispose of the object
             g_clear_object(&dev);
