@@ -18,7 +18,7 @@ params:
     /*
      * Do not perform EEPROM based revision detection and assume that the revision is as specified
      */
-    force_revision = "dv3"
+    // force_revision = "dv3"
 
 
     /*
