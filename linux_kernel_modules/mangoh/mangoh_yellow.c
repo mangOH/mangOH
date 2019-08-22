@@ -38,6 +38,7 @@ enum board_rev {
 	BOARD_REV_UNKNOWN = 0,
 	BOARD_REV_DV2,
 	BOARD_REV_DV3,
+	BOARD_REV_NEWEST = BOARD_REV_DV3,
 	BOARD_REV_NUM_OF, /* keep as last definition */
 };
 
@@ -199,6 +200,8 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 	const size_t eeprom_size = mangoh_yellow_eeprom_data.byte_len;
 	const char *dv3_string = "mangOH Yellow DV3";
 	u8 *data;
+	bool eeprom_blank = true;
+	int i;
 
 	if (mangoh_yellow_driver_data.board_rev != BOARD_REV_UNKNOWN) {
 		/*
@@ -220,8 +223,20 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 		goto done;
 	}
 
-	if (strcmp(data, dv3_string) == 0)
+	for (i = 0; i < eeprom_size; i++) {
+		if (data[i] != 0xFF) {
+			eeprom_blank = false;
+			break;
+		}
+	}
+
+	if (eeprom_blank) {
+		pr_warn("EEPROM is empty - assuming board is a mangOH Yellow %s\n",
+			board_rev_strings[BOARD_REV_NEWEST]);
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_NEWEST;
+	} else if (strcmp(data, dv3_string) == 0) {
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV3;
+	}
 
 	if (mangoh_yellow_driver_data.board_rev != BOARD_REV_UNKNOWN) {
 		pr_info("Detected mangOH Yellow board revision: %s\n",
@@ -373,8 +388,8 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	}
 
 	/*
-	 * On the mangOH Yellow DV3, the magnetometer is downstream of the
-	 * bmi160.
+	 * On the mangOH Yellow DV3 and later, the magnetometer is downstream of
+	 * the bmi160.
 	 */
 	if (mangoh_yellow_driver_data.board_rev == BOARD_REV_DV2)
 	{
@@ -492,10 +507,10 @@ static int __init mangoh_yellow_init(void)
 	platform_driver_register(&mangoh_yellow_driver);
 	printk(KERN_DEBUG "mangoh: registered platform driver\n");
 
-	if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV2]) == 0) {
-		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV2;
-	} else if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV3]) == 0) {
+	if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV3]) == 0) {
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV3;
+	} else if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV2]) == 0) {
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV2;
 	} else if (strcmp(force_revision, "") != 0) {
 		pr_err("%s: Can't force unsupported board revision (%s)\n",
 		       __func__, force_revision);
