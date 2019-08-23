@@ -34,8 +34,6 @@ ArduinoWire::ArduinoWire(): fd(0), txAddress(0), txBufferIndex(0), txBufferLengt
                 LE_INFO("Cannot access /dev/i2c-8 for O_RDWR error: %s", strerror(errno));
                 exit(1);
         }
-        /* else
-                LE_INFO("Can access /dev/i2c-8"); */
 
 	this->fd = open("/dev/i2c-8", O_RDWR);
 
@@ -43,12 +41,6 @@ ArduinoWire::ArduinoWire(): fd(0), txAddress(0), txBufferIndex(0), txBufferLengt
                 LE_INFO("Cannot open /dev/i2c-8 O_RDWR ret: %d %s", this->fd, strerror(errno));
                 exit(2);
 	}
-
-	/* if(ioctl(this->fd, I2C_FUNCS, &funcs) < 0) {
-		LE_INFO("I2C_FUNCS returned error");
-		exit(3);
-  	}
-  	LE_INFO("I2c Funcs of adapter: %ld", funcs); */
 }
 
 void ArduinoWire::becomeBusMaster() {
@@ -56,13 +48,6 @@ void ArduinoWire::becomeBusMaster() {
 		LE_INFO("Could not communicate with slave device at address: %x", txAddress);
 		exit(1);
 	}
-	/* SWI: We aren't doing SMBus transactions we are using the combined interface
-	if (ioctl(this->fd, I2C_SLAVE_FORCE, txAddress) < 0) {
-		LE_INFO("Could not I2C_SLAVE_FORCE slave device at address: %x", txAddress);
-		exit(1);
-	}
-	*/
-
 }
 void ArduinoWire::begin(){
 	txBufferIndex = 0;
@@ -72,21 +57,7 @@ void ArduinoWire::begin(){
 	rxBufferLength = 0;
 }
 
-//void ArduinoWire::begin(uint8_t address) {
-//	txAddress = address;
-//
-//	begin();
-//}
-
 void ArduinoWire::beginTransmission(const uint8_t address){
-	/* SWI: We aren't doing SMBus transactions we are using the combined interface
-	int ret;
-        if ((ret = ioctl(fd, I2C_SLAVE_FORCE, address)) < 0) {
-        	LE_INFO("ArduinoWire::beginTransmission Error: %s", strerror(errno));
-        	LE_INFO("I2C_SLAVE address: %x ret: %d",address, ret);
-                exit(1);
-        }
-	*/
 	txAddress = address;
 }
 
@@ -100,7 +71,6 @@ size_t ArduinoWire::write(const uint8_t data){
 	txBufferIndex++;
 	txBufferLength = txBufferIndex;
 
-	// PrintHex(txBuffer, txBufferLength);
 	return 1;
 }
 
@@ -119,19 +89,10 @@ size_t ArduinoWire::write(const uint8_t * data, size_t size){
 int ArduinoWire::endTransmission(uint8_t sendStop){
 	int res = 0;
 
-	/* SWI: We don't need this as we are doing combined transactions across I2c
-	if (releaseBus) {
-		becomeBusMaster();
-		releaseBus = false;
-	}
-	*/
-
 	if(txBufferLength == 0) {
 		LE_INFO("Error txBufferLength == 0, nothing to transmit");
 		return 1;
 	}
-
-	// PrintHex(txBuffer, txBufferLength);
 
 	/* For the NXP NT3H2111_2211 we are allowed to only write NTAG_BLOCK_SIZE  */
 	res = i2c_write();
@@ -140,8 +101,6 @@ int ArduinoWire::endTransmission(uint8_t sendStop){
 
 	txBufferIndex = 0;
 	txBufferLength = 0;
-
-	//releaseBus = sendStop;
 
 	return res;
 }
@@ -157,23 +116,7 @@ int ArduinoWire::requestFrom(int address, int read_len, bool releaseBus){
 		return 0;
 	}
 
-	// LE_INFO("Block/Register addressing:");
-	// PrintHex(txBuffer, txBufferLength);
-
 	read = i2c_read();
-	// LE_INFO("Reading from address: %d read_len: %d", address, read_len);
-	/* if (read == read_len) {
-		LE_INFO("read OK");
-		PrintHex(rxBuffer, read);
-	} else {
-		LE_INFO("read not OK");
-	} */
-
-	//this->releaseBus = releaseBus;
-
-	/* We assume that a write register/block calls are not
-	 * happening simultaneously, or things will break - need a mutex.
-	 */
 	txBufferIndex = 0;
 	txBufferLength = 0;
 
@@ -234,9 +177,6 @@ int ArduinoWire::i2c_read() {
     if(msgs[1].len != rxBufferLength)
     	LE_INFO("i2c_read FAILED, rxBufferLength: %d msgs[1].len: %d",
 		rxBufferLength, (int) msgs[1].len);
-    // else
-    	// LE_INFO("i2c_read SUCCESS, rxBufferLength: %d msgs[1].len: %d",
-		 // rxBufferLength, (int) msgs[1].len);
 
     return (int) msgs[1].len;
 }
@@ -272,7 +212,6 @@ int ArduinoWire::i2c_write() {
         LE_INFO("I2C_RDWR in i2c_write, address: %x ret: %d", txAddress, ret);
         return -3;
     }
-    // LE_INFO("i2c_write ret returned: %d", ret);
     return 0;
 }
 

@@ -2,7 +2,7 @@ requires:
 {
     api:
     {
-        le_gpioPin23 = le_gpio.api
+        fieldDetectGpio = le_gpio.api
         dhubIO = io.api
     }
 }

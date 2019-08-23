@@ -58,7 +58,8 @@
 	type of ntag and not our NT3H2111_2211.
 
 * Starting up
-  * Need an Android phone and download the "NTAG I2C Demo" app.
+  * Need an Android phone and download the "NTAG I2C Demo" app. Recently, NXP has added support
+	for the iPhone at: https://apps.apple.com/us/app/nfc-taginfo-by-nxp/id1246143596
   * Format the tag - in the Android NTAG Demo app do Reset Tag, but be very careful to not
 	create a password - it defaults if by accident you get to that screen (and then
 	the tag is almost brick'ed).  The Android Tagwriter also works - but a similar issue

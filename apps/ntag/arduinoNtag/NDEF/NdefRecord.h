@@ -1,7 +1,6 @@
 #ifndef NdefRecord_h
 #define NdefRecord_h
 
-#include "Due.h"
 #include "../arduino_types.h"
 #include "Ndef.h"
 

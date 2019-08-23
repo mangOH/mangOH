@@ -74,6 +74,13 @@ void PushNdef(void) {
     char buf[BUFSIZ], buf2[BUFSIZ];
 
     ntagAdapter.begin();
+
+    // If the tag is unformatted then there is no eeprom memory to send to dhub
+    if(ntagAdapter.isUnformatted() == true)
+	dhubIO_PushBoolean(TAG_FORMATTED, DHUBIO_NOW, false);
+    else
+    	dhubIO_PushBoolean(TAG_FORMATTED, DHUBIO_NOW, true);
+
     NfcTag tag = ntagAdapter.read();
     String TagType = tag.getTagType();
     TagType.toCharArray(buf, BUFSIZ);
@@ -409,6 +416,7 @@ COMPONENT_INIT
             }
 	    else if (strcmp(commandPtr, "pushndef") == 0)
             {
+                LE_ASSERT(LE_OK == dhubIO_CreateInput(TAG_FORMATTED, DHUBIO_DATA_TYPE_BOOLEAN, ""));
                 LE_ASSERT(LE_OK == dhubIO_CreateInput(TAG_NDEF, DHUBIO_DATA_TYPE_JSON, ""));
 		dhubIO_SetJsonExample(TAG_NDEF, JSON_EXAMPLE);
                 PushNdef();
