@@ -23,11 +23,6 @@ processes:
         ( NtagDhubIf )
     }
 
-    envVars:
-    {
-        LE_LOG_LEVEL = DEBUG
-    }
-
     faultAction: stopApp
 }
 

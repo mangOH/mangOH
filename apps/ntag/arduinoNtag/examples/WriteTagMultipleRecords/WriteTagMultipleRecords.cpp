@@ -1,5 +1,9 @@
 #include "ntagDefs.h"
 
+/* SWI mangOH Yellow has the 2K Ntag */
+static Ntag ntag(Ntag::NTAG_I2C_2K,2,5);
+static NtagEepromAdapter ntagAdapter(&ntag);
+
 void WriteTagMultipleRecords()
 {
     ntagAdapter.begin();

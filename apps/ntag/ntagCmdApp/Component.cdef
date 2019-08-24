@@ -19,8 +19,8 @@ requires:
     }
     component:
     {
-	$CURDIR/../arduinoNtag
-	$CURDIR/../arduinoLibs
+        $CURDIR/../arduinoNtag
+        $CURDIR/../arduinoLibs
     }
 }
 

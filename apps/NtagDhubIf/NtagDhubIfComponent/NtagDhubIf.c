@@ -27,7 +27,7 @@ bool debounce = false;
 #define RES_PATH_WRITE_NDEF     "writeNDEF"
 
 // Debounce interval in seconds
-#define DEBOUNCE_INTERVAL	1
+#define DEBOUNCE_INTERVAL    1
 const static struct timeval tLong = {DEBOUNCE_INTERVAL, 0};
 
 static void FdChangeCallback(bool state, void *ctx)
@@ -37,40 +37,40 @@ static void FdChangeCallback(bool state, void *ctx)
 
     // Debounce code seems to be needed by the FD-pin circuit
     if(!state && !debounce) {
-	LE_DEBUG("State == false && !debounce");
-	return;
+         LE_DEBUG("State == false && !debounce");
+         return;
     }
     else if(!state  && debounce) {
-	LE_DEBUG("State == false && debounce");
-	gettimeofday(&tNow, NULL);
-	if(timercmp(&tNow, &tEnd, >)) {
-	    LE_DEBUG("tNow: %ld.%06ld tEnd: %ld.%06ld\n",
-		tNow.tv_sec, tNow.tv_usec,
-	 	tEnd.tv_sec, tEnd.tv_usec);
-	   debounce = false;
-	   timerclear(&tEnd);
-	}
+         LE_DEBUG("State == false && debounce");
+         gettimeofday(&tNow, NULL);
+         if(timercmp(&tNow, &tEnd, >)) {
+             LE_DEBUG("tNow: %ld.%06ld tEnd: %ld.%06ld\n",
+                  tNow.tv_sec, tNow.tv_usec,
+                   tEnd.tv_sec, tEnd.tv_usec);
+            debounce = false;
+            timerclear(&tEnd);
+         }
     }
     else if(state && !debounce) {
-	gettimeofday (&tNow, NULL) ;
-	timeradd (&tNow, &tLong, &tEnd) ;
-	LE_DEBUG("State == true && !debounce \n tNow: %ld.%06ld tLong: %ld.%06ld tEnd: %ld.%06ld\n",
-		tNow.tv_sec, tNow.tv_usec,
-		tLong.tv_sec, tLong.tv_usec,
-		tEnd.tv_sec, tEnd.tv_usec);
-	debounce = true;
-	system("/legato/systems/current/bin/ntag pushndef");
+         gettimeofday (&tNow, NULL) ;
+         timeradd (&tNow, &tLong, &tEnd) ;
+         LE_DEBUG("State == true && !debounce \n tNow: %ld.%06ld tLong: %ld.%06ld tEnd: %ld.%06ld\n",
+             tNow.tv_sec, tNow.tv_usec,
+             tLong.tv_sec, tLong.tv_usec,
+             tEnd.tv_sec, tEnd.tv_usec);
+         debounce = true;
+         system("/legato/systems/current/bin/ntag pushNdef");
     }
     else if(state && debounce) {
-	LE_DEBUG("State == true && debounce");
-	gettimeofday(&tNow, NULL);
-	if(timercmp (&tNow, &tEnd, >)) {
-	    LE_DEBUG("tNow: %ld.%06ld tEnd: %ld.%06ld\n",
-		tNow.tv_sec, tNow.tv_usec,
-		tEnd.tv_sec, tEnd.tv_usec);
-	   debounce = false;
-	   timerclear(&tEnd);
-	}
+         LE_DEBUG("State == true && debounce");
+         gettimeofday(&tNow, NULL);
+         if(timercmp (&tNow, &tEnd, >)) {
+             LE_DEBUG("tNow: %ld.%06ld tEnd: %ld.%06ld\n",
+             tNow.tv_sec, tNow.tv_usec,
+             tEnd.tv_sec, tEnd.tv_usec);
+            debounce = false;
+            timerclear(&tEnd);
+         }
     }
 }
 
@@ -78,10 +78,10 @@ static void ConfigureFdGpio()
 {
     /*
      *  Assumptions - on the WP76 GPIO23 on a yellow board has certain defaults set
-     *		1. active_low - 0
-     *		2. edge - none
-     *		3. pull - down
-     *		4. direction - in
+     *        1. active_low - 0
+     *        2. edge - none
+     *        3. pull - down
+     *        4. direction - in
      *  The NT3H2111_2211 by default sets FD to falling on the RF field - i.e. a pull-up
      *  Thus, all we need to change is pull-down to pull-up.
      */
