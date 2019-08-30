@@ -28,6 +28,7 @@ fi
 uname -a | grep mdm9x28
 if [ $? -eq 0 ] ; then
 	CF3="mdm9x28"
+	WL_REG_ON_GPIO=33
 fi
 
 if [ -z "${CF3}" ] ; then
@@ -44,10 +45,20 @@ cy_wifi_init () {
 	insmod  /legato/systems/current/modules/cfg80211.ko
 }
 cy_wifi_start() {
-	# Let's bring the Cypress chip out of reset - see Note above not needing now
-	#echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
-	#echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
-	#echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+	# Let's bring the Cypress chip out of reset
+	if [ "${CF3}" = "mdm9x28" ] ; then
+		if [ ! -d "/sys/class/gpio/gpio${WL_REG_ON_GPIO}" ] ; then
+			echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
+			echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
+		fi
+		WL_REG_ON_VALUE=`cat /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value`
+		if [ $WL_REG_ON_VALUE -eq 0 ] ; then
+			echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+			sleep 2
+			modprobe sdhci-msm
+			sleep 2
+		fi
+	fi
 
 	if [ "${CF3}" = "mdm9x15" ] ; then
 		rmmod msm_sdcc
@@ -107,6 +118,7 @@ cy_wifi_start() {
 cy_wifi_stop() {
 	ifconfig | grep wlan0 >/dev/null
         # TODO FIX:  For now we have commented rmmod's and kicking the Cypress chip
+	# The sdhci-msm crashes on modprobe -r 
 	#if [ $? -eq 0 ]; then
 	   #ifconfig wlan0 down
 	#fi
@@ -114,6 +126,8 @@ cy_wifi_stop() {
 	#rmmod /legato/systems/current/modules/brcmutil.ko || exit 127
 	#rmmod /legato/systems/current/modules/cfg80211.ko || exit 127
 	#rmmod /legato/systems/current/modules/compat.ko || exit 127
+	#modprobe -r sdhci-msm
+
 	# Turn off the Cypress chip
 	#echo 0  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
 }

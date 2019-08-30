@@ -17,7 +17,7 @@ buildVars:
 apps:
 {
     // WiFi services
-    $LEGATO_WIFI_ROOT/service/wifiService.adef
+    $LEGATO_WIFI_ROOT/service/wifiService.adef { start: manual }
     $LEGATO_WIFI_ROOT/apps/tools/wifi/wifi.adef
 }
 
