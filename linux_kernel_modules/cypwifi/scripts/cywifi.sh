@@ -54,8 +54,14 @@ cy_wifi_start() {
 		WL_REG_ON_VALUE=`cat /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value`
 		if [ $WL_REG_ON_VALUE -eq 0 ] ; then
 			echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+			# TODO: fix. WL_HOST_WAKE (GPIO42) should tell us that the
+			# the Cypress chip is powered on. On DV3, may not be
+			# connected. If it works the sleep below can be removed.
 			sleep 2
 			modprobe sdhci-msm
+			# TODO: fix. Remove sleep below after more testing.
+			# Thought I saw issues in the BRCM FMAC coming up to soon.
+			# Btw, brcmfmac does have reconnect to sdio code.
 			sleep 2
 		fi
 	fi
