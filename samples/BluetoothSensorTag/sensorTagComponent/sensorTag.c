@@ -42,17 +42,17 @@ static GDBusObjectManager *BluezObjectManager = NULL;
 static BluezAdapter1 *AdapterInterface = NULL;
 static BluezDevice1 *SensorTagDeviceInterface = NULL;
 
-static BluezGattService1 *IRTemperatureSensorService = NULL;
+static gchar *IRTemperatureSensorServicePath = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicPeriod = NULL;
 
-static BluezGattService1 *HumiditySensorService = NULL;
+static gchar *HumiditySensorServicePath = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicData = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicPeriod = NULL;
 
-static BluezGattService1 *IOService = NULL;
+static gchar *IOServicePath = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicConfig = NULL;
 
@@ -176,19 +176,12 @@ static BluezDevice1 *TryCreateSensorTagDeviceProxy
 
 static bool IsCharacteristicInService
 (
-    BluezGattService1 *service,
+    const gchar *servicePath,
     BluezGattCharacteristic1 *characteristic
 )
 {
-    if (!service)
-    {
-        return false;
-    }
-    gchar *servicePath = NULL;
-    g_object_get(service, "g-object-path", &servicePath, NULL);
     const bool charInService = (
         g_strcmp0(bluez_gatt_characteristic1_get_service(characteristic), servicePath) == 0);
-    g_free(servicePath);
 
     return charInService;
 }
@@ -464,6 +457,7 @@ static bool TryProcessAsService
     const gchar *devicePath
 )
 {
+    bool found = false;
     BluezGattService1 *serviceProxy =
         BLUEZ_GATT_SERVICE1(g_dbus_object_get_interface(object, "org.bluez.GattService1"));
     if (serviceProxy == NULL)
@@ -476,27 +470,34 @@ static bool TryProcessAsService
     if (g_strcmp0(serviceUuid, SERVICE_UUID_IR_TEMP) == 0)
     {
         LE_DEBUG("IR temperature service found at: %s", objectPath);
-        IRTemperatureSensorService = serviceProxy;
-        return true;
+        LE_ASSERT(IRTemperatureSensorServicePath == NULL);
+        IRTemperatureSensorServicePath = g_strdup(objectPath);
+        found = true;
+        goto cleanup;
     }
 
     if (g_strcmp0(serviceUuid, SERVICE_UUID_HUMIDITY) == 0)
     {
         LE_DEBUG("Humidity service found at: %s", objectPath);
-        HumiditySensorService = serviceProxy;
-        return true;
+        LE_ASSERT(HumiditySensorServicePath == NULL);
+        HumiditySensorServicePath = g_strdup(objectPath);
+        found = true;
+        goto cleanup;
     }
 
     if (g_strcmp0(serviceUuid, SERVICE_UUID_IO) == 0)
     {
         LE_DEBUG("IO service found at: %s", objectPath);
-        IOService = serviceProxy;
-        return true;
+        LE_ASSERT(IOServicePath == NULL);
+        IOServicePath = g_strdup(objectPath);
+        found = true;
+        goto cleanup;
     }
 
     LE_DEBUG("Ignoring discovered service");
+cleanup:
     g_clear_object(&serviceProxy);
-    return false;
+    return found;
 }
 
 static bool TryProcessAsCharacteristic
@@ -514,7 +515,7 @@ static bool TryProcessAsCharacteristic
     }
     const gchar *characteristicUuid = bluez_gatt_characteristic1_get_uuid(characteristicProxy);
 
-    if (IsCharacteristicInService(IRTemperatureSensorService, characteristicProxy))
+    if (IsCharacteristicInService(IRTemperatureSensorServicePath, characteristicProxy))
     {
         if (IRTemperatureCharacteristicData == NULL &&
             g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_DATA) == 0)
@@ -538,7 +539,7 @@ static bool TryProcessAsCharacteristic
             return true;
         }
     }
-    else if (IsCharacteristicInService(HumiditySensorService, characteristicProxy))
+    else if (IsCharacteristicInService(HumiditySensorServicePath, characteristicProxy))
     {
         if (HumidityCharacteristicData == NULL &&
             g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_DATA) == 0)
@@ -562,7 +563,7 @@ static bool TryProcessAsCharacteristic
             return true;
         }
     }
-    else if (IsCharacteristicInService(IOService, characteristicProxy))
+    else if (IsCharacteristicInService(IOServicePath, characteristicProxy))
     {
         if (IOCharacteristicData == NULL &&
             g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IO_DATA) == 0)
@@ -605,15 +606,15 @@ static void TryProcessAsAttribute
             TryProcessAsService(object, unknownObjectPath, devicePath) ||
             TryProcessAsCharacteristic(object, unknownObjectPath, devicePath)
         ) &&
-        IRTemperatureSensorService &&
+        IRTemperatureSensorServicePath &&
         IRTemperatureCharacteristicData &&
         IRTemperatureCharacteristicConfig &&
         IRTemperatureCharacteristicPeriod &&
-        HumiditySensorService &&
+        HumiditySensorServicePath &&
         HumidityCharacteristicData &&
         HumidityCharacteristicConfig &&
         HumidityCharacteristicPeriod &&
-        IOService &&
+        IOServicePath &&
         IOCharacteristicData &&
         IOCharacteristicConfig)
     {
