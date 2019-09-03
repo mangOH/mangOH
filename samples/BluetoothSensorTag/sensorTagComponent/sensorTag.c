@@ -12,7 +12,12 @@
 #define CHARACTERISTIC_UUID_IR_TEMP_DATA                    "f000aa01-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_IR_TEMP_CONFIG                  "f000aa02-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_IR_TEMP_PERIOD                  "f000aa03-0451-4000-b000-000000000000"
-// #define DESCRIPTOR_UUID_CLIENT_CHARACTERISTIC_CONFIGURATION "00002902-0000-1000-8000-00805f9b34fb"
+
+#define SERVICE_UUID_HUMIDITY                               "f000aa20-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_DATA                   "f000aa21-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_CONFIG                 "f000aa22-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_PERIOD                 "f000aa23-0451-4000-b000-000000000000"
+
 #define SERVICE_UUID_IO                                     "f000aa64-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_IO_DATA                         "f000aa65-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_IO_CONFIG                       "f000aa66-0451-4000-b000-000000000000"
@@ -20,17 +25,33 @@
 #define RES_PATH_IR_TEMPERATURE_VALUE "irTemperature/value"
 #define RES_PATH_IR_TEMPERATURE_PERIOD "irTemperature/period"
 #define RES_PATH_IR_TEMPERATURE_ENABLE "irTemperature/enable"
+
+#define RES_PATH_HUMIDITY_VALUE  "humidity/value"
+#define RES_PATH_HUMIDITY_PERIOD "humidity/period"
+#define RES_PATH_HUMIDITY_ENABLE "humidity/enable"
+
 #define RES_PATH_IO_VALUE "io/value"
+
 #define IR_TEMP_PERIOD_MIN 0.3
 #define IR_TEMP_PERIOD_MAX 2.55
+
+#define HUMIDITY_PERIOD_MIN 0.1
+#define HUMIDITY_PERIOD_MAX 2.55
 
 static GDBusObjectManager *BluezObjectManager = NULL;
 static BluezAdapter1 *AdapterInterface = NULL;
 static BluezDevice1 *SensorTagDeviceInterface = NULL;
+
 static BluezGattService1 *IRTemperatureSensorService = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicPeriod = NULL;
+
+static BluezGattService1 *HumiditySensorService = NULL;
+static BluezGattCharacteristic1 *HumidityCharacteristicData = NULL;
+static BluezGattCharacteristic1 *HumidityCharacteristicConfig = NULL;
+static BluezGattCharacteristic1 *HumidityCharacteristicPeriod = NULL;
+
 static BluezGattService1 *IOService = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicConfig = NULL;
@@ -59,6 +80,11 @@ static struct
         bool enable;
         double period;
     } irTemp;
+    struct
+    {
+        bool enable;
+        double period;
+    } humidity;
     struct
     {
         bool redLed;
@@ -225,7 +251,7 @@ static void IrTemperatureSetPeriod
 }
 
 
-static void DataCharacteristicPropertiesChangedHandler
+static void IrTemperatureDataPropertiesChangedHandler
 (
     GDBusProxy *proxy,
     GVariant *changedProperties,
@@ -244,6 +270,96 @@ static void DataCharacteristicPropertiesChangedHandler
         const double ambTemp = ((valArray[2] << 0) + (valArray[3] << 8)) / divider;
         g_variant_unref(value);
         LE_DEBUG("Received value - objTemp=%f, ambTemp=%f", objTemp, ambTemp);
+        char json[64];
+        int res = snprintf(json, sizeof(json), "{ \"sensorDie\": %.3lf, \"object\": %.3lf }", ambTemp, objTemp);
+        LE_ASSERT(res > 0 && res < sizeof(json));
+        io_PushJson(RES_PATH_IR_TEMPERATURE_VALUE, IO_NOW, json);
+    }
+}
+
+
+static enum PeriodValidity ValidateHumidityPeriod
+(
+    double period
+)
+{
+    if (period < HUMIDITY_PERIOD_MIN)
+    {
+        return PERIOD_VALIDITY_TOO_SHORT;
+    }
+
+    if (period > HUMIDITY_PERIOD_MAX)
+    {
+        return PERIOD_VALIDITY_TOO_LONG;
+    }
+
+    return PERIOD_VALIDITY_OK;
+}
+
+static void HumiditySetEnable
+(
+    bool enable
+)
+{
+    LE_ASSERT(AppState == APP_STATE_SAMPLING);
+    GError *error = NULL;
+    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        HumidityCharacteristicConfig,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
+}
+
+static void HumiditySetPeriod
+(
+    double period
+)
+{
+    LE_ASSERT(AppState == APP_STATE_SAMPLING);
+    LE_ASSERT(period >= HUMIDITY_PERIOD_MIN && period <= HUMIDITY_PERIOD_MAX);
+    GError *error = NULL;
+    // Register is in units of 10 ms
+    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        HumidityCharacteristicPeriod,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
+}
+
+static void HumidityDataPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
+{
+    GVariant *value = g_variant_lookup_value(changedProperties, "Value", G_VARIANT_TYPE_BYTESTRING);
+    if (value != NULL)
+    {
+        gsize nElements;
+        const uint8_t *valArray = g_variant_get_fixed_array(value, &nElements, sizeof(uint8_t));
+        LE_FATAL_IF(nElements != 4, "Expected a value of size 4");
+        const uint16_t rawTemperature = ((valArray[0] << 0) | (valArray[1] << 8));
+        const uint16_t rawHumidity = ((valArray[2] << 0) | (valArray[3] << 8));
+        // temperature in degrees celcius
+        const double temperature = ((((double)rawTemperature) / (1 << 16)) * 165) - 40;
+        // relative humidity as percentage
+        const double humidity = (((double)(rawHumidity & ~0x0003)) / (1 << 16)) * 100;
+        g_variant_unref(value);
+        LE_DEBUG("Received humidity data - temperature=%f, humidity=%f%%", temperature, humidity);
+        char json[64];
+        int res = snprintf(json, sizeof(json), "{ \"temperature\": %.3lf, \"humidity\": %.3lf }", temperature, humidity);
+        LE_ASSERT(res > 0 && res < sizeof(json));
+        io_PushJson(RES_PATH_HUMIDITY_VALUE, IO_NOW, json);
     }
 }
 
@@ -305,16 +421,37 @@ static void AllAttributesFoundHandler
         IrTemperatureSetEnable(false);
     }
 
+    if (ValidateHumidityPeriod(DHubState.humidity.period) == PERIOD_VALIDITY_OK)
+    {
+        HumiditySetPeriod(DHubState.humidity.period);
+        HumiditySetEnable(DHubState.humidity.enable);
+    }
+    else
+    {
+        HumiditySetEnable(false);
+    }
+
     IOSetConfig();
     IOSetValue();
 
     g_signal_connect(
         IRTemperatureCharacteristicData,
         "g-properties-changed",
-        G_CALLBACK(DataCharacteristicPropertiesChangedHandler),
+        G_CALLBACK(IrTemperatureDataPropertiesChangedHandler),
         NULL);
     bluez_gatt_characteristic1_call_start_notify_sync(
         IRTemperatureCharacteristicData,
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
+
+    g_signal_connect(
+        HumidityCharacteristicData,
+        "g-properties-changed",
+        G_CALLBACK(HumidityDataPropertiesChangedHandler),
+        NULL);
+    bluez_gatt_characteristic1_call_start_notify_sync(
+        HumidityCharacteristicData,
         NULL,
         &error);
     LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
@@ -334,14 +471,23 @@ static bool TryProcessAsService
         return false;
     }
 
-    if (g_strcmp0(bluez_gatt_service1_get_uuid(serviceProxy), SERVICE_UUID_IR_TEMP) == 0)
+    const gchar *serviceUuid = bluez_gatt_service1_get_uuid(serviceProxy);
+
+    if (g_strcmp0(serviceUuid, SERVICE_UUID_IR_TEMP) == 0)
     {
         LE_DEBUG("IR temperature service found at: %s", objectPath);
         IRTemperatureSensorService = serviceProxy;
         return true;
     }
 
-    if (g_strcmp0(bluez_gatt_service1_get_uuid(serviceProxy), SERVICE_UUID_IO) == 0)
+    if (g_strcmp0(serviceUuid, SERVICE_UUID_HUMIDITY) == 0)
+    {
+        LE_DEBUG("Humidity service found at: %s", objectPath);
+        HumiditySensorService = serviceProxy;
+        return true;
+    }
+
+    if (g_strcmp0(serviceUuid, SERVICE_UUID_IO) == 0)
     {
         LE_DEBUG("IO service found at: %s", objectPath);
         IOService = serviceProxy;
@@ -392,6 +538,30 @@ static bool TryProcessAsCharacteristic
             return true;
         }
     }
+    else if (IsCharacteristicInService(HumiditySensorService, characteristicProxy))
+    {
+        if (HumidityCharacteristicData == NULL &&
+            g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_DATA) == 0)
+        {
+            LE_DEBUG("Humidity data characteristic found at: %s", objectPath);
+            HumidityCharacteristicData = characteristicProxy;
+            return true;
+        }
+        if (HumidityCharacteristicConfig == NULL &&
+                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_CONFIG) == 0)
+        {
+            LE_DEBUG("Humidity config characteristic found at: %s", objectPath);
+            HumidityCharacteristicConfig = characteristicProxy;
+            return true;
+        }
+        if (HumidityCharacteristicPeriod == NULL &&
+                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_PERIOD) == 0)
+        {
+            LE_DEBUG("Humidity period characteristic found at: %s", objectPath);
+            HumidityCharacteristicPeriod = characteristicProxy;
+            return true;
+        }
+    }
     else if (IsCharacteristicInService(IOService, characteristicProxy))
     {
         if (IOCharacteristicData == NULL &&
@@ -439,6 +609,10 @@ static void TryProcessAsAttribute
         IRTemperatureCharacteristicData &&
         IRTemperatureCharacteristicConfig &&
         IRTemperatureCharacteristicPeriod &&
+        HumiditySensorService &&
+        HumidityCharacteristicData &&
+        HumidityCharacteristicConfig &&
+        HumidityCharacteristicPeriod &&
         IOService &&
         IOCharacteristicData &&
         IOCharacteristicConfig)
@@ -745,6 +919,81 @@ static void HandleIrTempPeriodPush
     }
 }
 
+static void HandleHumidityEnablePush
+(
+    double timestamp,
+    bool enable,
+    void* contextPtr
+)
+{
+    if (enable != DHubState.humidity.enable)
+    {
+        DHubState.humidity.enable = enable;
+        if (AppState == APP_STATE_SAMPLING &&
+            ValidateHumidityPeriod(DHubState.humidity.period) == PERIOD_VALIDITY_OK)
+        {
+            HumiditySetEnable(DHubState.humidity.enable);
+        }
+    }
+}
+
+static void HandleHumidityPeriodPush
+(
+    double timestamp,
+    double period,
+    void* contextPtr
+)
+{
+    switch (ValidateHumidityPeriod(period))
+    {
+    case PERIOD_VALIDITY_TOO_SHORT:
+        LE_WARN(
+            "Not setting Humidity sensor period to %lf: minimum period is %lf",
+            period,
+            IR_TEMP_PERIOD_MIN);
+        break;
+
+    case PERIOD_VALIDITY_TOO_LONG:
+        LE_WARN(
+            "Not setting Humidity sensor period to %lf: maximum period is %lf",
+            period,
+            IR_TEMP_PERIOD_MAX);
+        break;
+
+    case PERIOD_VALIDITY_OK:
+        if (period != DHubState.humidity.period)
+        {
+            if (AppState == APP_STATE_SAMPLING)
+            {
+                HumiditySetPeriod(period);
+                /*
+                 * If the enable is already true, but the old period was invalid (because it had
+                 * never been set before), then we need to perform an enable.
+                 */
+                if (DHubState.humidity.enable)
+                {
+                    const bool oldPeriodValid =
+                        ValidateHumidityPeriod(DHubState.humidity.period) == PERIOD_VALIDITY_OK;
+                    if (!oldPeriodValid)
+                    {
+                        HumiditySetEnable(true);
+                    }
+                }
+            }
+            DHubState.humidity.period = period;
+        }
+        else
+        {
+            LE_DEBUG("Humidity sensor period is already set to %lf", period);
+        }
+        break;
+
+    default:
+        LE_ASSERT(false);
+        break;
+    }
+}
+
 
 static le_result_t ExtractBoolFromJson
 (
@@ -807,6 +1056,7 @@ static void HandleIOPush
 
 COMPONENT_INIT
 {
+    // IR Temperature
     LE_ASSERT_OK(io_CreateInput(RES_PATH_IR_TEMPERATURE_VALUE, IO_DATA_TYPE_JSON, ""));
     io_SetJsonExample(RES_PATH_IR_TEMPERATURE_VALUE, "{ \"sensorDie\": 26.4, \"object\": 19.3 }");
 
@@ -818,6 +1068,19 @@ COMPONENT_INIT
     io_AddBooleanPushHandler(RES_PATH_IR_TEMPERATURE_ENABLE, HandleIrTempEnablePush, NULL);
     io_SetBooleanDefault(RES_PATH_IR_TEMPERATURE_ENABLE, false);
 
+    // Humidity
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_HUMIDITY_VALUE, IO_DATA_TYPE_JSON, ""));
+    io_SetJsonExample(RES_PATH_HUMIDITY_VALUE, "{ \"temperature\": 21.3, \"humidity\": 63.9 }");
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_HUMIDITY_PERIOD, IO_DATA_TYPE_NUMERIC, "seconds"));
+    io_AddNumericPushHandler(RES_PATH_HUMIDITY_PERIOD, HandleHumidityPeriodPush, NULL);
+    io_SetNumericDefault(RES_PATH_HUMIDITY_PERIOD, 0.0);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_HUMIDITY_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_HUMIDITY_ENABLE, HandleHumidityEnablePush, NULL);
+    io_SetBooleanDefault(RES_PATH_HUMIDITY_ENABLE, false);
+
+    // IO
     LE_ASSERT_OK(io_CreateOutput(RES_PATH_IO_VALUE, IO_DATA_TYPE_JSON, ""));
     io_AddJsonPushHandler(RES_PATH_IO_VALUE, HandleIOPush, NULL);
     io_SetJsonDefault(
