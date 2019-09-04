@@ -305,17 +305,19 @@ static BluezDevice1 *TryCreateSensorTagDeviceProxy
     return dev;
 }
 
-static enum PeriodValidity ValidateIrTempPeriod
+static enum PeriodValidity ValidatePeriod
 (
-    double period
+    double period,
+    double minPeriod,
+    double maxPeriod
 )
 {
-    if (period < IR_TEMP_PERIOD_MIN)
+    if (period < minPeriod)
     {
         return PERIOD_VALIDITY_TOO_SHORT;
     }
 
-    if (period > IR_TEMP_PERIOD_MAX)
+    if (period > maxPeriod)
     {
         return PERIOD_VALIDITY_TOO_LONG;
     }
@@ -388,24 +390,6 @@ static void IrTemperatureDataPropertiesChangedHandler
     }
 }
 
-
-static enum PeriodValidity ValidateHumidityPeriod
-(
-    double period
-)
-{
-    if (period < HUMIDITY_PERIOD_MIN)
-    {
-        return PERIOD_VALIDITY_TOO_SHORT;
-    }
-
-    if (period > HUMIDITY_PERIOD_MAX)
-    {
-        return PERIOD_VALIDITY_TOO_LONG;
-    }
-
-    return PERIOD_VALIDITY_OK;
-}
 
 static void HumiditySetEnable
 (
@@ -515,24 +499,6 @@ static void IOSetConfig
 }
 
 
-static enum PeriodValidity ValidateLightPeriod
-(
-    double period
-)
-{
-    if (period < LIGHT_PERIOD_MIN)
-    {
-        return PERIOD_VALIDITY_TOO_SHORT;
-    }
-
-    if (period > LIGHT_PERIOD_MAX)
-    {
-        return PERIOD_VALIDITY_TOO_LONG;
-    }
-
-    return PERIOD_VALIDITY_OK;
-}
-
 static void LightSetEnable
 (
     bool enable
@@ -603,7 +569,8 @@ static void AllAttributesFoundHandler
     AppState = APP_STATE_SAMPLING;
     GError *error = NULL;
 
-    if (ValidateIrTempPeriod(DHubState.irTemp.period) == PERIOD_VALIDITY_OK)
+    if (ValidatePeriod(DHubState.irTemp.period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX) ==
+        PERIOD_VALIDITY_OK)
     {
         IrTemperatureSetPeriod(DHubState.irTemp.period);
         IrTemperatureSetEnable(DHubState.irTemp.enable);
@@ -613,7 +580,8 @@ static void AllAttributesFoundHandler
         IrTemperatureSetEnable(false);
     }
 
-    if (ValidateHumidityPeriod(DHubState.humidity.period) == PERIOD_VALIDITY_OK)
+    if (ValidatePeriod(DHubState.humidity.period, HUMIDITY_PERIOD_MIN, HUMIDITY_PERIOD_MAX) ==
+        PERIOD_VALIDITY_OK)
     {
         HumiditySetPeriod(DHubState.humidity.period);
         HumiditySetEnable(DHubState.humidity.enable);
@@ -1018,7 +986,8 @@ static void HandleIrTempEnablePush
     {
         DHubState.irTemp.enable = enable;
         if (AppState == APP_STATE_SAMPLING &&
-            ValidateIrTempPeriod(DHubState.irTemp.period) == PERIOD_VALIDITY_OK)
+            ValidatePeriod(DHubState.irTemp.period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX) ==
+            PERIOD_VALIDITY_OK)
         {
             IrTemperatureSetEnable(DHubState.irTemp.enable);
         }
@@ -1032,7 +1001,7 @@ static void HandleIrTempPeriodPush
     void* contextPtr
 )
 {
-    switch (ValidateIrTempPeriod(period))
+    switch (ValidatePeriod(period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX))
     {
     case PERIOD_VALIDITY_TOO_SHORT:
         LE_WARN(
@@ -1061,7 +1030,7 @@ static void HandleIrTempPeriodPush
                 if (DHubState.irTemp.enable)
                 {
                     const bool oldPeriodValid =
-                        ValidateIrTempPeriod(DHubState.irTemp.period) == PERIOD_VALIDITY_OK;
+                        ValidatePeriod(DHubState.irTemp.period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX) == PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
                         IrTemperatureSetEnable(true);
@@ -1093,7 +1062,8 @@ static void HandleHumidityEnablePush
     {
         DHubState.humidity.enable = enable;
         if (AppState == APP_STATE_SAMPLING &&
-            ValidateHumidityPeriod(DHubState.humidity.period) == PERIOD_VALIDITY_OK)
+            ValidatePeriod(DHubState.humidity.period, HUMIDITY_PERIOD_MIN, HUMIDITY_PERIOD_MAX) ==
+            PERIOD_VALIDITY_OK)
         {
             HumiditySetEnable(DHubState.humidity.enable);
         }
@@ -1107,7 +1077,7 @@ static void HandleHumidityPeriodPush
     void* contextPtr
 )
 {
-    switch (ValidateHumidityPeriod(period))
+    switch (ValidatePeriod(period, HUMIDITY_PERIOD_MIN, HUMIDITY_PERIOD_MAX))
     {
     case PERIOD_VALIDITY_TOO_SHORT:
         LE_WARN(
@@ -1136,7 +1106,8 @@ static void HandleHumidityPeriodPush
                 if (DHubState.humidity.enable)
                 {
                     const bool oldPeriodValid =
-                        ValidateHumidityPeriod(DHubState.humidity.period) == PERIOD_VALIDITY_OK;
+                        ValidatePeriod(DHubState.humidity.period, HUMIDITY_PERIOD_MIN, HUMIDITY_PERIOD_MAX) ==
+                        PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
                         HumiditySetEnable(true);
@@ -1168,7 +1139,7 @@ static void HandleLightEnablePush
     {
         DHubState.light.enable = enable;
         if (AppState == APP_STATE_SAMPLING &&
-            ValidateLightPeriod(DHubState.light.period) == PERIOD_VALIDITY_OK)
+            ValidatePeriod(DHubState.light.period, LIGHT_PERIOD_MIN, LIGHT_PERIOD_MAX) == PERIOD_VALIDITY_OK)
         {
             LightSetEnable(DHubState.light.enable);
         }
@@ -1182,7 +1153,7 @@ static void HandleLightPeriodPush
     void* contextPtr
 )
 {
-    switch (ValidateLightPeriod(period))
+    switch (ValidatePeriod(period, LIGHT_PERIOD_MIN, LIGHT_PERIOD_MAX))
     {
     case PERIOD_VALIDITY_TOO_SHORT:
         LE_WARN(
@@ -1211,7 +1182,8 @@ static void HandleLightPeriodPush
                 if (DHubState.light.enable)
                 {
                     const bool oldPeriodValid =
-                        ValidateLightPeriod(DHubState.light.period) == PERIOD_VALIDITY_OK;
+                        ValidatePeriod(DHubState.light.period, LIGHT_PERIOD_MIN, LIGHT_PERIOD_MAX) ==
+                        PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
                         LightSetEnable(true);
