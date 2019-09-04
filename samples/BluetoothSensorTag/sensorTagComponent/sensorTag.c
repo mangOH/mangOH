@@ -975,14 +975,14 @@ static void HandleHumidityPeriodPush
         LE_WARN(
             "Not setting Humidity sensor period to %lf: minimum period is %lf",
             period,
-            IR_TEMP_PERIOD_MIN);
+            HUMIDITY_PERIOD_MIN);
         break;
 
     case PERIOD_VALIDITY_TOO_LONG:
         LE_WARN(
             "Not setting Humidity sensor period to %lf: maximum period is %lf",
             period,
-            IR_TEMP_PERIOD_MAX);
+            HUMIDITY_PERIOD_MAX);
         break;
 
     case PERIOD_VALIDITY_OK:
