@@ -8,35 +8,47 @@
 #include "org.bluez.GattCharacteristic1.h"
 #include "org.bluez.GattDescriptor1.h"
 
-#define SERVICE_UUID_IR_TEMP                                "f000aa00-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IR_TEMP_DATA                    "f000aa01-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IR_TEMP_CONFIG                  "f000aa02-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IR_TEMP_PERIOD                  "f000aa03-0451-4000-b000-000000000000"
+#define SERVICE_UUID_IR_TEMP                "f000aa00-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IR_TEMP_DATA    "f000aa01-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IR_TEMP_CONFIG  "f000aa02-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IR_TEMP_PERIOD  "f000aa03-0451-4000-b000-000000000000"
 
-#define SERVICE_UUID_HUMIDITY                               "f000aa20-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_HUMIDITY_DATA                   "f000aa21-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_HUMIDITY_CONFIG                 "f000aa22-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_HUMIDITY_PERIOD                 "f000aa23-0451-4000-b000-000000000000"
+#define SERVICE_UUID_HUMIDITY               "f000aa20-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_DATA   "f000aa21-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_CONFIG "f000aa22-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_PERIOD "f000aa23-0451-4000-b000-000000000000"
 
-#define SERVICE_UUID_IO                                     "f000aa64-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IO_DATA                         "f000aa65-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IO_CONFIG                       "f000aa66-0451-4000-b000-000000000000"
+#define SERVICE_UUID_IO                     "f000aa64-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IO_DATA         "f000aa65-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IO_CONFIG       "f000aa66-0451-4000-b000-000000000000"
 
-#define RES_PATH_IR_TEMPERATURE_VALUE "irTemperature/value"
-#define RES_PATH_IR_TEMPERATURE_PERIOD "irTemperature/period"
-#define RES_PATH_IR_TEMPERATURE_ENABLE "irTemperature/enable"
+#define SERVICE_UUID_LIGHT                  "f000aa70-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_LIGHT_DATA      "f000aa71-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_LIGHT_CONFIG    "f000aa72-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_LIGHT_PERIOD    "f000aa73-0451-4000-b000-000000000000"
 
-#define RES_PATH_HUMIDITY_VALUE  "humidity/value"
-#define RES_PATH_HUMIDITY_PERIOD "humidity/period"
-#define RES_PATH_HUMIDITY_ENABLE "humidity/enable"
+#define RES_PATH_IR_TEMPERATURE_VALUE       "irTemperature/value"
+#define RES_PATH_IR_TEMPERATURE_PERIOD      "irTemperature/period"
+#define RES_PATH_IR_TEMPERATURE_ENABLE      "irTemperature/enable"
 
-#define RES_PATH_IO_VALUE "io/value"
+#define RES_PATH_HUMIDITY_VALUE             "humidity/value"
+#define RES_PATH_HUMIDITY_PERIOD            "humidity/period"
+#define RES_PATH_HUMIDITY_ENABLE            "humidity/enable"
+
+#define RES_PATH_IO_VALUE                   "io/value"
+
+#define RES_PATH_LIGHT_VALUE                "light/value"
+#define RES_PATH_LIGHT_PERIOD               "light/period"
+#define RES_PATH_LIGHT_ENABLE               "light/enable"
 
 #define IR_TEMP_PERIOD_MIN 0.3
 #define IR_TEMP_PERIOD_MAX 2.55
 
 #define HUMIDITY_PERIOD_MIN 0.1
 #define HUMIDITY_PERIOD_MAX 2.55
+
+#define LIGHT_PERIOD_MIN 0.1
+#define LIGHT_PERIOD_MAX 2.55
 
 static GDBusObjectManager *BluezObjectManager = NULL;
 static BluezAdapter1 *AdapterInterface = NULL;
@@ -52,6 +64,10 @@ static BluezGattCharacteristic1 *HumidityCharacteristicPeriod = NULL;
 
 static BluezGattCharacteristic1 *IOCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicConfig = NULL;
+
+static BluezGattCharacteristic1 *LightCharacteristicData = NULL;
+static BluezGattCharacteristic1 *LightCharacteristicConfig = NULL;
+static BluezGattCharacteristic1 *LightCharacteristicPeriod = NULL;
 
 struct Characteristic
 {
@@ -123,6 +139,26 @@ static const struct Characteristic IOCharacteristics[] =
     },
 };
 
+static const struct Characteristic LightCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_LIGHT_DATA,
+        .proxy = &LightCharacteristicData,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_LIGHT_CONFIG,
+        .proxy = &LightCharacteristicConfig,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_LIGHT_PERIOD,
+        .proxy = &LightCharacteristicPeriod,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
+};
+
 static struct Service Services[] =
 {
     {
@@ -139,6 +175,11 @@ static struct Service Services[] =
         .name = "IO",
         .uuid = SERVICE_UUID_IO,
         .characteristics = IOCharacteristics,
+    },
+    {
+        .name = "Light",
+        .uuid = SERVICE_UUID_LIGHT,
+        .characteristics = LightCharacteristics,
     },
 };
 
@@ -177,6 +218,11 @@ static struct
         bool greenLed;
         bool buzzer;
     } io;
+    struct
+    {
+        bool enable;
+        double period;
+    } light;
 } DHubState;
 
 
@@ -468,6 +514,87 @@ static void IOSetConfig
     LE_FATAL_IF(error, "Failed while writing IO config - %s", error->message);
 }
 
+
+static enum PeriodValidity ValidateLightPeriod
+(
+    double period
+)
+{
+    if (period < LIGHT_PERIOD_MIN)
+    {
+        return PERIOD_VALIDITY_TOO_SHORT;
+    }
+
+    if (period > LIGHT_PERIOD_MAX)
+    {
+        return PERIOD_VALIDITY_TOO_LONG;
+    }
+
+    return PERIOD_VALIDITY_OK;
+}
+
+static void LightSetEnable
+(
+    bool enable
+)
+{
+    LE_ASSERT(AppState == APP_STATE_SAMPLING);
+    GError *error = NULL;
+    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        LightCharacteristicConfig,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
+}
+
+static void LightSetPeriod
+(
+    double period
+)
+{
+    LE_ASSERT(AppState == APP_STATE_SAMPLING);
+    LE_ASSERT(period >= LIGHT_PERIOD_MIN && period <= LIGHT_PERIOD_MAX);
+    GError *error = NULL;
+    // Register is in units of 10 ms
+    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        LightCharacteristicPeriod,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
+}
+
+static void LightDataPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
+{
+    GVariant *value = g_variant_lookup_value(changedProperties, "Value", G_VARIANT_TYPE_BYTESTRING);
+    if (value != NULL)
+    {
+        gsize nElements;
+        const uint8_t *valArray = g_variant_get_fixed_array(value, &nElements, sizeof(uint8_t));
+        LE_FATAL_IF(nElements != 2, "Expected a value of size 2");
+        const uint16_t rawLightReg = ((valArray[0] << 0) | (valArray[1] << 8));
+        const uint16_t mantissa = (rawLightReg & 0x0FFF);
+        const uint16_t exponent = (rawLightReg >> 12);
+        const uint16_t mult = (1 << exponent);
+        const double lux = (mantissa * mult) / 100.0;
+        LE_DEBUG("Received light data - lux=%f", lux);
+        io_PushNumeric(RES_PATH_LIGHT_VALUE, IO_NOW, lux);
+    }
+}
+
 static void AllAttributesFoundHandler
 (
     void
@@ -517,6 +644,17 @@ static void AllAttributesFoundHandler
         NULL);
     bluez_gatt_characteristic1_call_start_notify_sync(
         HumidityCharacteristicData,
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
+
+    g_signal_connect(
+        LightCharacteristicData,
+        "g-properties-changed",
+        G_CALLBACK(LightDataPropertiesChangedHandler),
+        NULL);
+    bluez_gatt_characteristic1_call_start_notify_sync(
+        LightCharacteristicData,
         NULL,
         &error);
     LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
@@ -1019,6 +1157,81 @@ static void HandleHumidityPeriodPush
     }
 }
 
+static void HandleLightEnablePush
+(
+    double timestamp,
+    bool enable,
+    void* contextPtr
+)
+{
+    if (enable != DHubState.light.enable)
+    {
+        DHubState.light.enable = enable;
+        if (AppState == APP_STATE_SAMPLING &&
+            ValidateLightPeriod(DHubState.light.period) == PERIOD_VALIDITY_OK)
+        {
+            LightSetEnable(DHubState.light.enable);
+        }
+    }
+}
+
+static void HandleLightPeriodPush
+(
+    double timestamp,
+    double period,
+    void* contextPtr
+)
+{
+    switch (ValidateLightPeriod(period))
+    {
+    case PERIOD_VALIDITY_TOO_SHORT:
+        LE_WARN(
+            "Not setting Light sensor period to %lf: minimum period is %lf",
+            period,
+            LIGHT_PERIOD_MIN);
+        break;
+
+    case PERIOD_VALIDITY_TOO_LONG:
+        LE_WARN(
+            "Not setting Light sensor period to %lf: maximum period is %lf",
+            period,
+            LIGHT_PERIOD_MAX);
+        break;
+
+    case PERIOD_VALIDITY_OK:
+        if (period != DHubState.light.period)
+        {
+            if (AppState == APP_STATE_SAMPLING)
+            {
+                LightSetPeriod(period);
+                /*
+                 * If the enable is already true, but the old period was invalid (because it had
+                 * never been set before), then we need to perform an enable.
+                 */
+                if (DHubState.light.enable)
+                {
+                    const bool oldPeriodValid =
+                        ValidateLightPeriod(DHubState.light.period) == PERIOD_VALIDITY_OK;
+                    if (!oldPeriodValid)
+                    {
+                        LightSetEnable(true);
+                    }
+                }
+            }
+            DHubState.light.period = period;
+        }
+        else
+        {
+            LE_DEBUG("Light sensor period is already set to %lf", period);
+        }
+        break;
+
+    default:
+        LE_ASSERT(false);
+        break;
+    }
+}
+
 
 static le_result_t ExtractBoolFromJson
 (
@@ -1110,6 +1323,17 @@ COMPONENT_INIT
     io_AddJsonPushHandler(RES_PATH_IO_VALUE, HandleIOPush, NULL);
     io_SetJsonDefault(
         RES_PATH_IO_VALUE, "{ \"redLed\": false, \"greenLed\": false, \"buzzer\": false }");
+
+    // Light
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_LIGHT_VALUE, IO_DATA_TYPE_NUMERIC, "lux"));
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_LIGHT_PERIOD, IO_DATA_TYPE_NUMERIC, "seconds"));
+    io_AddNumericPushHandler(RES_PATH_LIGHT_PERIOD, HandleLightPeriodPush, NULL);
+    io_SetNumericDefault(RES_PATH_LIGHT_PERIOD, 0.0);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_LIGHT_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_LIGHT_ENABLE, HandleLightEnablePush, NULL);
+    io_SetBooleanDefault(RES_PATH_LIGHT_ENABLE, false);
 
     le_event_QueueFunction(GlibInit, NULL, NULL);
 }
