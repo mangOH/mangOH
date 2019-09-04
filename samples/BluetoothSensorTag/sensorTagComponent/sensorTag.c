@@ -42,19 +42,105 @@ static GDBusObjectManager *BluezObjectManager = NULL;
 static BluezAdapter1 *AdapterInterface = NULL;
 static BluezDevice1 *SensorTagDeviceInterface = NULL;
 
-static gchar *IRTemperatureSensorServicePath = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicPeriod = NULL;
 
-static gchar *HumiditySensorServicePath = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicData = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicPeriod = NULL;
 
-static gchar *IOServicePath = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicConfig = NULL;
+
+struct Characteristic
+{
+    const gchar *uuid;
+    BluezGattCharacteristic1 **proxy;
+};
+
+struct Service
+{
+    const gchar *name;
+    const gchar *uuid;
+    gchar *objectPath;
+    const struct Characteristic *characteristics;
+};
+
+static const struct Characteristic IRTemperatureCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_IR_TEMP_DATA,
+        .proxy = &IRTemperatureCharacteristicData,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_IR_TEMP_CONFIG,
+        .proxy = &IRTemperatureCharacteristicConfig,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_IR_TEMP_PERIOD,
+        .proxy = &IRTemperatureCharacteristicPeriod,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
+};
+
+static const struct Characteristic HumidityCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_HUMIDITY_DATA,
+        .proxy = &HumidityCharacteristicData,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_HUMIDITY_CONFIG,
+        .proxy = &HumidityCharacteristicConfig,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_HUMIDITY_PERIOD,
+        .proxy = &HumidityCharacteristicPeriod,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
+};
+
+static const struct Characteristic IOCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_IO_DATA,
+        .proxy = &IOCharacteristicData,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_IO_CONFIG,
+        .proxy = &IOCharacteristicConfig,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
+};
+
+static struct Service Services[] =
+{
+    {
+        .name = "IR Temperature",
+        .uuid = SERVICE_UUID_IR_TEMP,
+        .characteristics = IRTemperatureCharacteristics,
+    },
+    {
+        .name = "Humidity",
+        .uuid = SERVICE_UUID_HUMIDITY,
+        .characteristics = HumidityCharacteristics,
+    },
+    {
+        .name = "IO",
+        .uuid = SERVICE_UUID_IO,
+        .characteristics = IOCharacteristics,
+    },
+};
 
 enum PeriodValidity
 {
@@ -102,7 +188,7 @@ GType BluezProxyTypeFunc
     gpointer userData
 )
 {
-    LE_DEBUG("Handling request for objectPath=%s, interfaceName=%s", objectPath, interfaceName);
+    LE_DEBUG("proxy ctor: path=%s, intf=%s", objectPath, interfaceName);
     if (interfaceName == NULL)
     {
         return g_dbus_object_proxy_get_type();
@@ -172,20 +258,6 @@ static BluezDevice1 *TryCreateSensorTagDeviceProxy
     }
     return dev;
 }
-
-
-static bool IsCharacteristicInService
-(
-    const gchar *servicePath,
-    BluezGattCharacteristic1 *characteristic
-)
-{
-    const bool charInService = (
-        g_strcmp0(bluez_gatt_characteristic1_get_service(characteristic), servicePath) == 0);
-
-    return charInService;
-}
-
 
 static enum PeriodValidity ValidateIrTempPeriod
 (
@@ -453,8 +525,7 @@ static void AllAttributesFoundHandler
 static bool TryProcessAsService
 (
     GDBusObject *object,
-    const gchar *objectPath,
-    const gchar *devicePath
+    const gchar *objectPath
 )
 {
     bool found = false;
@@ -466,45 +537,26 @@ static bool TryProcessAsService
     }
 
     const gchar *serviceUuid = bluez_gatt_service1_get_uuid(serviceProxy);
-
-    if (g_strcmp0(serviceUuid, SERVICE_UUID_IR_TEMP) == 0)
+    for (size_t i = 0; i < NUM_ARRAY_MEMBERS(Services); i++)
     {
-        LE_DEBUG("IR temperature service found at: %s", objectPath);
-        LE_ASSERT(IRTemperatureSensorServicePath == NULL);
-        IRTemperatureSensorServicePath = g_strdup(objectPath);
-        found = true;
-        goto cleanup;
+        if (g_strcmp0(serviceUuid, Services[i].uuid) == 0)
+        {
+            LE_DEBUG("%s service found at: %s", Services[i].name, objectPath);
+            LE_ASSERT(Services[i].objectPath == NULL);
+            Services[i].objectPath = g_strdup(objectPath);
+            found = true;
+            break;
+        }
     }
-
-    if (g_strcmp0(serviceUuid, SERVICE_UUID_HUMIDITY) == 0)
-    {
-        LE_DEBUG("Humidity service found at: %s", objectPath);
-        LE_ASSERT(HumiditySensorServicePath == NULL);
-        HumiditySensorServicePath = g_strdup(objectPath);
-        found = true;
-        goto cleanup;
-    }
-
-    if (g_strcmp0(serviceUuid, SERVICE_UUID_IO) == 0)
-    {
-        LE_DEBUG("IO service found at: %s", objectPath);
-        LE_ASSERT(IOServicePath == NULL);
-        IOServicePath = g_strdup(objectPath);
-        found = true;
-        goto cleanup;
-    }
-
-    LE_DEBUG("Ignoring discovered service");
-cleanup:
     g_clear_object(&serviceProxy);
+
     return found;
 }
 
 static bool TryProcessAsCharacteristic
 (
     GDBusObject *object,
-    const gchar *objectPath,
-    const gchar *devicePath
+    const gchar *objectPath
 )
 {
     BluezGattCharacteristic1 *characteristicProxy = BLUEZ_GATT_CHARACTERISTIC1(
@@ -515,73 +567,34 @@ static bool TryProcessAsCharacteristic
     }
     const gchar *characteristicUuid = bluez_gatt_characteristic1_get_uuid(characteristicProxy);
 
-    if (IsCharacteristicInService(IRTemperatureSensorServicePath, characteristicProxy))
+    for (size_t serviceIdx = 0; serviceIdx < NUM_ARRAY_MEMBERS(Services); serviceIdx++)
     {
-        if (IRTemperatureCharacteristicData == NULL &&
-            g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_DATA) == 0)
+        const bool charInService = (
+            g_strcmp0(
+                bluez_gatt_characteristic1_get_service(characteristicProxy),
+                Services[serviceIdx].objectPath) == 0);
+        if (charInService)
         {
-            LE_DEBUG("IR temperature data characteristic found at: %s", objectPath);
-            IRTemperatureCharacteristicData = characteristicProxy;
-            return true;
-        }
-        if (IRTemperatureCharacteristicConfig == NULL &&
-                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_CONFIG) == 0)
-        {
-            LE_DEBUG("IR temperature config characteristic found at: %s", objectPath);
-            IRTemperatureCharacteristicConfig = characteristicProxy;
-            return true;
-        }
-        if (IRTemperatureCharacteristicPeriod == NULL &&
-                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IR_TEMP_PERIOD) == 0)
-        {
-            LE_DEBUG("IR temperature period characteristic found at: %s", objectPath);
-            IRTemperatureCharacteristicPeriod = characteristicProxy;
-            return true;
-        }
-    }
-    else if (IsCharacteristicInService(HumiditySensorServicePath, characteristicProxy))
-    {
-        if (HumidityCharacteristicData == NULL &&
-            g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_DATA) == 0)
-        {
-            LE_DEBUG("Humidity data characteristic found at: %s", objectPath);
-            HumidityCharacteristicData = characteristicProxy;
-            return true;
-        }
-        if (HumidityCharacteristicConfig == NULL &&
-                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_CONFIG) == 0)
-        {
-            LE_DEBUG("Humidity config characteristic found at: %s", objectPath);
-            HumidityCharacteristicConfig = characteristicProxy;
-            return true;
-        }
-        if (HumidityCharacteristicPeriod == NULL &&
-                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_HUMIDITY_PERIOD) == 0)
-        {
-            LE_DEBUG("Humidity period characteristic found at: %s", objectPath);
-            HumidityCharacteristicPeriod = characteristicProxy;
-            return true;
-        }
-    }
-    else if (IsCharacteristicInService(IOServicePath, characteristicProxy))
-    {
-        if (IOCharacteristicData == NULL &&
-            g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IO_DATA) == 0)
-        {
-            LE_DEBUG("IO data characteristic found at: %s", objectPath);
-            IOCharacteristicData = characteristicProxy;
-            return true;
-        }
-        if (IOCharacteristicConfig == NULL &&
-                 g_strcmp0(characteristicUuid, CHARACTERISTIC_UUID_IO_CONFIG) == 0)
-        {
-            LE_DEBUG("IO temperature config characteristic found at: %s", objectPath);
-            IOCharacteristicConfig = characteristicProxy;
-            return true;
+            for (const struct Characteristic *characteristic = Services[serviceIdx].characteristics;
+                 characteristic->uuid != NULL;
+                 characteristic++)
+            {
+                if (g_strcmp0(characteristic->uuid, characteristicUuid) == 0)
+                {
+                    LE_ASSERT(*(characteristic->proxy) == NULL);
+                    LE_DEBUG(
+                        "service %s characteristic %s found at %s",
+                        Services[serviceIdx].name,
+                        characteristic->uuid,
+                        objectPath);
+                    *(characteristic->proxy) = characteristicProxy;
+                    return true;
+                }
+            }
+            break;
         }
     }
 
-    LE_DEBUG("Ignoring discovered characteristic");
     g_clear_object(&characteristicProxy);
     return false;
 }
@@ -601,25 +614,36 @@ static void TryProcessAsAttribute
         goto done;
     }
 
-    if (
-        (
-            TryProcessAsService(object, unknownObjectPath, devicePath) ||
-            TryProcessAsCharacteristic(object, unknownObjectPath, devicePath)
-        ) &&
-        IRTemperatureSensorServicePath &&
-        IRTemperatureCharacteristicData &&
-        IRTemperatureCharacteristicConfig &&
-        IRTemperatureCharacteristicPeriod &&
-        HumiditySensorServicePath &&
-        HumidityCharacteristicData &&
-        HumidityCharacteristicConfig &&
-        HumidityCharacteristicPeriod &&
-        IOServicePath &&
-        IOCharacteristicData &&
-        IOCharacteristicConfig)
+    bool missingCharacteristic = false;
+    if (TryProcessAsService(object, unknownObjectPath))
     {
-        LE_DEBUG("Found all attributes");
-        AllAttributesFoundHandler();
+        // Services are discovered before their attributes, so there's no point in checking if all
+        // attributes are found.
+    }
+    else if (TryProcessAsCharacteristic(object, unknownObjectPath))
+    {
+        for (size_t serviceIdx = 0;
+             serviceIdx < NUM_ARRAY_MEMBERS(Services) && !missingCharacteristic;
+             serviceIdx++)
+        {
+            for (const struct Characteristic *characteristic = Services[serviceIdx].characteristics;
+                 characteristic->uuid != NULL;
+                 characteristic++)
+            {
+                if (*(characteristic->proxy) == NULL)
+                {
+                    missingCharacteristic = true;
+                    LE_DEBUG("Found missing characteristic: %s:%s", Services[serviceIdx].name, characteristic->uuid);
+                    break;
+                }
+            }
+        }
+
+        if (!missingCharacteristic)
+        {
+            LE_DEBUG("Found all attributes");
+            AllAttributesFoundHandler();
+        }
     }
 
 done:
