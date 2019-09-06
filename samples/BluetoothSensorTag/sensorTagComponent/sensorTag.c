@@ -8,47 +8,54 @@
 #include "org.bluez.GattCharacteristic1.h"
 #include "org.bluez.GattDescriptor1.h"
 
-#define SERVICE_UUID_IR_TEMP                "f000aa00-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IR_TEMP_DATA    "f000aa01-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IR_TEMP_CONFIG  "f000aa02-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IR_TEMP_PERIOD  "f000aa03-0451-4000-b000-000000000000"
+#define SERVICE_UUID_SIMPLE_KEYS             "0000ffe0-0000-1000-8000-00805f9b34fb"
+#define CHARACTERISTIC_UUID_SIMPLE_KEYS_DATA "0000ffe1-0000-1000-8000-00805f9b34fb"
 
-#define SERVICE_UUID_HUMIDITY               "f000aa20-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_HUMIDITY_DATA   "f000aa21-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_HUMIDITY_CONFIG "f000aa22-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_HUMIDITY_PERIOD "f000aa23-0451-4000-b000-000000000000"
+#define SERVICE_UUID_IR_TEMP                 "f000aa00-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IR_TEMP_DATA     "f000aa01-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IR_TEMP_CONFIG   "f000aa02-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IR_TEMP_PERIOD   "f000aa03-0451-4000-b000-000000000000"
 
-#define SERVICE_UUID_PRESSURE               "f000aa40-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_PRESSURE_DATA   "f000aa41-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_PRESSURE_CONFIG "f000aa42-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_PRESSURE_PERIOD "f000aa44-0451-4000-b000-000000000000"
+#define SERVICE_UUID_HUMIDITY                "f000aa20-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_DATA    "f000aa21-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_CONFIG  "f000aa22-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_HUMIDITY_PERIOD  "f000aa23-0451-4000-b000-000000000000"
 
-#define SERVICE_UUID_IO                     "f000aa64-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IO_DATA         "f000aa65-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_IO_CONFIG       "f000aa66-0451-4000-b000-000000000000"
+#define SERVICE_UUID_PRESSURE                "f000aa40-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_PRESSURE_DATA    "f000aa41-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_PRESSURE_CONFIG  "f000aa42-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_PRESSURE_PERIOD  "f000aa44-0451-4000-b000-000000000000"
 
-#define SERVICE_UUID_LIGHT                  "f000aa70-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_LIGHT_DATA      "f000aa71-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_LIGHT_CONFIG    "f000aa72-0451-4000-b000-000000000000"
-#define CHARACTERISTIC_UUID_LIGHT_PERIOD    "f000aa73-0451-4000-b000-000000000000"
+#define SERVICE_UUID_IO                      "f000aa64-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IO_DATA          "f000aa65-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IO_CONFIG        "f000aa66-0451-4000-b000-000000000000"
 
-#define RES_PATH_IR_TEMPERATURE_VALUE       "irTemperature/value"
-#define RES_PATH_IR_TEMPERATURE_PERIOD      "irTemperature/period"
-#define RES_PATH_IR_TEMPERATURE_ENABLE      "irTemperature/enable"
+#define SERVICE_UUID_LIGHT                   "f000aa70-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_LIGHT_DATA       "f000aa71-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_LIGHT_CONFIG     "f000aa72-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_LIGHT_PERIOD     "f000aa73-0451-4000-b000-000000000000"
 
-#define RES_PATH_HUMIDITY_VALUE             "humidity/value"
-#define RES_PATH_HUMIDITY_PERIOD            "humidity/period"
-#define RES_PATH_HUMIDITY_ENABLE            "humidity/enable"
+#define RES_PATH_SIMPLE_KEYS_USER_VALUE      "simpleKeys/user/value"
+#define RES_PATH_SIMPLE_KEYS_POWER_VALUE     "simpleKeys/power/value"
+#define RES_PATH_SIMPLE_KEYS_REED_VALUE      "simpleKeys/reed/value"
 
-#define RES_PATH_PRESSURE_VALUE             "pressure/value"
-#define RES_PATH_PRESSURE_PERIOD            "pressure/period"
-#define RES_PATH_PRESSURE_ENABLE            "pressure/enable"
+#define RES_PATH_IR_TEMPERATURE_VALUE        "irTemperature/value"
+#define RES_PATH_IR_TEMPERATURE_PERIOD       "irTemperature/period"
+#define RES_PATH_IR_TEMPERATURE_ENABLE       "irTemperature/enable"
 
-#define RES_PATH_IO_VALUE                   "io/value"
+#define RES_PATH_HUMIDITY_VALUE              "humidity/value"
+#define RES_PATH_HUMIDITY_PERIOD             "humidity/period"
+#define RES_PATH_HUMIDITY_ENABLE             "humidity/enable"
 
-#define RES_PATH_LIGHT_VALUE                "light/value"
-#define RES_PATH_LIGHT_PERIOD               "light/period"
-#define RES_PATH_LIGHT_ENABLE               "light/enable"
+#define RES_PATH_PRESSURE_VALUE              "pressure/value"
+#define RES_PATH_PRESSURE_PERIOD             "pressure/period"
+#define RES_PATH_PRESSURE_ENABLE             "pressure/enable"
+
+#define RES_PATH_IO_VALUE                    "io/value"
+
+#define RES_PATH_LIGHT_VALUE                 "light/value"
+#define RES_PATH_LIGHT_PERIOD                "light/period"
+#define RES_PATH_LIGHT_ENABLE                "light/enable"
 
 #define IR_TEMP_PERIOD_MIN 0.3
 #define IR_TEMP_PERIOD_MAX 2.55
@@ -65,6 +72,8 @@
 static GDBusObjectManager *BluezObjectManager = NULL;
 static BluezAdapter1 *AdapterInterface = NULL;
 static BluezDevice1 *SensorTagDeviceInterface = NULL;
+
+static BluezGattCharacteristic1 *SimpleKeysCharacteristicData = NULL;
 
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IRTemperatureCharacteristicConfig = NULL;
@@ -97,6 +106,18 @@ struct Service
     const gchar *uuid;
     gchar *objectPath;
     const struct Characteristic *characteristics;
+};
+
+static const struct Characteristic SimpleKeysCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_SIMPLE_KEYS_DATA,
+        .proxy = &SimpleKeysCharacteristicData,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
 };
 
 static const struct Characteristic IRTemperatureCharacteristics[] =
@@ -198,6 +219,11 @@ static const struct Characteristic LightCharacteristics[] =
 static struct Service Services[] =
 {
     {
+        .name = "Simple Keys",
+        .uuid = SERVICE_UUID_SIMPLE_KEYS,
+        .characteristics = SimpleKeysCharacteristics,
+    },
+    {
         .name = "IR Temperature",
         .uuid = SERVICE_UUID_IR_TEMP,
         .characteristics = IRTemperatureCharacteristics,
@@ -243,6 +269,12 @@ static enum ApplicationState
 
 static struct
 {
+    struct
+    {
+        bool userPressed;
+        bool powerPressed;
+        bool reedActivated;
+    } simpleKeys;
     struct
     {
         bool enable;
@@ -369,6 +401,48 @@ static enum PeriodValidity ValidatePeriod
     }
 
     return PERIOD_VALIDITY_OK;
+}
+
+
+static void SimpleKeysDataPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
+{
+    GVariant *value = g_variant_lookup_value(changedProperties, "Value", G_VARIANT_TYPE_BYTESTRING);
+    if (value != NULL)
+    {
+        gsize nElements;
+        const uint8_t *valArray = g_variant_get_fixed_array(value, &nElements, sizeof(uint8_t));
+        LE_FATAL_IF(nElements != 1, "Expected a value of size 1");
+        const bool userPressed = ((valArray[0] & (1 << 0)) != 0);
+        const bool powerPressed = ((valArray[0] & (1 << 1)) != 0);
+        const bool reedActivated = ((valArray[0] & (1 << 2)) != 0);
+        g_variant_unref(value);
+        LE_DEBUG(
+            "Received value - userPressed=%d, powerPressed=%d, reedActivated=%d",
+            userPressed,
+            powerPressed,
+            reedActivated);
+        if (userPressed != DHubState.simpleKeys.userPressed)
+        {
+            DHubState.simpleKeys.userPressed = userPressed;
+            io_PushBoolean(RES_PATH_SIMPLE_KEYS_USER_VALUE, IO_NOW, userPressed);
+        }
+        if (powerPressed != DHubState.simpleKeys.powerPressed)
+        {
+            DHubState.simpleKeys.powerPressed = powerPressed;
+            io_PushBoolean(RES_PATH_SIMPLE_KEYS_POWER_VALUE, IO_NOW, powerPressed);
+        }
+        if (reedActivated != DHubState.simpleKeys.reedActivated)
+        {
+            DHubState.simpleKeys.reedActivated = reedActivated;
+            io_PushBoolean(RES_PATH_SIMPLE_KEYS_REED_VALUE, IO_NOW, reedActivated);
+        }
+    }
 }
 
 static void IrTemperatureSetEnable
@@ -724,6 +798,17 @@ static void AllAttributesFoundHandler
 
     IOSetConfig();
     IOSetValue();
+
+    g_signal_connect(
+        SimpleKeysCharacteristicData,
+        "g-properties-changed",
+        G_CALLBACK(SimpleKeysDataPropertiesChangedHandler),
+        NULL);
+    bluez_gatt_characteristic1_call_start_notify_sync(
+        SimpleKeysCharacteristicData,
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
 
     g_signal_connect(
         IRTemperatureCharacteristicData,
@@ -1486,6 +1571,14 @@ static void HandleIOPush
 
 COMPONENT_INIT
 {
+    // Simple Keys
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_SIMPLE_KEYS_USER_VALUE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_SetBooleanDefault(RES_PATH_SIMPLE_KEYS_USER_VALUE, false);
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_SIMPLE_KEYS_POWER_VALUE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_SetBooleanDefault(RES_PATH_SIMPLE_KEYS_POWER_VALUE, false);
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_SIMPLE_KEYS_REED_VALUE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_SetBooleanDefault(RES_PATH_SIMPLE_KEYS_REED_VALUE, false);
+
     // IR Temperature
     LE_ASSERT_OK(io_CreateInput(RES_PATH_IR_TEMPERATURE_VALUE, IO_DATA_TYPE_JSON, ""));
     io_SetJsonExample(RES_PATH_IR_TEMPERATURE_VALUE, "{ \"sensorDie\": 26.4, \"object\": 19.3 }");
