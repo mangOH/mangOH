@@ -18,6 +18,11 @@
 #define CHARACTERISTIC_UUID_HUMIDITY_CONFIG "f000aa22-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_HUMIDITY_PERIOD "f000aa23-0451-4000-b000-000000000000"
 
+#define SERVICE_UUID_PRESSURE               "f000aa40-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_PRESSURE_DATA   "f000aa41-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_PRESSURE_CONFIG "f000aa42-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_PRESSURE_PERIOD "f000aa44-0451-4000-b000-000000000000"
+
 #define SERVICE_UUID_IO                     "f000aa64-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_IO_DATA         "f000aa65-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_IO_CONFIG       "f000aa66-0451-4000-b000-000000000000"
@@ -35,6 +40,10 @@
 #define RES_PATH_HUMIDITY_PERIOD            "humidity/period"
 #define RES_PATH_HUMIDITY_ENABLE            "humidity/enable"
 
+#define RES_PATH_PRESSURE_VALUE             "pressure/value"
+#define RES_PATH_PRESSURE_PERIOD            "pressure/period"
+#define RES_PATH_PRESSURE_ENABLE            "pressure/enable"
+
 #define RES_PATH_IO_VALUE                   "io/value"
 
 #define RES_PATH_LIGHT_VALUE                "light/value"
@@ -43,6 +52,9 @@
 
 #define IR_TEMP_PERIOD_MIN 0.3
 #define IR_TEMP_PERIOD_MAX 2.55
+
+#define PRESSURE_PERIOD_MIN 0.1
+#define PRESSURE_PERIOD_MAX 2.55
 
 #define HUMIDITY_PERIOD_MIN 0.1
 #define HUMIDITY_PERIOD_MAX 2.55
@@ -61,6 +73,10 @@ static BluezGattCharacteristic1 *IRTemperatureCharacteristicPeriod = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicData = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *HumidityCharacteristicPeriod = NULL;
+
+static BluezGattCharacteristic1 *PressureCharacteristicData = NULL;
+static BluezGattCharacteristic1 *PressureCharacteristicConfig = NULL;
+static BluezGattCharacteristic1 *PressureCharacteristicPeriod = NULL;
 
 static BluezGattCharacteristic1 *IOCharacteristicData = NULL;
 static BluezGattCharacteristic1 *IOCharacteristicConfig = NULL;
@@ -123,6 +139,26 @@ static const struct Characteristic HumidityCharacteristics[] =
     },
 };
 
+static const struct Characteristic PressureCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_PRESSURE_DATA,
+        .proxy = &PressureCharacteristicData,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_PRESSURE_CONFIG,
+        .proxy = &PressureCharacteristicConfig,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_PRESSURE_PERIOD,
+        .proxy = &PressureCharacteristicPeriod,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
+};
+
 static const struct Characteristic IOCharacteristics[] =
 {
     {
@@ -172,6 +208,11 @@ static struct Service Services[] =
         .characteristics = HumidityCharacteristics,
     },
     {
+        .name = "Pressure",
+        .uuid = SERVICE_UUID_PRESSURE,
+        .characteristics = PressureCharacteristics,
+    },
+    {
         .name = "IO",
         .uuid = SERVICE_UUID_IO,
         .characteristics = IOCharacteristics,
@@ -212,6 +253,11 @@ static struct
         bool enable;
         double period;
     } humidity;
+    struct
+    {
+        bool enable;
+        double period;
+    } pressure;
     struct
     {
         bool redLed;
@@ -458,6 +504,80 @@ static void HumidityDataPropertiesChangedHandler
     }
 }
 
+
+static void PressureSetEnable
+(
+    bool enable
+)
+{
+    LE_ASSERT(AppState == APP_STATE_SAMPLING);
+    GError *error = NULL;
+    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        PressureCharacteristicConfig,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
+}
+
+static void PressureSetPeriod
+(
+    double period
+)
+{
+    LE_ASSERT(AppState == APP_STATE_SAMPLING);
+    LE_ASSERT(period >= PRESSURE_PERIOD_MIN && period <= PRESSURE_PERIOD_MAX);
+    GError *error = NULL;
+    // Register is in units of 10 ms
+    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        PressureCharacteristicPeriod,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
+}
+
+static void PressureDataPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
+{
+    GVariant *value = g_variant_lookup_value(changedProperties, "Value", G_VARIANT_TYPE_BYTESTRING);
+    if (value != NULL)
+    {
+        gsize nElements;
+        const uint8_t *valArray = g_variant_get_fixed_array(value, &nElements, sizeof(uint8_t));
+        LE_FATAL_IF(nElements != 6, "Expected a value of size 6");
+        const uint32_t rawTemperature = ((valArray[0] << 0) | (valArray[1] << 8) | (valArray[2] << 16));
+        const uint16_t rawPressure = ((valArray[3] << 0) | (valArray[4] << 8) | (valArray[5] << 16));
+        // temperature in degrees celcius
+        /*
+         * TODO: The SensorTag wiki page says that the raw temperature is an unsigned 24-bit value
+         * that when divided by 100 is the temperature in celcius. This seems strange since it means
+         * that the temperature can never be below 0.
+         */
+        const double temperature = ((double)rawTemperature) / 100;
+        // pressure is in hectopascal (hPa)
+        const double pressure = ((double)rawPressure) / 100;
+        g_variant_unref(value);
+        LE_DEBUG("Received pressure data - temperature=%f, pressure=%f%%", temperature, pressure);
+        char json[64];
+        int res = snprintf(json, sizeof(json), "{ \"temperature\": %.3lf, \"pressure\": %.3lf }", temperature, pressure);
+        LE_ASSERT(res > 0 && res < sizeof(json));
+        io_PushJson(RES_PATH_PRESSURE_VALUE, IO_NOW, json);
+    }
+}
+
+
 static void IOSetValue
 (
     void
@@ -591,6 +711,17 @@ static void AllAttributesFoundHandler
         HumiditySetEnable(false);
     }
 
+    if (ValidatePeriod(DHubState.pressure.period, PRESSURE_PERIOD_MIN, PRESSURE_PERIOD_MAX) ==
+        PERIOD_VALIDITY_OK)
+    {
+        PressureSetPeriod(DHubState.pressure.period);
+        PressureSetEnable(DHubState.pressure.enable);
+    }
+    else
+    {
+        PressureSetEnable(false);
+    }
+
     IOSetConfig();
     IOSetValue();
 
@@ -612,6 +743,17 @@ static void AllAttributesFoundHandler
         NULL);
     bluez_gatt_characteristic1_call_start_notify_sync(
         HumidityCharacteristicData,
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
+
+    g_signal_connect(
+        PressureCharacteristicData,
+        "g-properties-changed",
+        G_CALLBACK(PressureDataPropertiesChangedHandler),
+        NULL);
+    bluez_gatt_characteristic1_call_start_notify_sync(
+        PressureCharacteristicData,
         NULL,
         &error);
     LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
@@ -1128,6 +1270,84 @@ static void HandleHumidityPeriodPush
     }
 }
 
+static void HandlePressureEnablePush
+(
+    double timestamp,
+    bool enable,
+    void* contextPtr
+)
+{
+    if (enable != DHubState.pressure.enable)
+    {
+        DHubState.pressure.enable = enable;
+        if (AppState == APP_STATE_SAMPLING &&
+            ValidatePeriod(DHubState.pressure.period, PRESSURE_PERIOD_MIN, PRESSURE_PERIOD_MAX) ==
+            PERIOD_VALIDITY_OK)
+        {
+            PressureSetEnable(DHubState.pressure.enable);
+        }
+    }
+}
+
+static void HandlePressurePeriodPush
+(
+    double timestamp,
+    double period,
+    void* contextPtr
+)
+{
+    switch (ValidatePeriod(period, PRESSURE_PERIOD_MIN, PRESSURE_PERIOD_MAX))
+    {
+    case PERIOD_VALIDITY_TOO_SHORT:
+        LE_WARN(
+            "Not setting Pressure sensor period to %lf: minimum period is %lf",
+            period,
+            PRESSURE_PERIOD_MIN);
+        break;
+
+    case PERIOD_VALIDITY_TOO_LONG:
+        LE_WARN(
+            "Not setting Pressure sensor period to %lf: maximum period is %lf",
+            period,
+            PRESSURE_PERIOD_MAX);
+        break;
+
+    case PERIOD_VALIDITY_OK:
+        if (period != DHubState.pressure.period)
+        {
+            if (AppState == APP_STATE_SAMPLING)
+            {
+                PressureSetPeriod(period);
+                /*
+                 * If the enable is already true, but the old period was invalid (because it had
+                 * never been set before), then we need to perform an enable.
+                 */
+                if (DHubState.pressure.enable)
+                {
+                    const bool oldPeriodValid =
+                        ValidatePeriod(DHubState.pressure.period, PRESSURE_PERIOD_MIN, PRESSURE_PERIOD_MAX) ==
+                        PERIOD_VALIDITY_OK;
+                    if (!oldPeriodValid)
+                    {
+                        PressureSetEnable(true);
+                    }
+                }
+            }
+            DHubState.pressure.period = period;
+        }
+        else
+        {
+            LE_DEBUG("Pressure sensor period is already set to %lf", period);
+        }
+        break;
+
+    default:
+        LE_ASSERT(false);
+        break;
+    }
+}
+
+
 static void HandleLightEnablePush
 (
     double timestamp,
@@ -1289,6 +1509,18 @@ COMPONENT_INIT
     LE_ASSERT_OK(io_CreateOutput(RES_PATH_HUMIDITY_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
     io_AddBooleanPushHandler(RES_PATH_HUMIDITY_ENABLE, HandleHumidityEnablePush, NULL);
     io_SetBooleanDefault(RES_PATH_HUMIDITY_ENABLE, false);
+
+    // Pressure
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_PRESSURE_VALUE, IO_DATA_TYPE_JSON, ""));
+    io_SetJsonExample(RES_PATH_PRESSURE_VALUE, "{ \"temperature\": 21.3, \"pressure\": 1001.7 }");
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_PRESSURE_PERIOD, IO_DATA_TYPE_NUMERIC, "seconds"));
+    io_AddNumericPushHandler(RES_PATH_PRESSURE_PERIOD, HandlePressurePeriodPush, NULL);
+    io_SetNumericDefault(RES_PATH_PRESSURE_PERIOD, 0.0);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_PRESSURE_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_PRESSURE_ENABLE, HandlePressureEnablePush, NULL);
+    io_SetBooleanDefault(RES_PATH_PRESSURE_ENABLE, false);
 
     // IO
     LE_ASSERT_OK(io_CreateOutput(RES_PATH_IO_VALUE, IO_DATA_TYPE_JSON, ""));
