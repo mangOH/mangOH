@@ -383,6 +383,51 @@ static BluezDevice1 *TryCreateSensorTagDeviceProxy
     return dev;
 }
 
+/*
+ * All services in the SensorTag use the same "period" scheme. It's a single unsigned byte
+ * characteristic measured in 10ms increments.
+ */
+static void WritePeriod
+(
+    double period,
+    BluezGattCharacteristic1 *periodCharacteristic
+)
+{
+    GError *error = NULL;
+    // Register is in units of 10 ms
+    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        periodCharacteristic,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
+}
+
+/*
+ * For almost all services on the SensorTag, the configuration characteristic expects a single byte
+ * where 0x01 means enable and 0x00 means disable.
+ */
+static void WriteBasicConfig
+(
+    bool enable,
+    BluezGattCharacteristic1 *configCharacteristic
+)
+{
+    GError *error = NULL;
+    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
+    bluez_gatt_characteristic1_call_write_value_sync(
+        configCharacteristic,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
+}
+
 static enum PeriodValidity ValidatePeriod
 (
     double period,
@@ -445,44 +490,6 @@ static void SimpleKeysDataPropertiesChangedHandler
     }
 }
 
-static void IrTemperatureSetEnable
-(
-    bool enable
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    GError *error = NULL;
-    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        IRTemperatureCharacteristicConfig,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
-}
-
-static void IrTemperatureSetPeriod
-(
-    double period
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    LE_ASSERT(period >= IR_TEMP_PERIOD_MIN && period <= IR_TEMP_PERIOD_MAX);
-    GError *error = NULL;
-    // Register is in units of 10 ms
-    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        IRTemperatureCharacteristicPeriod,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
-}
-
 
 static void IrTemperatureDataPropertiesChangedHandler
 (
@@ -510,44 +517,6 @@ static void IrTemperatureDataPropertiesChangedHandler
     }
 }
 
-
-static void HumiditySetEnable
-(
-    bool enable
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    GError *error = NULL;
-    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        HumidityCharacteristicConfig,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
-}
-
-static void HumiditySetPeriod
-(
-    double period
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    LE_ASSERT(period >= HUMIDITY_PERIOD_MIN && period <= HUMIDITY_PERIOD_MAX);
-    GError *error = NULL;
-    // Register is in units of 10 ms
-    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        HumidityCharacteristicPeriod,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
-}
 
 static void HumidityDataPropertiesChangedHandler
 (
@@ -578,44 +547,6 @@ static void HumidityDataPropertiesChangedHandler
     }
 }
 
-
-static void PressureSetEnable
-(
-    bool enable
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    GError *error = NULL;
-    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        PressureCharacteristicConfig,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
-}
-
-static void PressureSetPeriod
-(
-    double period
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    LE_ASSERT(period >= PRESSURE_PERIOD_MIN && period <= PRESSURE_PERIOD_MAX);
-    GError *error = NULL;
-    // Register is in units of 10 ms
-    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        PressureCharacteristicPeriod,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
-}
 
 static void PressureDataPropertiesChangedHandler
 (
@@ -693,44 +624,6 @@ static void IOSetConfig
 }
 
 
-static void LightSetEnable
-(
-    bool enable
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    GError *error = NULL;
-    const uint8_t configReg[] = {enable ? 0x01 : 0x00};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        LightCharacteristicConfig,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
-}
-
-static void LightSetPeriod
-(
-    double period
-)
-{
-    LE_ASSERT(AppState == APP_STATE_SAMPLING);
-    LE_ASSERT(period >= LIGHT_PERIOD_MIN && period <= LIGHT_PERIOD_MAX);
-    GError *error = NULL;
-    // Register is in units of 10 ms
-    const uint8_t periodReg[] = {(uint8_t)(period * 100)};
-    bluez_gatt_characteristic1_call_write_value_sync(
-        LightCharacteristicPeriod,
-        g_variant_new_fixed_array(
-            G_VARIANT_TYPE_BYTE, periodReg, NUM_ARRAY_MEMBERS(periodReg), sizeof(periodReg[0])),
-        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
-        NULL,
-        &error);
-    LE_FATAL_IF(error, "Failed while writing sampling period - %s", error->message);
-}
-
 static void LightDataPropertiesChangedHandler
 (
     GDBusProxy *proxy,
@@ -766,34 +659,34 @@ static void AllAttributesFoundHandler
     if (ValidatePeriod(DHubState.irTemp.period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX) ==
         PERIOD_VALIDITY_OK)
     {
-        IrTemperatureSetPeriod(DHubState.irTemp.period);
-        IrTemperatureSetEnable(DHubState.irTemp.enable);
+        WritePeriod(DHubState.irTemp.period, IRTemperatureCharacteristicPeriod);
+        WriteBasicConfig(DHubState.irTemp.enable, IRTemperatureCharacteristicConfig);
     }
     else
     {
-        IrTemperatureSetEnable(false);
+        WriteBasicConfig(false, IRTemperatureCharacteristicConfig);
     }
 
     if (ValidatePeriod(DHubState.humidity.period, HUMIDITY_PERIOD_MIN, HUMIDITY_PERIOD_MAX) ==
         PERIOD_VALIDITY_OK)
     {
-        HumiditySetPeriod(DHubState.humidity.period);
-        HumiditySetEnable(DHubState.humidity.enable);
+        WritePeriod(DHubState.humidity.period, HumidityCharacteristicPeriod);
+        WriteBasicConfig(DHubState.humidity.enable, HumidityCharacteristicConfig);
     }
     else
     {
-        HumiditySetEnable(false);
+        WriteBasicConfig(false, HumidityCharacteristicConfig);
     }
 
     if (ValidatePeriod(DHubState.pressure.period, PRESSURE_PERIOD_MIN, PRESSURE_PERIOD_MAX) ==
         PERIOD_VALIDITY_OK)
     {
-        PressureSetPeriod(DHubState.pressure.period);
-        PressureSetEnable(DHubState.pressure.enable);
+        WritePeriod(DHubState.pressure.period, PressureCharacteristicPeriod);
+        WriteBasicConfig(DHubState.pressure.enable, PressureCharacteristicConfig);
     }
     else
     {
-        PressureSetEnable(false);
+        WriteBasicConfig(false, PressureCharacteristicConfig);
     }
 
     IOSetConfig();
@@ -1216,7 +1109,7 @@ static void HandleIrTempEnablePush
             ValidatePeriod(DHubState.irTemp.period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX) ==
             PERIOD_VALIDITY_OK)
         {
-            IrTemperatureSetEnable(DHubState.irTemp.enable);
+            WriteBasicConfig(DHubState.irTemp.enable, IRTemperatureCharacteristicConfig);
         }
     }
 }
@@ -1249,7 +1142,7 @@ static void HandleIrTempPeriodPush
         {
             if (AppState == APP_STATE_SAMPLING)
             {
-                IrTemperatureSetPeriod(period);
+                WritePeriod(period, IRTemperatureCharacteristicPeriod);
                 /*
                  * If the enable is already true, but the old period was invalid (because it had
                  * never been set before), then we need to perform an enable.
@@ -1260,7 +1153,7 @@ static void HandleIrTempPeriodPush
                         ValidatePeriod(DHubState.irTemp.period, IR_TEMP_PERIOD_MIN, IR_TEMP_PERIOD_MAX) == PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
-                        IrTemperatureSetEnable(true);
+                        WriteBasicConfig(true, IRTemperatureCharacteristicConfig);
                     }
                 }
             }
@@ -1292,7 +1185,7 @@ static void HandleHumidityEnablePush
             ValidatePeriod(DHubState.humidity.period, HUMIDITY_PERIOD_MIN, HUMIDITY_PERIOD_MAX) ==
             PERIOD_VALIDITY_OK)
         {
-            HumiditySetEnable(DHubState.humidity.enable);
+            WriteBasicConfig(DHubState.humidity.enable, HumidityCharacteristicConfig);
         }
     }
 }
@@ -1325,7 +1218,7 @@ static void HandleHumidityPeriodPush
         {
             if (AppState == APP_STATE_SAMPLING)
             {
-                HumiditySetPeriod(period);
+                WritePeriod(period, HumidityCharacteristicPeriod);
                 /*
                  * If the enable is already true, but the old period was invalid (because it had
                  * never been set before), then we need to perform an enable.
@@ -1337,7 +1230,7 @@ static void HandleHumidityPeriodPush
                         PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
-                        HumiditySetEnable(true);
+                        WriteBasicConfig(true, HumidityCharacteristicConfig);
                     }
                 }
             }
@@ -1369,7 +1262,7 @@ static void HandlePressureEnablePush
             ValidatePeriod(DHubState.pressure.period, PRESSURE_PERIOD_MIN, PRESSURE_PERIOD_MAX) ==
             PERIOD_VALIDITY_OK)
         {
-            PressureSetEnable(DHubState.pressure.enable);
+            WriteBasicConfig(DHubState.pressure.enable, PressureCharacteristicConfig);
         }
     }
 }
@@ -1402,7 +1295,7 @@ static void HandlePressurePeriodPush
         {
             if (AppState == APP_STATE_SAMPLING)
             {
-                PressureSetPeriod(period);
+                WritePeriod(period, PressureCharacteristicPeriod);
                 /*
                  * If the enable is already true, but the old period was invalid (because it had
                  * never been set before), then we need to perform an enable.
@@ -1414,7 +1307,7 @@ static void HandlePressurePeriodPush
                         PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
-                        PressureSetEnable(true);
+                        WriteBasicConfig(true, PressureCharacteristicConfig);
                     }
                 }
             }
@@ -1446,7 +1339,7 @@ static void HandleLightEnablePush
         if (AppState == APP_STATE_SAMPLING &&
             ValidatePeriod(DHubState.light.period, LIGHT_PERIOD_MIN, LIGHT_PERIOD_MAX) == PERIOD_VALIDITY_OK)
         {
-            LightSetEnable(DHubState.light.enable);
+            WriteBasicConfig(DHubState.light.enable, LightCharacteristicConfig);
         }
     }
 }
@@ -1479,7 +1372,7 @@ static void HandleLightPeriodPush
         {
             if (AppState == APP_STATE_SAMPLING)
             {
-                LightSetPeriod(period);
+                WritePeriod(period, LightCharacteristicPeriod);
                 /*
                  * If the enable is already true, but the old period was invalid (because it had
                  * never been set before), then we need to perform an enable.
@@ -1491,7 +1384,7 @@ static void HandleLightPeriodPush
                         PERIOD_VALIDITY_OK;
                     if (!oldPeriodValid)
                     {
-                        LightSetEnable(true);
+                        WriteBasicConfig(true, LightCharacteristicConfig);
                     }
                 }
             }
