@@ -35,6 +35,11 @@
 #define CHARACTERISTIC_UUID_LIGHT_CONFIG     "f000aa72-0451-4000-b000-000000000000"
 #define CHARACTERISTIC_UUID_LIGHT_PERIOD     "f000aa73-0451-4000-b000-000000000000"
 
+#define SERVICE_UUID_IMU                     "f000aa80-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IMU_DATA         "f000aa81-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IMU_CONFIG       "f000aa82-0451-4000-b000-000000000000"
+#define CHARACTERISTIC_UUID_IMU_PERIOD       "f000aa83-0451-4000-b000-000000000000"
+
 #define RES_PATH_SIMPLE_KEYS_USER_VALUE      "simpleKeys/user/value"
 #define RES_PATH_SIMPLE_KEYS_POWER_VALUE     "simpleKeys/power/value"
 #define RES_PATH_SIMPLE_KEYS_REED_VALUE      "simpleKeys/reed/value"
@@ -57,6 +62,19 @@
 #define RES_PATH_LIGHT_PERIOD                "light/period"
 #define RES_PATH_LIGHT_ENABLE                "light/enable"
 
+#define RES_PATH_IMU_VALUE                   "imu/value"
+#define RES_PATH_IMU_PERIOD                  "imu/period"
+#define RES_PATH_IMU_ENABLE                  "imu/enable"
+#define RES_PATH_IMU_GYRO_X_ENABLE           "imu/gyro/x/enable"
+#define RES_PATH_IMU_GYRO_Y_ENABLE           "imu/gyro/y/enable"
+#define RES_PATH_IMU_GYRO_Z_ENABLE           "imu/gyro/z/enable"
+#define RES_PATH_IMU_ACCEL_X_ENABLE          "imu/accel/x/enable"
+#define RES_PATH_IMU_ACCEL_Y_ENABLE          "imu/accel/y/enable"
+#define RES_PATH_IMU_ACCEL_Z_ENABLE          "imu/accel/z/enable"
+#define RES_PATH_IMU_ACCEL_WOM               "imu/accel/wakeOnMotion"
+#define RES_PATH_IMU_ACCEL_RANGE             "imu/accel/range"
+#define RES_PATH_IMU_MAG_ENABLE              "imu/mag/enable"
+
 #define IR_TEMP_PERIOD_MIN 0.3
 #define IR_TEMP_PERIOD_MAX 2.55
 
@@ -68,6 +86,9 @@
 
 #define LIGHT_PERIOD_MIN 0.1
 #define LIGHT_PERIOD_MAX 2.55
+
+#define IMU_PERIOD_MIN 0.1
+#define IMU_PERIOD_MAX 2.55
 
 static GDBusObjectManager *BluezObjectManager = NULL;
 static BluezAdapter1 *AdapterInterface = NULL;
@@ -93,6 +114,10 @@ static BluezGattCharacteristic1 *IOCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *LightCharacteristicData = NULL;
 static BluezGattCharacteristic1 *LightCharacteristicConfig = NULL;
 static BluezGattCharacteristic1 *LightCharacteristicPeriod = NULL;
+
+static BluezGattCharacteristic1 *ImuCharacteristicData = NULL;
+static BluezGattCharacteristic1 *ImuCharacteristicConfig = NULL;
+static BluezGattCharacteristic1 *ImuCharacteristicPeriod = NULL;
 
 struct Characteristic
 {
@@ -216,6 +241,26 @@ static const struct Characteristic LightCharacteristics[] =
     },
 };
 
+static const struct Characteristic ImuCharacteristics[] =
+{
+    {
+        .uuid = CHARACTERISTIC_UUID_IMU_DATA,
+        .proxy = &ImuCharacteristicData,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_IMU_CONFIG,
+        .proxy = &ImuCharacteristicConfig,
+    },
+    {
+        .uuid = CHARACTERISTIC_UUID_IMU_PERIOD,
+        .proxy = &ImuCharacteristicPeriod,
+    },
+    {
+        .uuid = NULL,
+        .proxy = NULL,
+    },
+};
+
 static struct Service Services[] =
 {
     {
@@ -247,6 +292,11 @@ static struct Service Services[] =
         .name = "Light",
         .uuid = SERVICE_UUID_LIGHT,
         .characteristics = LightCharacteristics,
+    },
+    {
+        .name = "IMU",
+        .uuid = SERVICE_UUID_IMU,
+        .characteristics = ImuCharacteristics,
     },
 };
 
@@ -301,8 +351,21 @@ static struct
         bool enable;
         double period;
     } light;
+    struct
+    {
+        bool enableGlobal;
+        bool enableGyroX;
+        bool enableGyroY;
+        bool enableGyroZ;
+        bool enableAccelX;
+        bool enableAccelY;
+        bool enableAccelZ;
+        bool enableMag;
+        bool wakeOnMotion;
+        uint8_t accelerometerRange;
+        double period;
+    } imu;
 } DHubState;
-
 
 GType BluezProxyTypeFunc
 (
@@ -648,6 +711,95 @@ static void LightDataPropertiesChangedHandler
     }
 }
 
+
+static void ImuDataPropertiesChangedHandler
+(
+    GDBusProxy *proxy,
+    GVariant *changedProperties,
+    GStrv invalidatedProperties,
+    gpointer userData
+)
+{
+    GVariant *value = g_variant_lookup_value(changedProperties, "Value", G_VARIANT_TYPE_BYTESTRING);
+    if (value != NULL)
+    {
+        gsize nElements;
+        const uint8_t *valArray = g_variant_get_fixed_array(value, &nElements, sizeof(uint8_t));
+        LE_FATAL_IF(nElements != 18, "Expected a value of size 18");
+
+        // raw
+        const int16_t gyroRawX  = ((valArray[0]  << 0) | (valArray[1]  << 8));
+        const int16_t gyroRawY  = ((valArray[2]  << 0) | (valArray[3]  << 8));
+        const int16_t gyroRawZ  = ((valArray[4]  << 0) | (valArray[5]  << 8));
+        const int16_t accelRawX = ((valArray[6]  << 0) | (valArray[7]  << 8));
+        const int16_t accelRawY = ((valArray[8]  << 0) | (valArray[9]  << 8));
+        const int16_t accelRawZ = ((valArray[10] << 0) | (valArray[11] << 8));
+        const int16_t magRawX   = ((valArray[12] << 0) | (valArray[13] << 8));
+        const int16_t magRawY   = ((valArray[14] << 0) | (valArray[15] << 8));
+        const int16_t magRawZ   = ((valArray[16] << 0) | (valArray[17] << 8));
+
+        // converted
+        const double gyroX = ((double)gyroRawX) * 500.0 / (1 << 16);
+        const double gyroY = ((double)gyroRawY) * 500.0 / (1 << 16);
+        const double gyroZ = ((double)gyroRawZ) * 500.0 / (1 << 16);
+
+        const double accelX =
+            ((double)accelRawX) / (1 << (16 - (1 + DHubState.imu.accelerometerRange)));
+        const double accelY =
+            ((double)accelRawY) / (1 << (16 - (1 + DHubState.imu.accelerometerRange)));
+        const double accelZ =
+            ((double)accelRawZ) / (1 << (16 - (1 + DHubState.imu.accelerometerRange)));
+
+        const double magX = (double)magRawX;
+        const double magY = (double)magRawY;
+        const double magZ = (double)magRawZ;
+
+        LE_DEBUG(
+            "Received IMU data - gyro(%lf,%lf,%lf) accel(%lf,%lf,%lf) mag(%lf,%lf,%lf)",
+            gyroX, gyroY, gyroZ, accelX, accelY, accelZ, magX, magY, magZ);
+        char json[256];
+        int res = snprintf(
+            json,
+            sizeof(json),
+            "{ "
+            "\"gyro\": { \"x\": %.2lf,  \"y\": %.2lf, \"z\": %.2lf }, "
+            "\"accel\": { \"x\": %.2lf,  \"y\": %.2lf, \"z\": %.2lf }, "
+            "\"mag\": { \"x\": %.1lf,  \"y\": %.1lf, \"z\": %.1lf } "
+            "}",
+            gyroX, gyroY, gyroZ, accelX, accelY, accelZ, magX, magY, magZ);
+        LE_ASSERT(res > 0 && res < sizeof(json));
+        io_PushJson(RES_PATH_IMU_VALUE, IO_NOW, json);
+    }
+}
+
+
+static void WriteImuConfig(bool forceDisable)
+{
+    uint8_t configReg[2] = {0, 0}; // means disable
+    if (DHubState.imu.enableGlobal && !forceDisable)
+    {
+        configReg[0] = (
+            (DHubState.imu.enableGyroX  << 0) |
+            (DHubState.imu.enableGyroY  << 1) |
+            (DHubState.imu.enableGyroZ  << 2) |
+            (DHubState.imu.enableAccelX << 3) |
+            (DHubState.imu.enableAccelY << 4) |
+            (DHubState.imu.enableAccelZ << 5) |
+            (DHubState.imu.enableMag    << 6) |
+            (DHubState.imu.wakeOnMotion << 7));
+        configReg[1] = DHubState.imu.accelerometerRange;
+    }
+    GError *error = NULL;
+    bluez_gatt_characteristic1_call_write_value_sync(
+        ImuCharacteristicConfig,
+        g_variant_new_fixed_array(
+            G_VARIANT_TYPE_BYTE, configReg, NUM_ARRAY_MEMBERS(configReg), sizeof(configReg[0])),
+        g_variant_new_array(G_VARIANT_TYPE("{sv}"), NULL, 0),
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while writing config - %s", error->message);
+}
+
 static void AllAttributesFoundHandler
 (
     void
@@ -687,6 +839,17 @@ static void AllAttributesFoundHandler
     else
     {
         WriteBasicConfig(false, PressureCharacteristicConfig);
+    }
+
+    if (ValidatePeriod(DHubState.imu.period, IMU_PERIOD_MIN, IMU_PERIOD_MAX) ==
+        PERIOD_VALIDITY_OK)
+    {
+        WritePeriod(DHubState.imu.period, ImuCharacteristicPeriod);
+        WriteImuConfig(false);
+    }
+    else
+    {
+        WriteImuConfig(true);
     }
 
     IOSetConfig();
@@ -743,6 +906,17 @@ static void AllAttributesFoundHandler
         NULL);
     bluez_gatt_characteristic1_call_start_notify_sync(
         LightCharacteristicData,
+        NULL,
+        &error);
+    LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
+
+    g_signal_connect(
+        ImuCharacteristicData,
+        "g-properties-changed",
+        G_CALLBACK(ImuDataPropertiesChangedHandler),
+        NULL);
+    bluez_gatt_characteristic1_call_start_notify_sync(
+        ImuCharacteristicData,
         NULL,
         &error);
     LE_FATAL_IF(error, "Failed while calling StartNotify - %s", error->message);
@@ -1402,6 +1576,134 @@ static void HandleLightPeriodPush
     }
 }
 
+static void HandleImuEnablePush
+(
+    double timestamp,
+    bool enable,
+    void* context
+)
+{
+    bool *toUpdate = context;
+    if (*toUpdate != enable)
+    {
+        *toUpdate = enable;
+
+        const bool enableGlobalChanged = (toUpdate == &DHubState.imu.enableGlobal);
+        const bool periodValid =
+            (ValidatePeriod(DHubState.imu.period, IMU_PERIOD_MIN, IMU_PERIOD_MAX) ==
+             PERIOD_VALIDITY_OK);
+        if (enableGlobalChanged)
+        {
+            WriteImuConfig(!periodValid);
+        }
+        else if (DHubState.imu.enableGlobal && periodValid)
+        {
+            WriteImuConfig(false);
+        }
+    }
+}
+
+static void HandleImuAccelRangePush
+(
+    double timestamp,
+    double value,
+    void *context
+)
+{
+    uint8_t rangeRegVal;
+
+    if (value == 16.0)
+    {
+        rangeRegVal = 3;
+    }
+    else if (value == 8.0)
+    {
+        rangeRegVal = 2;
+    }
+    else if (value == 4.0)
+    {
+        rangeRegVal = 1;
+    }
+    else if (value == 2.0)
+    {
+        rangeRegVal = 0;
+    }
+    else
+    {
+        LE_WARN("Received unsupported IMU accelerometer range (%lf)", value);
+        return;
+    }
+
+    if (rangeRegVal != DHubState.imu.accelerometerRange)
+    {
+        const bool periodValid =
+            (ValidatePeriod(DHubState.imu.period, IMU_PERIOD_MIN, IMU_PERIOD_MAX) ==
+             PERIOD_VALIDITY_OK);
+        if (DHubState.imu.enableGlobal && periodValid)
+        {
+            WriteImuConfig(false);
+        }
+    }
+}
+
+static void HandleImuPeriodPush
+(
+    double timestamp,
+    double period,
+    void* context
+)
+{
+    switch (ValidatePeriod(period, IMU_PERIOD_MIN, IMU_PERIOD_MAX))
+    {
+    case PERIOD_VALIDITY_TOO_SHORT:
+        LE_WARN(
+            "Not setting Imu sensor period to %lf: minimum period is %lf",
+            period,
+            IMU_PERIOD_MIN);
+        break;
+
+    case PERIOD_VALIDITY_TOO_LONG:
+        LE_WARN(
+            "Not setting Imu sensor period to %lf: maximum period is %lf",
+            period,
+            IMU_PERIOD_MAX);
+        break;
+
+    case PERIOD_VALIDITY_OK:
+        if (period != DHubState.imu.period)
+        {
+            if (AppState == APP_STATE_SAMPLING)
+            {
+                WritePeriod(period, ImuCharacteristicPeriod);
+                /*
+                 * If the enable is already true, but the old period was invalid (because it had
+                 * never been set before), then we need to perform an enable.
+                 */
+                if (DHubState.imu.enableGlobal)
+                {
+                    const bool oldPeriodValid =
+                        ValidatePeriod(DHubState.imu.period, IMU_PERIOD_MIN, IMU_PERIOD_MAX) ==
+                        PERIOD_VALIDITY_OK;
+                    if (!oldPeriodValid)
+                    {
+                        WriteImuConfig(false);
+                    }
+                }
+            }
+            DHubState.imu.period = period;
+        }
+        else
+        {
+            LE_DEBUG("Imu sensor period is already set to %lf", period);
+        }
+        break;
+
+    default:
+        LE_ASSERT(false);
+        break;
+    }
+}
+
 
 static le_result_t ExtractBoolFromJson
 (
@@ -1524,6 +1826,60 @@ COMPONENT_INIT
     LE_ASSERT_OK(io_CreateOutput(RES_PATH_LIGHT_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
     io_AddBooleanPushHandler(RES_PATH_LIGHT_ENABLE, HandleLightEnablePush, NULL);
     io_SetBooleanDefault(RES_PATH_LIGHT_ENABLE, false);
+
+    // IMU
+    LE_ASSERT_OK(io_CreateInput(RES_PATH_IMU_VALUE, IO_DATA_TYPE_JSON, ""));
+    io_SetJsonExample(
+        RES_PATH_IMU_VALUE,
+        "{ "
+        "\"gyro\": { \"x\": 360.0,  \"y\": 180.0, \"z\": 90.0 }, "
+        "\"accel\": { \"x\": 0.21,  \"y\": 0.13, \"z\": 1.0 }, "
+        "\"mag\": { \"x\": 500.0,  \"y\": -312.7, \"z\": 45.3 } "
+        "}");
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_PERIOD, IO_DATA_TYPE_NUMERIC, "seconds"));
+    io_AddNumericPushHandler(RES_PATH_IMU_PERIOD, HandleImuPeriodPush, NULL);
+    io_SetNumericDefault(RES_PATH_IMU_PERIOD, 0.0);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_ENABLE, HandleImuEnablePush, &DHubState.imu.enableGlobal);
+    io_SetBooleanDefault(RES_PATH_IMU_ENABLE, false);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_GYRO_X_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_GYRO_X_ENABLE, HandleImuEnablePush, &DHubState.imu.enableGyroX);
+    io_SetBooleanDefault(RES_PATH_IMU_GYRO_X_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_GYRO_Y_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_GYRO_Y_ENABLE, HandleImuEnablePush, &DHubState.imu.enableGyroY);
+    io_SetBooleanDefault(RES_PATH_IMU_GYRO_Y_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_GYRO_Z_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_GYRO_Z_ENABLE, HandleImuEnablePush, &DHubState.imu.enableGyroZ);
+    io_SetBooleanDefault(RES_PATH_IMU_GYRO_Z_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_ACCEL_X_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_ACCEL_X_ENABLE, HandleImuEnablePush, &DHubState.imu.enableAccelX);
+    io_SetBooleanDefault(RES_PATH_IMU_ACCEL_X_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_ACCEL_Y_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_ACCEL_Y_ENABLE, HandleImuEnablePush, &DHubState.imu.enableAccelY);
+    io_SetBooleanDefault(RES_PATH_IMU_ACCEL_Y_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_ACCEL_Z_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_ACCEL_Z_ENABLE, HandleImuEnablePush, &DHubState.imu.enableAccelZ);
+    io_SetBooleanDefault(RES_PATH_IMU_ACCEL_Z_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_MAG_ENABLE, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_MAG_ENABLE, HandleImuEnablePush, &DHubState.imu.enableMag);
+    io_SetBooleanDefault(RES_PATH_IMU_MAG_ENABLE, true);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_ACCEL_WOM, IO_DATA_TYPE_BOOLEAN, ""));
+    io_AddBooleanPushHandler(RES_PATH_IMU_ACCEL_WOM, HandleImuEnablePush, &DHubState.imu.wakeOnMotion);
+    io_SetBooleanDefault(RES_PATH_IMU_ACCEL_WOM, false);
+
+    LE_ASSERT_OK(io_CreateOutput(RES_PATH_IMU_ACCEL_RANGE, IO_DATA_TYPE_NUMERIC, "G"));
+    io_AddNumericPushHandler(RES_PATH_IMU_ACCEL_RANGE, HandleImuAccelRangePush, NULL);
+    io_SetNumericDefault(RES_PATH_IMU_ACCEL_RANGE, 16.0);
 
     le_event_QueueFunction(GlibInit, NULL, NULL);
 }
