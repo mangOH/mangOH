@@ -38,7 +38,8 @@ enum board_rev {
 	BOARD_REV_UNKNOWN = 0,
 	BOARD_REV_DV2,
 	BOARD_REV_DV3,
-	BOARD_REV_NEWEST = BOARD_REV_DV3,
+	BOARD_REV_1_0,
+	BOARD_REV_NEWEST = BOARD_REV_1_0,
 	BOARD_REV_NUM_OF, /* keep as last definition */
 };
 
@@ -63,6 +64,7 @@ static char * const board_rev_strings[BOARD_REV_NUM_OF] = {
 	[BOARD_REV_UNKNOWN] = "unknown",
 	[BOARD_REV_DV2] = "dv2",
 	[BOARD_REV_DV3] = "dv3",
+	[BOARD_REV_1_0] = "1.0",
 };
 
 static char *force_revision = "";
@@ -199,6 +201,7 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 {
 	const size_t eeprom_size = mangoh_yellow_eeprom_data.byte_len;
 	const char *dv3_string = "mangOH Yellow DV3";
+	const char *production_first_line = "mangOH Yellow\n";
 	u8 *data;
 	bool eeprom_blank = true;
 	int i;
@@ -234,6 +237,20 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 		pr_warn("EEPROM is empty - assuming board is a mangOH Yellow %s\n",
 			board_rev_strings[BOARD_REV_NEWEST]);
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_NEWEST;
+	} else if (strstarts(data, production_first_line)) {
+		/*
+		 * TODO:
+		 * The EEPROM contents of a production device should be in this form:
+		 * mangOH Yellow\n
+		 * Rev: 1.0\n
+		 * Date: 2019-09-10-09:37\n
+		 * Mfg: Talon Communications\n\0
+		 *
+		 * If additional board revisions of the mangOH Yellow are
+		 * created it will become necessary to parse the "Rev" field at
+		 * a minimum.
+		 */
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_1_0;
 	} else if (strcmp(data, dv3_string) == 0) {
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV3;
 	}
@@ -507,7 +524,9 @@ static int __init mangoh_yellow_init(void)
 	platform_driver_register(&mangoh_yellow_driver);
 	printk(KERN_DEBUG "mangoh: registered platform driver\n");
 
-	if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV3]) == 0) {
+	if (strcmp(force_revision, board_rev_strings[BOARD_REV_1_0]) == 0) {
+		mangoh_yellow_driver_data.board_rev = BOARD_REV_1_0;
+	} else if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV3]) == 0) {
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV3;
 	} else if (strcmp(force_revision, board_rev_strings[BOARD_REV_DV2]) == 0) {
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_DV2;
