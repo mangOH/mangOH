@@ -47,7 +47,6 @@ apps:
     $CURDIR/apps/ntag/ntag
     $CURDIR/apps/NtagDhubIf/NtagDhubIf
 
-    $LEGATO_ROOT/apps/tools/devMode
 }
 
 
