@@ -90,46 +90,7 @@ struct opt300x_chip {
 	u8 scaler_numerator;
 	u8 scaler_denominator;
 	const struct opt300x_scale table[12];
-};
-
-static const struct opt300x_chip opt3001_chip = {
-	.device_id = OPT3001_DEVICE_ID,
-	.scaler_numerator = 1,
-	.scaler_denominator = 100,
-	.table = {
-		{ .val =    40, .val2 = 950000, },
-		{ .val =    81, .val2 = 900000, },
-		{ .val =   163, .val2 = 800000, },
-		{ .val =   327, .val2 = 600000, },
-		{ .val =   655, .val2 = 200000, },
-		{ .val =  1310, .val2 = 400000, },
-		{ .val =  2620, .val2 = 800000, },
-		{ .val =  5241, .val2 = 600000, },
-		{ .val = 10483, .val2 = 200000, },
-		{ .val = 20966, .val2 = 400000, },
-		{ .val = 41932, .val2 = 800000, },
-		{ .val = 83865, .val2 = 600000, },
-	},
-};
-
-static const struct opt300x_chip opt3002_chip = {
-	.device_id = -1,
-	.scaler_numerator = 6,
-	.scaler_denominator = 5,
-	.table = {
-		{ .val =     4914, .val2 = 0, },
-		{ .val =     9828, .val2 = 0, },
-		{ .val =    19656, .val2 = 0, },
-		{ .val =    39312, .val2 = 0, },
-		{ .val =    78624, .val2 = 0, },
-		{ .val =   157248, .val2 = 0, },
-		{ .val =   314496, .val2 = 0, },
-		{ .val =   628992, .val2 = 0, },
-		{ .val =  1257984, .val2 = 0, },
-		{ .val =  2515968, .val2 = 0, },
-		{ .val =  5031936, .val2 = 0, },
-		{ .val = 10063872, .val2 = 0, },
-	},
+	const struct iio_chan_spec channels[2];
 };
 
 struct opt300x {
@@ -153,6 +114,95 @@ struct opt300x {
 	u8			low_thresh_exp;
 
 	bool			use_irq;
+};
+
+
+static IIO_CONST_ATTR_INT_TIME_AVAIL("0.1 0.8");
+
+static struct attribute *opt300x_attributes[] = {
+	&iio_const_attr_integration_time_available.dev_attr.attr,
+	NULL
+};
+
+static const struct attribute_group opt300x_attribute_group = {
+	.attrs = opt300x_attributes,
+};
+
+static const struct iio_event_spec opt300x_event_spec[] = {
+	{
+		.type = IIO_EV_TYPE_THRESH,
+		.dir = IIO_EV_DIR_RISING,
+		.mask_separate = BIT(IIO_EV_INFO_VALUE) |
+		BIT(IIO_EV_INFO_ENABLE),
+	},
+	{
+		.type = IIO_EV_TYPE_THRESH,
+		.dir = IIO_EV_DIR_FALLING,
+		.mask_separate = BIT(IIO_EV_INFO_VALUE) |
+		BIT(IIO_EV_INFO_ENABLE),
+	},
+};
+
+static const struct opt300x_chip opt3001_chip = {
+	.device_id = OPT3001_DEVICE_ID,
+	.scaler_numerator = 1,
+	.scaler_denominator = 100,
+	.table = {
+		{ .val =    40, .val2 = 950000, },
+		{ .val =    81, .val2 = 900000, },
+		{ .val =   163, .val2 = 800000, },
+		{ .val =   327, .val2 = 600000, },
+		{ .val =   655, .val2 = 200000, },
+		{ .val =  1310, .val2 = 400000, },
+		{ .val =  2620, .val2 = 800000, },
+		{ .val =  5241, .val2 = 600000, },
+		{ .val = 10483, .val2 = 200000, },
+		{ .val = 20966, .val2 = 400000, },
+		{ .val = 41932, .val2 = 800000, },
+		{ .val = 83865, .val2 = 600000, },
+	},
+	.channels = {
+		{
+			/* values reported in lux */
+			.type = IIO_LIGHT,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
+					      BIT(IIO_CHAN_INFO_INT_TIME),
+			.event_spec = opt300x_event_spec,
+			.num_event_specs = ARRAY_SIZE(opt300x_event_spec),
+		},
+		IIO_CHAN_SOFT_TIMESTAMP(1),
+	},
+};
+
+static const struct opt300x_chip opt3002_chip = {
+	.device_id = -1,
+	.scaler_numerator = 6,
+	.scaler_denominator = 5,
+	.table = {
+		{ .val =     4914, .val2 = 0, },
+		{ .val =     9828, .val2 = 0, },
+		{ .val =    19656, .val2 = 0, },
+		{ .val =    39312, .val2 = 0, },
+		{ .val =    78624, .val2 = 0, },
+		{ .val =   157248, .val2 = 0, },
+		{ .val =   314496, .val2 = 0, },
+		{ .val =   628992, .val2 = 0, },
+		{ .val =  1257984, .val2 = 0, },
+		{ .val =  2515968, .val2 = 0, },
+		{ .val =  5031936, .val2 = 0, },
+		{ .val = 10063872, .val2 = 0, },
+	},
+	.channels = {
+		{
+			/* values reported in nW/cm^2 */
+			.type = IIO_INTENSITY,
+			.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
+					      BIT(IIO_CHAN_INFO_INT_TIME),
+			.event_spec = opt300x_event_spec,
+			.num_event_specs = ARRAY_SIZE(opt300x_event_spec),
+		},
+		IIO_CHAN_SOFT_TIMESTAMP(1),
+	},
 };
 
 static int opt300x_find_scale(const struct opt300x *opt, int val,
@@ -201,44 +251,8 @@ static void opt300x_set_mode(struct opt300x *opt, u16 *reg, u16 mode)
 	opt->mode = mode;
 }
 
-static IIO_CONST_ATTR_INT_TIME_AVAIL("0.1 0.8");
 
-static struct attribute *opt300x_attributes[] = {
-	&iio_const_attr_integration_time_available.dev_attr.attr,
-	NULL
-};
-
-static const struct attribute_group opt300x_attribute_group = {
-	.attrs = opt300x_attributes,
-};
-
-static const struct iio_event_spec opt300x_event_spec[] = {
-	{
-		.type = IIO_EV_TYPE_THRESH,
-		.dir = IIO_EV_DIR_RISING,
-		.mask_separate = BIT(IIO_EV_INFO_VALUE) |
-			BIT(IIO_EV_INFO_ENABLE),
-	},
-	{
-		.type = IIO_EV_TYPE_THRESH,
-		.dir = IIO_EV_DIR_FALLING,
-		.mask_separate = BIT(IIO_EV_INFO_VALUE) |
-			BIT(IIO_EV_INFO_ENABLE),
-	},
-};
-
-static const struct iio_chan_spec opt300x_channels[] = {
-	{
-		.type = IIO_LIGHT,
-		.info_mask_separate = BIT(IIO_CHAN_INFO_PROCESSED) |
-				BIT(IIO_CHAN_INFO_INT_TIME),
-		.event_spec = opt300x_event_spec,
-		.num_event_specs = ARRAY_SIZE(opt300x_event_spec),
-	},
-	IIO_CHAN_SOFT_TIMESTAMP(1),
-};
-
-static int opt300x_get_lux(struct opt300x *opt, int *val, int *val2)
+static int opt300x_get_reading(struct opt300x *opt, int *val, int *val2)
 {
 	int ret;
 	u16 mantissa;
@@ -410,14 +424,14 @@ static int opt300x_read_raw(struct iio_dev *iio,
 	if (opt->mode == OPT300x_CONFIGURATION_M_CONTINUOUS)
 		return -EBUSY;
 
-	if (chan->type != IIO_LIGHT)
+	if (chan->type != opt->chip->channels[0].type)
 		return -EINVAL;
 
 	mutex_lock(&opt->lock);
 
 	switch (mask) {
 	case IIO_CHAN_INFO_PROCESSED:
-		ret = opt300x_get_lux(opt, val, val2);
+		ret = opt300x_get_reading(opt, val, val2);
 		break;
 	case IIO_CHAN_INFO_INT_TIME:
 		ret = opt300x_get_int_time(opt, val, val2);
@@ -441,7 +455,7 @@ static int opt300x_write_raw(struct iio_dev *iio,
 	if (opt->mode == OPT300x_CONFIGURATION_M_CONTINUOUS)
 		return -EBUSY;
 
-	if (chan->type != IIO_LIGHT)
+	if (chan->type != opt->chip->channels[0].type)
 		return -EINVAL;
 
 	if (mask != IIO_CHAN_INFO_INT_TIME)
@@ -798,8 +812,8 @@ static int opt300x_probe(struct i2c_client *client,
 		return ret;
 
 	iio->name = client->name;
-	iio->channels = opt300x_channels;
-	iio->num_channels = ARRAY_SIZE(opt300x_channels);
+	iio->channels = opt->chip->channels;
+	iio->num_channels = ARRAY_SIZE(opt->chip->channels);
 	iio->dev.parent = dev;
 	iio->modes = INDIO_DIRECT_MODE;
 	iio->info = &opt300x_info;
