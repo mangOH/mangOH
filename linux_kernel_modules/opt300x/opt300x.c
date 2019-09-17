@@ -89,7 +89,7 @@ struct opt300x_chip {
 	int device_id;
 	u8 scaler_numerator;
 	u8 scaler_denominator;
-        const struct opt300x_scale table[12];
+	const struct opt300x_scale table[12];
 };
 
 static const struct opt300x_chip opt3001_chip = {
@@ -136,7 +136,7 @@ struct opt300x {
 	struct i2c_client	*client;
 	struct device		*dev;
 
- 	struct opt300x_chip     *chip;
+	struct opt300x_chip	*chip;
 	struct mutex		lock;
 	bool			ok_to_ignore_lock;
 	bool			result_ready;
@@ -159,7 +159,7 @@ static int opt300x_find_scale(const struct opt300x *opt, int val,
 		int val2, u8 *exponent)
 {
 	int i;
-        int val_tmp = (val * 1000ll +  val2 / 1000);
+	int val_tmp = (val * 1000ll + val2 / 1000);
 
 	for (i = 0; i < ARRAY_SIZE(opt->chip->table); i++) {
 		const struct opt300x_scale *scale = &opt->chip->table[i];
@@ -183,8 +183,8 @@ static void opt300x_to_iio_ret(struct opt300x *opt, u8 exponent,
 {
 	u64 res;
 	u64 tmp;
-        u8 numerator = opt->chip->scaler_numerator;
-        u8 denominator = opt->chip->scaler_denominator;
+	u8 numerator = opt->chip->scaler_numerator;
+	u8 denominator = opt->chip->scaler_denominator;
 	tmp = 1000000ull;
 	do_div(tmp, denominator);
 	res = tmp * (mantissa << exponent) * numerator;
@@ -498,10 +498,10 @@ static int opt300x_write_event_value(struct iio_dev *iio,
 	u16 reg;
 
 	u8 exponent;
-        u64 tmp;
+	u64 tmp;
 
-        u8 numerator = opt->chip->scaler_numerator;
-        u8 denominator = opt->chip->scaler_denominator;
+	u8 numerator = opt->chip->scaler_numerator;
+	u8 denominator = opt->chip->scaler_denominator;
 
 
 	if (val < 0)
@@ -515,9 +515,9 @@ static int opt300x_write_event_value(struct iio_dev *iio,
 		goto err;
 	}
 
-        tmp  = ((val * 1000000ull) + val2) * denominator;
-        do_div(tmp, numerator * 1000000ull);
-        mantissa = tmp >> exponent;
+	tmp = ((val * 1000000ull) + val2) * denominator;
+	do_div(tmp, numerator * 1000000ull);
+	mantissa = tmp >> exponent;
 
 	value = (exponent << 12) | mantissa;
 
@@ -631,7 +631,7 @@ static int opt300x_read_id(struct opt300x *opt)
 				manufacturer);
 		return -ENODEV;
 	}
-        dev_info(opt->dev, "manufacturer id (%u)\n",manufacturer);
+	dev_info(opt->dev, "manufacturer id (%u)\n",manufacturer);
 
 	if (opt->chip->device_id >= 0) {
 		ret = i2c_smbus_read_word_swapped(opt->client, OPT3001_DEVICE_ID);
@@ -768,7 +768,7 @@ static int opt300x_probe(struct i2c_client *client,
 		const struct i2c_device_id *id)
 {
 	struct device *dev = &client->dev;
-        struct opt300x_chip *c = (struct opt300x_chip *)id->driver_data;
+	struct opt300x_chip *c = (struct opt300x_chip *)id->driver_data;
 	struct iio_dev *iio;
 	struct opt300x *opt;
 	int ret;
@@ -782,7 +782,7 @@ static int opt300x_probe(struct i2c_client *client,
 	opt = iio_priv(iio);
 	opt->client = client;
 	opt->dev = dev;
-        opt->chip = c;
+	opt->chip = c;
 	mutex_init(&opt->lock);
 	init_waitqueue_head(&opt->result_ready_queue);
 	i2c_set_clientdata(client, iio);
@@ -862,7 +862,7 @@ static int opt300x_remove(struct i2c_client *client)
 static const struct i2c_device_id opt300x_id[] = {
 	{ "opt3001", (kernel_ulong_t)&opt3001_chip },
 	{ "opt3002", (kernel_ulong_t)&opt3002_chip },
-        { } /* Terminating Entry */
+	{ } /* Terminating Entry */
 };
 MODULE_DEVICE_TABLE(i2c, opt300x_id);
 
