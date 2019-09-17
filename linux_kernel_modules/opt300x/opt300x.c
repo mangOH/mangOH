@@ -194,24 +194,24 @@ static const struct opt300x_scale opt3002_scales[] = {
 
 struct opt300x_chip {
 	int device_id;
-	u16 multiplier_numerator;
-	u16 multiplier_denominator;
+	u8 scaler_numerator;
+	u8 scaler_denominator;
         const struct opt300x_scale *table;
 	size_t table_num_entries;
 };
 
 static const struct opt300x_chip opt3001_chip = {
 	.device_id = OPT3001_DEVICE_ID,
-	.multiplier_numerator = 1,
-	.multiplier_denominator = 100,
+	.scaler_numerator = 1,
+	.scaler_denominator = 100,
 	.table = opt3001_scales,
 	.table_num_entries = ARRAY_SIZE(opt3001_scales),
 };
 
 static const struct opt300x_chip opt3002_chip = {
 	.device_id = -1,
-	.multiplier_numerator = 6,
-	.multiplier_denominator = 5,
+	.scaler_numerator = 6,
+	.scaler_denominator = 5,
 	.table = opt3002_scales,
 	.table_num_entries = ARRAY_SIZE(opt3002_scales),
 };
@@ -266,17 +266,17 @@ static int opt300x_find_scale(const struct opt300x *opt, int val,
 static void opt300x_to_iio_ret(struct opt300x *opt, u8 exponent,
 		u16 mantissa, int *val, int *val2)
 {
-	u64 lux;
+	u64 res;
 	u64 tmp;
-        u16  multiplier1 = opt->chip->multiplier_numerator;
-        u16  multiplier2 = opt->chip->multiplier_denominator;
+        u8 numerator = opt->chip->scaler_numerator;
+        u8 denominator = opt->chip->scaler_denominator;
 	tmp = 1000000ull;
-	do_div(tmp, multiplier2);
-	lux = tmp * (mantissa << exponent) * multiplier1;
-	tmp = lux;
+	do_div(tmp, denominator);
+	res = tmp * (mantissa << exponent) * numerator;
+	tmp = res;
 	do_div(tmp, 1000000);
 	*val = tmp;
-	*val2 = lux - (1000000ull * (*val));
+	*val2 = res - (1000000ull * (*val));
 }
 
 static void opt300x_set_mode(struct opt300x *opt, u16 *reg, u16 mode)
@@ -585,8 +585,8 @@ static int opt300x_write_event_value(struct iio_dev *iio,
 	u8 exponent;
         u64 tmp;
 
-        u16  multiplier1 = opt->chip->multiplier_numerator;
-        u16  multiplier2 = opt->chip->multiplier_denominator;
+        u8 numerator = opt->chip->scaler_numerator;
+        u8 denominator = opt->chip->scaler_denominator;
 
 
 	if (val < 0)
@@ -600,8 +600,8 @@ static int opt300x_write_event_value(struct iio_dev *iio,
 		goto err;
 	}
 
-        tmp  = ((val * 1000000ull) + val2) * multiplier2;
-        do_div(tmp, multiplier1 * 1000000ull);
+        tmp  = ((val * 1000000ull) + val2) * denominator;
+        do_div(tmp, numerator * 1000000ull);
         mantissa = tmp >> exponent;
 
 	value = (exponent << 12) | mantissa;
