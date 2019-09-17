@@ -18,7 +18,7 @@
 #include "lightSensor.h"
 #include "fileUtils.h"
 
-static const char LightFile[]  = "/driver/in_illuminance_input";
+static const char LightFile[]  = "/driver/in_intensity_input";
 
 
 //--------------------------------------------------------------------------------------------------
@@ -74,5 +74,5 @@ static void SampleLight
 
 COMPONENT_INIT
 {
-    (void)psensor_Create("", DHUBIO_DATA_TYPE_NUMERIC, "lux", SampleLight, NULL);
+    (void)psensor_Create("", DHUBIO_DATA_TYPE_NUMERIC, "nW/cm2", SampleLight, NULL);
 }

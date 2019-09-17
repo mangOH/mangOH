@@ -31,7 +31,7 @@ requires:
     }
     file:
     {
-       /sys/bus/i2c/devices/7-0044/iio:device1/in_illuminance_input     /driver/
+       /sys/bus/i2c/devices/7-0044/iio:device1/in_intensity_input     /driver/
     }
 }
 
