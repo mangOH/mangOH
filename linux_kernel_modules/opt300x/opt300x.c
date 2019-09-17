@@ -81,139 +81,55 @@
 
 
 struct opt300x_scale {
-	int	val;
-	int	val2;
+	int val;
+	int val2;
 };
-
-static const struct opt300x_scale opt3001_scales[] = {
-	{
-		.val = 40,
-		.val2 = 950000,
-	},
-	{
-		.val = 81,
-		.val2 = 900000,
-	},
-	{
-		.val = 163,
-		.val2 = 800000,
-	},
-	{
-		.val = 327,
-		.val2 = 600000,
-	},
-	{
-		.val = 655,
-		.val2 = 200000,
-	},
-	{
-		.val = 1310,
-		.val2 = 400000,
-	},
-	{
-		.val = 2620,
-		.val2 = 800000,
-	},
-	{
-		.val = 5241,
-		.val2 = 600000,
-	},
-	{
-		.val = 10483,
-		.val2 = 200000,
-	},
-	{
-		.val = 20966,
-		.val2 = 400000,
-	},
-
-        {
-		.val = 41932,
-		.val2 = 800000,
-	},
-
-	{
-		.val = 83865,
-		.val2 = 600000,
-	},
-};
-
-static const struct opt300x_scale opt3002_scales[] = {
-	{
-		.val =  4914,
-		.val2 = 0,
-	},
-	{
-		.val =  9828,
-		.val2 = 0,
-	},
-	{
-		.val = 19656,
-		.val2 = 0,
-	},
-	{
-		.val = 39312,
-		.val2 = 0,
-	},
-	{
-		.val = 78624,
-		.val2 = 0,
-	},
-	{
-		.val = 157248,
-		.val2 = 0,
-	},
-	{
-		.val = 314496,
-		.val2 = 0,
-	},
-	{
-		.val = 628992,
-		.val2 = 0,
-	},
-	{
-		.val = 1257984,
-		.val2 = 0,
-	},
-	{
-		.val = 2515968,
-		.val2 = 0,
-	},
-	{
-		.val = 5031936,
-		.val2 = 0,
-	},
-
-	{
-		.val = 10063872,
-		.val2 = 0,
-	},
-};
-
-
 
 struct opt300x_chip {
 	int device_id;
 	u8 scaler_numerator;
 	u8 scaler_denominator;
-        const struct opt300x_scale *table;
-	size_t table_num_entries;
+        const struct opt300x_scale table[12];
 };
 
 static const struct opt300x_chip opt3001_chip = {
 	.device_id = OPT3001_DEVICE_ID,
 	.scaler_numerator = 1,
 	.scaler_denominator = 100,
-	.table = opt3001_scales,
-	.table_num_entries = ARRAY_SIZE(opt3001_scales),
+	.table = {
+		{ .val =    40, .val2 = 950000, },
+		{ .val =    81, .val2 = 900000, },
+		{ .val =   163, .val2 = 800000, },
+		{ .val =   327, .val2 = 600000, },
+		{ .val =   655, .val2 = 200000, },
+		{ .val =  1310, .val2 = 400000, },
+		{ .val =  2620, .val2 = 800000, },
+		{ .val =  5241, .val2 = 600000, },
+		{ .val = 10483, .val2 = 200000, },
+		{ .val = 20966, .val2 = 400000, },
+		{ .val = 41932, .val2 = 800000, },
+		{ .val = 83865, .val2 = 600000, },
+	},
 };
 
 static const struct opt300x_chip opt3002_chip = {
 	.device_id = -1,
 	.scaler_numerator = 6,
 	.scaler_denominator = 5,
-	.table = opt3002_scales,
-	.table_num_entries = ARRAY_SIZE(opt3002_scales),
+	.table = {
+		{ .val =     4914, .val2 = 0, },
+		{ .val =     9828, .val2 = 0, },
+		{ .val =    19656, .val2 = 0, },
+		{ .val =    39312, .val2 = 0, },
+		{ .val =    78624, .val2 = 0, },
+		{ .val =   157248, .val2 = 0, },
+		{ .val =   314496, .val2 = 0, },
+		{ .val =   628992, .val2 = 0, },
+		{ .val =  1257984, .val2 = 0, },
+		{ .val =  2515968, .val2 = 0, },
+		{ .val =  5031936, .val2 = 0, },
+		{ .val = 10063872, .val2 = 0, },
+	},
 };
 
 struct opt300x {
@@ -245,14 +161,13 @@ static int opt300x_find_scale(const struct opt300x *opt, int val,
 	int i;
         int val_tmp = (val * 1000ll +  val2 / 1000);
 
-	for (i = 0; i < opt->chip->table_num_entries; i++) {
+	for (i = 0; i < ARRAY_SIZE(opt->chip->table); i++) {
 		const struct opt300x_scale *scale = &opt->chip->table[i];
 
 		int scale_tmp = (scale->val * 1000ll + scale->val2 / 1000);
 		/*
-		 * Combine the integer and micro parts for comparison
-		 * purposes. Use milli lux precision to avoid 32-bit integer
-		 * overflows.
+		 * Combine the whole and micro parts for comparison purposes.
+		 * Use milli precision to avoid 32-bit integer overflows.
 		 */
 		if (val_tmp <= scale_tmp) {
 			*exponent = i;
