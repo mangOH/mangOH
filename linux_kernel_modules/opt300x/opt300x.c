@@ -149,7 +149,7 @@ static const struct opt300x_scale opt3002_scales[] = {
 	},
 	{
 		.val = 19656,
-		.val2 =0,
+		.val2 = 0,
 	},
 	{
 		.val = 39312,
@@ -219,7 +219,7 @@ static const struct opt300x_chip opt3002_chip = {
 struct opt300x {
 	struct i2c_client	*client;
 	struct device		*dev;
-        
+
  	struct opt300x_chip     *chip;
 	struct mutex		lock;
 	bool			ok_to_ignore_lock;
@@ -269,7 +269,7 @@ static void opt300x_to_iio_ret(struct opt300x *opt, u8 exponent,
 	u64 lux;
 	u64 tmp;
         u16  multiplier1 = opt->chip->multiplier_numerator;
-        u16  multiplier2 = opt->chip->multiplier_denominator; 
+        u16  multiplier2 = opt->chip->multiplier_denominator;
 	tmp = 1000000ull;
 	do_div(tmp, multiplier2);
 	lux = tmp * (mantissa << exponent) * multiplier1;
@@ -726,7 +726,7 @@ static int opt300x_read_id(struct opt300x *opt)
 			return ret;
 		}
 		device_id = ret;
-		
+
 		if (device_id != opt->chip->device_id) {
 			//dev_err("opt->dev, Invalid Device id %d", device_id);
 			return -ENODEV;
