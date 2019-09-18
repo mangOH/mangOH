@@ -31,7 +31,7 @@ static const char LightFile[]  = "/driver/in_intensity_input";
 le_result_t light_Read
 (
     double* readingPtr
-        ///< [OUT] Where the reading (in LUX) will be put if LE_OK is returned.
+        ///< [OUT] Where the reading (in W/m2) will be put if LE_OK is returned.
 )
 {
     double light;
@@ -40,7 +40,10 @@ le_result_t light_Read
     {
         return r;
     }
-    *readingPtr = ((double)light);
+
+    const double cmSquaredPerMeterSquared = 100.0 * 100.0;
+    const double nanoWattsPerWatt = 1000000000.0;
+    *readingPtr = light * (cmSquaredPerMeterSquared / nanoWattsPerWatt);
 
     return LE_OK;
 }
@@ -74,5 +77,5 @@ static void SampleLight
 
 COMPONENT_INIT
 {
-    (void)psensor_Create("", DHUBIO_DATA_TYPE_NUMERIC, "nW/cm2", SampleLight, NULL);
+    (void)psensor_Create("", DHUBIO_DATA_TYPE_NUMERIC, "W/m2", SampleLight, NULL);
 }
