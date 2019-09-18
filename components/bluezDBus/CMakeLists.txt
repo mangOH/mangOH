@@ -1,3 +1,7 @@
+# No backwards compatibility testing has been performed, but cmake complains if a minimum version
+# isn't specified.  3.5 was chosen because it's the version that was included with Ubuntu 16.04
+# LTS.
+cmake_minimum_required (VERSION 3.5)
 project (libBluezDBus)
 
 find_package(PkgConfig REQUIRED)
