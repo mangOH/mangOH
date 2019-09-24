@@ -2,8 +2,7 @@
 /**
  * @page c_mangoh_light Light Sensor API
  *
- * The following function can be used to access the light intensity measurement provided
- * by the light sensor on the mangOH Red DV3:
+ * The following function can be used to access the light sensor.
  *
  * - light_Read()
  *

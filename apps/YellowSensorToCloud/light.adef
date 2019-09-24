@@ -1,3 +1,12 @@
+/*
+ * This app has to be unsandboxed to enable libiio to search through the IIO files in /sys/bus/iio/
+ * and /dev/iio:device*. It might be possible to explicitly requires/file and requires/directory the
+ * right set of files, but it would be gross to have to hardcode that the light sensor is
+ * iio:device1 since that can change depending on the order that IIO devices are added into the
+ * system.
+ */
+sandboxed: false
+
 executables:
 {
     lightSensor = ( components/sensors/light )

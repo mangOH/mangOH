@@ -1,7 +1,6 @@
 //--------------------------------------------------------------------------------------------------
 /**
- * Component definition file for the mangOH Yellow Light
- * sensor interface component.
+ * Component definition file for the mangOH Yellow light sensor interface component.
  */
 //--------------------------------------------------------------------------------------------------
 cflags:
@@ -26,13 +25,26 @@ requires:
 
     component:
     {
-        fileUtils
         periodicSensor
+        libiioComponent
     }
-    file:
+
+    // Use requires/lib once LE-12987 is fixed
+    /*
+    lib:
     {
-       /sys/bus/i2c/devices/7-0044/iio:device1/in_intensity_input     /driver/
+        libiio.so
+        libiio.so.0
+        libiio.so.0.18
     }
+    */
+}
+
+// Remove ldflags section once LE-12987 is fixed
+ldflags:
+{
+    -liio
+    -L${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs
 }
 
 sources:
