@@ -9,16 +9,27 @@ requires:
     {
         ${MANGOH_ROOT}/components/libiioComponent
     }
+
+    // Use requires/lib once LE-12987 is fixed
+    /*
     lib:
     {
         libiio.so
         libiio.so.0
-        libiio.so.0.15
+        libiio.so.0.18
     }
+    */
 }
 
 cflags:
 {
     -I${MANGOH_ROOT}/components/libiioComponent/libiio
     -std=c99
+}
+
+// Remove ldflags section once LE-12987 is fixed
+ldflags:
+{
+    -L${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/
+    -liio
 }
