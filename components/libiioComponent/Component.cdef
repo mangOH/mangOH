@@ -14,8 +14,16 @@ bundles:
 {
     file:
     {
-        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so      /usr/lib/
-        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so.0    /usr/lib/
-        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so.0.15 /usr/lib/
+        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so      /lib/
+        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so.0    /lib/
+        [rx] ${MANGOH_ROOT}/build/${MANGOH_BOARD}_${LEGATO_TARGET}/libs/libiio.so.0.18 /lib/
+    }
+}
+
+provides:
+{
+    headerDir:
+    {
+        $CURDIR/libiio
     }
 }

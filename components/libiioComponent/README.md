@@ -18,11 +18,7 @@ requires:
     {
         libiio.so
         libiio.so.0
-        libiio.so.0.15
+        libiio.so.0.18
     }
-}
-cflags:
-{
-    -I${MANGOH_ROOT}/components/libiioComponent/libiio
 }
 ```
