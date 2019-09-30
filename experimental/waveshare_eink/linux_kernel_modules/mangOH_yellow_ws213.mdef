@@ -9,8 +9,24 @@ cflags:
     -DCONFIG_RPIFB
 }
 
-params:
+requires:
 {
+    kernelModules:
+    {
+	// This dependency is needed as the gpiochip ports are not
+	// ready for this module unless the yellow driver sets them
+	// up properly.
+        $CURDIR/../../../linux_kernel_modules/mangoh/mangoh_yellow_dev
+    }
 }
 
-load: manual
+
+// Note the start script has had kludge over many issues.
+scripts:
+{
+    install:  $CURDIR/scripts/start_waveshare.sh
+    remove:   $CURDIR/scripts/stop_waveshare.sh
+}
+
+load: auto
+

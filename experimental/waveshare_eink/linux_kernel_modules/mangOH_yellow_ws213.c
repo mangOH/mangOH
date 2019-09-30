@@ -12,8 +12,17 @@
 
 #include "fb_waveshare_eink.h"
 
-#define SPI_BUS		32766
-#define SPI_BUS_CS1	1
+
+/* Legato 19.07 stop/start causes SPI bus to be renumerated
+ * off of the SPI port of the CP2130 - could be an issue
+ * on the USB that feeds the CP2130 or even the USB Hub.
+ * The Expansion connector SPI is of the 2nd SPI bus
+ * not the primary and starts enumeration at 32766.
+ */
+#define SPI_MAX_SEARCH		16
+#define SPI_START_BUS		32766
+#define SPI_MIN_BUS		(32766 - SPI_MAX_SEARCH)
+#define SPI_BUS_CS1		1
 /*
  * The minimum clock cycle duration supported by the waveshare 2.13 Inch display
  * is 250ns which translates to 4MHz bus speed
@@ -45,14 +54,23 @@ static int gpiochip_match_name(struct gpio_chip *chip, void *data)
 
 static int __init add_ws213fb_device_to_bus(void)
 {
-	struct spi_master *spi_master;
+	struct spi_master *spi_master = NULL;
 	struct gpio_chip *expander_gpiop;
+	int busnum;
 	int status = 0;
 
-	spi_master = spi_busnum_to_master(SPI_BUS);
-	if (!spi_master) {
-		printk(KERN_ALERT "spi_busnum_to_master(%d) returned NULL\n",
-		       SPI_BUS);
+        /* Bus not assigned: find SPI master with lowest bus number */
+        for (busnum = SPI_START_BUS;
+		busnum > SPI_MIN_BUS && NULL == spi_master; busnum--) {
+		printk(KERN_ALERT "mangOH_yellow_ws213: Trying busnum: %d\n",
+			busnum);
+                spi_master = spi_busnum_to_master(busnum);
+        }
+
+        if (!spi_master) {
+		printk(KERN_ALERT
+		"mangOH_yellow_ws213: spi_busnum_to_master(%d) search returned NULL\n",
+		       busnum);
 		return -1;
 	}
 
@@ -73,7 +91,8 @@ static int __init add_ws213fb_device_to_bus(void)
 	/* If we find the expander for the busy GPIO we are ok */
 	expander_gpiop = gpiochip_find((void *) "sx1509q", gpiochip_match_name);
 	if (expander_gpiop == NULL) {
-		printk(KERN_ALERT "Finding our gpiochip for the busy gpio failed\n");
+		printk(KERN_ALERT
+		"mangOH_yellow_ws213: Finding sx1509q gpiochip for the busy gpio failed\n");
 		status = -1;
 		goto put_master;
 	}
@@ -87,7 +106,8 @@ static int __init add_ws213fb_device_to_bus(void)
 	status = spi_add_device(eink_device);
 	if (status < 0) {
 		spi_dev_put(eink_device);
-		printk(KERN_ALERT "spi_add_device() failed: %d\n", status);
+		printk(KERN_ALERT
+		"mangOH_yellow_ws213: spi_add_device() failed: %d\n", status);
 	}
 
 put_master:

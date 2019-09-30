@@ -1,87 +1,27 @@
 # mangOH Waveshare E-Ink Linux Framebuffer driver
 
-For integration mangOH Red and Waveshare E-Ink Display
+mangOH Red/Yellow (note separate drivers exist for Red & Yellow) drivers for the Waveshare 2.13 E-Ink Display
+Code is experimental so far and the instructions below are tailored to the Yellow and WP7[67]xx. TODO, fix for Red.
+Note, original code-base was for WP85 on Red, so should be able to adapt.
 
-### 1. Download Legato Distribution Source Package from sierra wireless website:
-    Yocto Source (Around 4 GB)
-    The file name is Legato-Dist-Source-mdm9x15-SWI9X15Y_07.13.05.00.tar.bz2
+### 1. Dependency on meta-mangOH for FB core & helper drivers - standard mangOH spk should have already.
 
-### 2. Extract the downloaded Distribution source package:
+### 2. Need to include sinc/waveshare_eink.sinc in the yellow.sdef and build it.
 
-    Run command: tar -xvjf Legato-Dist-Source-mdm9x15-SWI9X15Y_07.13.05.00.tar.bz2
+    Note for Legato 19.04 please add the waveshare_eink.sinc to the end of the file as
+    mksys crashes in the build if it is added in the beginning of the yellow.sdef.
 
-### 3. Disable Legato configuration to build Yocto
+### 3. Tested on Legato 19.04 with these shell startup/stop scripts
 
-    Run command: cd yocto
-    Run command: export LEGATO_BUILD=0
+    scp(1) scripts/start_eink.sh/stop_eink.sh to the target.
+    Need to run the start_eink.sh after bootup from a shell to load the kernel loadable
+    modules, mangOH_yellow_ws213, fb_waveshare_eink, and finally EinkDhubIf app in that order.
+    To remove just run stop_eink.sh and then app stop EinkDhubIf in that order.
 
-### 4. Build Yocto images from source
+### 4. Currently is ready for auto-startup on Legato 19.07 as it allows mdef start/stop scripts.
 
-    Run command: make image_bin
-    If you get the error not found 'serf.h', then follow the steps below, otherwise skip to the next step.
-        Go to directory: cd meta-swi/common/recipes-devtools/
-        create directory: mkdir subversion
-        Put attach file: subversion_1.8.9.bbappend, under directory subversion
-        The full path would be: yocto/meta-swi/common/recipes-devtools/subversion/subversion_1.8.9.bbappend
-        build Yocto images again: make image_bin
-### 5. Set environment under yocto directory, this will get command bitbake run:
+    Note, kludges are noted in the mangOH_yellow_ws213 start script in regards
+    to the SPI busy port and other issues. mangOH_yellow_ws213 needs to deal with the
+    SPI bus renumbering off of the sx1509q.
 
-    Run Command: . ./poky/oe-init-build-env
-    
-### 6. Build Linux kernel with Buffer Frame driver modules support
-
-    Go to directory: yocto/build_bin (cd …/build_bin)
-    Configure kernel with default:
-        Run command: bitbake linux-yocto -c kernel_configme -f
-    Configure kernel to add BT driver module in Linux configuration
-        Run command: bitbake linux-yocto -c menuconfig
-        Enter Device Driver -> Graphic Support
-        Enter <M> Suport for frameBuffer devices
-            <M> Ion Memory Manager
-            <> Lowlevel video output switch controls
-            <*> Support for frame buffer devices 
-                 [*] Enable firmware EDID
-                 [*] Framebuffer foreign endianess support --->
-                 -*- Enable Video Mode Hangling Helper
-                 [*] Enable Tile Blitting Support
-                     ***Frame buffer hardware drivers***
-                 <M> OpenCores VGA/LCD core 2.0 framebuffer support
-                 <M> Epson S1D13XXX framebuffer support
-                 <M> Toshiba Mobile IO framebuffer support
-                 [*] tmiofb acceleration (NEW)
-                 <M> SMSC UFX6000/7000 USB Framebuffer support
-                 <M> Displaylink USB Framebuffer support
-                 <M> Goldfish Framebuffer 
-                 <M> Vitrual Frame Buffer support(ONLY FOR TESTING)
-                 <M> E-Ink Metronome/8track controller support
-                 <M> MSM Framebuffer support
-                 <M> E-Ink Broadsheet/Epson S1D13521 controller support
-                 <M> AUO-K190X EPD controller support
-                    <M> AUO-K1900 EPD controller support
-                    <M> AUO-K190X\1 EPD controller support
-                 [*] Simple framebuffer support 
-        [*] Esynos Video driver support 
-            Console display driver support 
-            <*> Framebuffer Console support
-            [*]     Map the console to primary display device
-            [*]     Framebuffer Console Rotation
-    Exit and save Frame Buffer Linux config
-    Rebuild kernel image: bitbake -f linux-yocto
- 
- ### 7. Rebuild rootfs filesystem and images
-    
-    bitbake -c cleansstate mdm9x15-image-minimal
-    bitbake mdm9x15-image-minimal
-
-Check new build CWE images: yocto_wp85.cwe
-
-    Go to images directory: cd build_bin/tmp/deploy/images/swi-mdm9x15
-
-Reflash new image with Frame Buffer driver module support to the target board
-
-    on Windows: FDT command: fdt yocto_wp85.cwe 
-    on Linux: by command: fwupdate download yocto_wp85.cwe
-
-
-
-
+### 6. Please see TODO.md for more things to fix.

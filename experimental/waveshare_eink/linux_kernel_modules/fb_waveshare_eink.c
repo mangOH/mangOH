@@ -346,16 +346,18 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 	u8 *ssbuf = par->ssbuf;
 	const u8 *lut;
 	size_t lut_size;
-	static int update_count = 0;
 
-	if(++update_count == 10) {
-		update_count = 0;
-		lut = lut_full_update;
-		lut_size = ARRAY_SIZE(lut_full_update);
-	} else {
-		lut = lut_partial_update;
-		lut_size = ARRAY_SIZE(lut_partial_update);
-	}
+        /* Previous code had partial refresh for a count of 10 here.
+         * Removed because serious ghosting issues existed. On further
+         * investigation found from
+         *    https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT
+         * that these ghosting issues may even damage the display.
+         * Thus, we only do full refresh for now - TODO: see
+         * if a better combination of partial/full exists.
+         */
+
+	lut = lut_full_update;
+	lut_size = ARRAY_SIZE(lut_full_update);
 
 	ret = int_lut(par, lut, lut_size);
 	if (ret)
