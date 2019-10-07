@@ -1,7 +1,6 @@
 #!/bin/sh
 # Broadcom/Cypress chip startup for MangOH Yellow
 
-set -x
 export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin
 
 # The Broadcom/Cypress uses the WL_REG_ON gpio to bring out of reset, but
