@@ -1,6 +1,7 @@
 #!/bin/sh
 # Broadcom/Cypress chip startup for MangOH Yellow
 
+set -x
 export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin
 
 # The Broadcom/Cypress uses the WL_REG_ON gpio to bring out of reset, but
@@ -28,6 +29,11 @@ fi
 uname -a | grep mdm9x28
 if [ $? -eq 0 ] ; then
 	CF3="mdm9x28"
+	# DV3 uses GPIO33 and DV4 uses wl_reg_on on the expander
+	BOARD_REV=`head -n 2 /sys/bus/i2c/devices/4-0050/eeprom | tail -1 | sed 's/Rev: //'`
+	if [ ${BOARD_REV} == "DV3" ] ; then
+		WL_REG_ON_GPIO=33
+	fi
 fi
 
 if [ -z "${CF3}" ] ; then
@@ -46,8 +52,22 @@ cy_wifi_init () {
 cy_wifi_start() {
 	# Let's bring the Cypress chip out of reset
 	if [ "${CF3}" = "mdm9x28" ] ; then
-		# DV4 off expander now
-		echo 1  > /sys/devices/platform/expander.0/wl_reg_on
+		# DV3 vs. DV4 diffs
+          	if [ ${BOARD_REV} == "DV3" ] ; then
+                  	if [ ! -d "/sys/class/gpio/gpio${WL_REG_ON_GPIO}" ] ; then
+				echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
+				echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
+			fi
+                	WL_REG_ON_VALUE=`cat /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value`
+                        if [ $WL_REG_ON_VALUE -eq 0 ] ; then
+				echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+			fi
+		elif [ ${BOARD_REV} == "1.0" ] ; then
+			echo 1  > /sys/devices/platform/expander.0/wl_reg_on
+		# Assuming things don't change on future board revs, otherwise, change here
+		else
+			echo 1  > /sys/devices/platform/expander.0/wl_reg_on
+          	fi            
 		# TODO: fix. WL_HOST_WAKE (GPIO42) should tell us that the
 		# the Cypress chip is powered on. On DV[34], may not be
 		# connected. If it works the sleep below can be removed.
