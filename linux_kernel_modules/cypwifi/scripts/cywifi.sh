@@ -29,8 +29,11 @@ uname -a | grep mdm9x28
 if [ $? -eq 0 ] ; then
 	CF3="mdm9x28"
 	# DV3 uses GPIO33 and DV4 uses wl_reg_on on the expander
-	BOARD_REV=`head -n 2 /sys/bus/i2c/devices/4-0050/eeprom | tail -1 | sed 's/Rev: //'`
-	if [ ${BOARD_REV} == "DV3" ] ; then
+	# It seems different DV3 boards were sent in the Yellow giveaway with different formats
+	# So relax the search for the DV3 string
+	head -n 2 /sys/bus/i2c/devices/4-0050/eeprom | grep -q DV3
+	if [ $? -eq 0 ] ; then
+		BOARD_REV="DV3"
 		WL_REG_ON_GPIO=33
 	fi
 fi
@@ -52,7 +55,7 @@ cy_wifi_start() {
 	# Let's bring the Cypress chip out of reset
 	if [ "${CF3}" = "mdm9x28" ] ; then
 		# DV3 vs. DV4 diffs
-          	if [ ${BOARD_REV} == "DV3" ] ; then
+          	if [ -n "$BOARD_REV" ] && [ ${BOARD_REV} == "DV3" ] ; then
                   	if [ ! -d "/sys/class/gpio/gpio${WL_REG_ON_GPIO}" ] ; then
 				echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
 				echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
@@ -61,9 +64,7 @@ cy_wifi_start() {
                         if [ $WL_REG_ON_VALUE -eq 0 ] ; then
 				echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
 			fi
-		elif [ ${BOARD_REV} == "1.0" ] ; then
-			echo 1  > /sys/devices/platform/expander.0/wl_reg_on
-		# Assuming things don't change on future board revs, otherwise, change here
+		# Otherwise let's assume Rev 1.0 or greater
 		else
 			echo 1  > /sys/devices/platform/expander.0/wl_reg_on
           	fi            
