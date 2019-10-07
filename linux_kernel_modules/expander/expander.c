@@ -12,7 +12,7 @@
  */
 #define GENERIC_LED		(4)
 #define PCM_SEL			(5)
-//#define SDIO_SEL		(6)
+#define WL_REG_ON		(1)
 #define TRI_LED_BLU		(7)
 #define TRI_LED_GRN		(15)
 #define TRI_LED_RED		(10)
@@ -20,7 +20,7 @@
 
 struct expander_device {
 	struct platform_device *pdev;
-	atomic_t generic_led_val, pcm_sel_val, sdio_sel_val,
+	atomic_t generic_led_val, pcm_sel_val, wl_reg_on_val,
 	         tri_led_blu_val, tri_led_red_val, tri_led_grn_val;
 	int gpio_expander_base;
 };
@@ -53,7 +53,7 @@ static DEVICE_ATTR_RW(_var)
 
 CREATE_SYSFS_DEFN(generic_led, GENERIC_LED, true);
 CREATE_SYSFS_DEFN(pcm_sel, PCM_SEL, false);
-//CREATE_SYSFS_DEFN(sdio_sel, SDIO_SEL, false);
+CREATE_SYSFS_DEFN(wl_reg_on, WL_REG_ON, false);
 CREATE_SYSFS_DEFN(tri_led_blu, TRI_LED_BLU, true);
 CREATE_SYSFS_DEFN(tri_led_red, TRI_LED_RED, true);
 CREATE_SYSFS_DEFN(tri_led_grn, TRI_LED_GRN, true);
@@ -130,10 +130,8 @@ static int expander_probe(struct platform_device *pdev)
 				  &dev->pcm_sel_val, false);
 	if (ret)
 		goto done;
-/* For Yellow DV3 boards no SDIO selection by the expander
-	ret = gpio_initial_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0,
-				  &dev->sdio_sel_val, false);
-*/
+	ret = gpio_initial_status(pdev, &dev_attr_wl_reg_on, WL_REG_ON, 0,
+				  &dev->wl_reg_on_val, false);
 	if (ret)
 		goto done;
 	ret = gpio_initial_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 1,
@@ -158,7 +156,7 @@ static int expander_remove(struct platform_device *pdev)
 	/* remove sysfs files & set final state values for gpio expander */
 	gpio_final_status(pdev, &dev_attr_generic_led, GENERIC_LED, 0);
 	gpio_final_status(pdev, &dev_attr_pcm_sel, PCM_SEL, 0);
-	//gpio_final_status(pdev, &dev_attr_sdio_sel, SDIO_SEL, 0);
+	gpio_final_status(pdev, &dev_attr_wl_reg_on, WL_REG_ON, 0);
 	gpio_final_status(pdev, &dev_attr_tri_led_blu, TRI_LED_BLU, 0);
 	gpio_final_status(pdev, &dev_attr_tri_led_red, TRI_LED_RED, 0);
 	gpio_final_status(pdev, &dev_attr_tri_led_grn, TRI_LED_GRN, 0);

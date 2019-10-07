@@ -28,7 +28,14 @@ fi
 uname -a | grep mdm9x28
 if [ $? -eq 0 ] ; then
 	CF3="mdm9x28"
-	WL_REG_ON_GPIO=33
+	# DV3 uses GPIO33 and DV4 uses wl_reg_on on the expander
+	# It seems different DV3 boards were sent in the Yellow giveaway with different formats
+	# So relax the search for the DV3 string
+	head -n 2 /sys/bus/i2c/devices/4-0050/eeprom | grep -q DV3
+	if [ $? -eq 0 ] ; then
+		BOARD_REV="DV3"
+		WL_REG_ON_GPIO=33
+	fi
 fi
 
 if [ -z "${CF3}" ] ; then
@@ -47,23 +54,29 @@ cy_wifi_init () {
 cy_wifi_start() {
 	# Let's bring the Cypress chip out of reset
 	if [ "${CF3}" = "mdm9x28" ] ; then
-		if [ ! -d "/sys/class/gpio/gpio${WL_REG_ON_GPIO}" ] ; then
-			echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
-			echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
-		fi
-		WL_REG_ON_VALUE=`cat /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value`
-		if [ $WL_REG_ON_VALUE -eq 0 ] ; then
-			echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
-			# TODO: fix. WL_HOST_WAKE (GPIO42) should tell us that the
-			# the Cypress chip is powered on. On DV3, may not be
-			# connected. If it works the sleep below can be removed.
-			sleep 2
-			modprobe sdhci-msm
-			# TODO: fix. Remove sleep below after more testing.
-			# Thought I saw issues in the BRCM FMAC coming up to soon.
-			# Btw, brcmfmac does have reconnect to sdio code.
-			sleep 2
-		fi
+		# DV3 vs. DV4 diffs
+          	if [ -n "$BOARD_REV" ] && [ ${BOARD_REV} == "DV3" ] ; then
+                  	if [ ! -d "/sys/class/gpio/gpio${WL_REG_ON_GPIO}" ] ; then
+				echo ${WL_REG_ON_GPIO} > /sys/class/gpio/export
+				echo out  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/direction
+			fi
+                	WL_REG_ON_VALUE=`cat /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value`
+                        if [ $WL_REG_ON_VALUE -eq 0 ] ; then
+				echo 1  > /sys/class/gpio/gpio${WL_REG_ON_GPIO}/value
+			fi
+		# Otherwise let's assume Rev 1.0 or greater
+		else
+			echo 1  > /sys/devices/platform/expander.0/wl_reg_on
+          	fi            
+		# TODO: fix. WL_HOST_WAKE (GPIO42) should tell us that the
+		# the Cypress chip is powered on. On DV[34], may not be
+		# connected. If it works the sleep below can be removed.
+		sleep 2
+		modprobe sdhci-msm
+		# TODO: fix. Remove sleep below after more testing.
+		# Thought I saw issues in the BRCM FMAC coming up to soon.
+		# Btw, brcmfmac does have reconnect to sdio code.
+		sleep 2
 	fi
 
 	if [ "${CF3}" = "mdm9x15" ] ; then
