@@ -1,0 +1,16 @@
+sources:
+{
+    displayData.c
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+        admin.api
+        query.api
+    }
+
+}
+
