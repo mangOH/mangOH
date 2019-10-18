@@ -1,0 +1,13 @@
+sources:
+{
+    expander_expbrd.c
+}
+
+cflags:
+{
+    -DDEBUG
+}
+
+params:
+{
+}

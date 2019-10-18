@@ -1,0 +1,31 @@
+sandboxed: false
+
+executables:
+{
+	rtcDhubIf = ( rtcDhubIfComponent )
+}
+
+processes:
+{
+	run:
+	{
+		( rtcDhubIf )
+	}
+
+	faultAction: stopApp
+}
+
+extern:
+{
+    rtcDhubIf.rtcDhubIfComponent.dhubIO  // required API
+}
+
+requires:
+{
+    device:
+	{
+		[rw] /dev/rtc1 /dev/rtc1
+	}
+
+}
+
