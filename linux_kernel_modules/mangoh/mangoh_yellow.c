@@ -320,6 +320,7 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 		*i2c_adapter_port2 = NULL, *i2c_adapter_port3 = NULL;
 	struct gpio_chip *gpio_expander;
 	struct gpio_chip *gpio_expander_expbrd;
+	union i2c_smbus_data dummy;
 
 	dev_info(&pdev->dev, "%s(): probe\n", __func__);
 
@@ -425,31 +426,49 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 	mangoh_yellow_driver_data.expander_registered = true;
 
 	/* Map the GPIO expander on expander board */
-	dev_dbg(&pdev->dev, "mapping the gpio expander on expander board\n");
-	mangoh_yellow_driver_data.gpio_expander_expbrd =
-		i2c_new_device(i2c_adapter_port3,
-			       &mangoh_yellow_gpio_expander_expbrd_devinfo);
-	if (!mangoh_yellow_driver_data.gpio_expander_expbrd) {
-		dev_err(&pdev->dev, "Failed to register %s\n",
-			mangoh_yellow_gpio_expander_expbrd_devinfo.type);
-		ret = -ENODEV;
-		goto cleanup;
+	dev_dbg(&pdev->dev, "Try mapping the gpio expander on expander board\n");
+
+	/* Let's make sure the GPIO expander on expander board is accessible */
+	if(i2c_smbus_xfer(i2c_adapter_port3,
+		mangoh_yellow_gpio_expander_expbrd_devinfo.addr,
+		0, I2C_SMBUS_READ, 0, I2C_SMBUS_BYTE, &dummy) >= 0) {
+		mangoh_yellow_driver_data.gpio_expander_expbrd =
+			i2c_new_device(i2c_adapter_port3,
+			       	&mangoh_yellow_gpio_expander_expbrd_devinfo);
+		if (!mangoh_yellow_driver_data.gpio_expander_expbrd) {
+			dev_err(&pdev->dev, "Failed to register %s\n",
+				mangoh_yellow_gpio_expander_expbrd_devinfo.type);
+			/* Let's not fail if the connections on the expander
+			 * board are awry.
+			 */
+			goto skip_expander_expbrd;
+		}
+
+		gpio_expander_expbrd = i2c_get_clientdata(
+			mangoh_yellow_driver_data.gpio_expander_expbrd);
+
+
+		/* Map the Expander board expander gpios as hardcoded functions */
+		mangoh_yellow_expander_expbrd_platform_data.gpio_expander_expbrd_base =
+			gpio_expander_expbrd->base;
+		ret = platform_device_register(&mangoh_yellow_expander_expbrd);
+		if (ret != 0) {
+			dev_err(&pdev->dev,
+				"Failed to register Expander board expander gpios for hardcoding\n");
+			/* Let's not fail if the connections on the expander
+			 * board are awry.
+			 */
+			goto skip_expander_expbrd;
+		}
+		mangoh_yellow_driver_data.expander_expbrd_registered = true;
 	}
 
-	gpio_expander_expbrd = i2c_get_clientdata(
-		mangoh_yellow_driver_data.gpio_expander_expbrd);
+skip_expander_expbrd:
 
-
-	/* Map the Expander board expander gpios as hardcoded functions */
-	mangoh_yellow_expander_expbrd_platform_data.gpio_expander_expbrd_base =
-		gpio_expander_expbrd->base;
-	ret = platform_device_register(&mangoh_yellow_expander_expbrd);
-	if (ret != 0) {
-		dev_err(&pdev->dev,
-			"Failed to register Expander board expander gpios for hardcoding\n");
-		goto cleanup;
-	}
-	mangoh_yellow_driver_data.expander_expbrd_registered = true;
+	if(!mangoh_yellow_driver_data.expander_expbrd_registered)
+		dev_dbg(&pdev->dev, "Gpio expander on expander board not found\n");
+	else
+		dev_dbg(&pdev->dev, "Found Gpio expander on expander board\n");
 
 	/* Map the I2C BMI160 IMU for gyro/accel/temp sensor */
 	dev_dbg(&pdev->dev, "mapping bmi160 gyro/accel/temp sensor\n");
@@ -564,9 +583,10 @@ static int mangoh_yellow_remove(struct platform_device* pdev)
 	safe_i2c_unregister_device(dd->battery_charger);
 	safe_i2c_unregister_device(dd->battery_gauge);
 	safe_i2c_unregister_device(dd->rtc);
-	if (dd->expander_expbrd_registered)
+	if (dd->expander_expbrd_registered) {
 		platform_device_unregister(&mangoh_yellow_expander_expbrd);
-	safe_i2c_unregister_device(dd->gpio_expander_expbrd);
+		safe_i2c_unregister_device(dd->gpio_expander_expbrd);
+	}
 	if (dd->expander_registered)
 		platform_device_unregister(&mangoh_yellow_expander);
 	safe_i2c_unregister_device(dd->gpio_expander);
