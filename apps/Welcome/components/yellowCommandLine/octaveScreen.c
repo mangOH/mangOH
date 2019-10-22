@@ -39,35 +39,25 @@ static const char* GetImei
 
 //--------------------------------------------------------------------------------------------------
 /**
- * Fetch the SIM's ICCID.
+ * Fetch the cellular module's serial number.
  */
 //--------------------------------------------------------------------------------------------------
-static const char* GetIccid
+static const char* GetSerialNumber
 (
     void
 )
 //--------------------------------------------------------------------------------------------------
 {
-    le_sim_Id_t simId = le_sim_GetSelectedCard();
+    static char serialNumber[LE_INFO_MAX_PSN_BYTES] = "unknown";
 
-    // Buffer to hold the ICCID (which is normally up to 20 characters long).
-    static char Iccid[32] = "unknown";
+    le_result_t result = le_info_GetPlatformSerialNumber(serialNumber, sizeof(serialNumber));
 
-    if (!le_sim_IsPresent(simId))
+    if (result != LE_OK)
     {
-        (void)snprintf(Iccid, sizeof(Iccid), "ERROR: SIM card not detected");
-    }
-    else
-    {
-        le_result_t result = le_sim_GetICCID(simId, Iccid, sizeof(Iccid));
-
-        if (result != LE_OK)
-        {
-            (void)snprintf(Iccid, sizeof(Iccid), "ERROR (%s)", LE_RESULT_TXT(result));
-        }
+        (void)snprintf(serialNumber, sizeof(serialNumber), "ERROR (%s)", LE_RESULT_TXT(result));
     }
 
-    return Iccid;
+    return serialNumber;
 }
 
 
@@ -117,11 +107,11 @@ static void Draw
            "your device with the Sierra Wireless Octave IoT data\n"
            "orchestration service:\n"
            "\n"
-           "   IMEI:  %s\n"
-           "   ICCID: %s\n"
+           "   IMEI: %s\n"
+           "     SN: %s\n"
            "\n",
            GetImei(),
-           GetIccid());
+           GetSerialNumber());
 
     if (instantGratification_IsEnabled())
     {
