@@ -141,7 +141,7 @@ $(YELLOW_GOALS): yellow_%: legato_%
 		echo "*" ; \
 		false ; \
 	fi
-	@if [ "$(OCTAVE)" == "1" -a "$(OCTAVE_ROOT)" == "" ]; then \
+	@if [ "$(OCTAVE)" = "1" && "$(OCTAVE_ROOT)" = "" ]; then \
 		echo "* ERROR: OCTAVE_ROOT not defined. Cannot build Octave support." >&2 ; \
 		echo "*        Set OCTAVE_ROOT to the directory in which the Octave .app" >&2 ; \
 		echo "*        files can be found, or set OCTAVE=0 (or unset OCTAVE) to" >&2 ; \
