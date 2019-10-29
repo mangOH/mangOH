@@ -43,8 +43,3 @@ componentSearch:
     $CURDIR/components
     $CURDIR/apps/DataHub/components
 }
-
-kernelModules:
-{
-    $CURDIR/linux_kernel_modules/spisvc/spisvc
-}
