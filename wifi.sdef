@@ -5,7 +5,7 @@
 // Copyright (C) Sierra Wireless Inc.
 //--------------------------------------------------------------------------------------------------
 
-#include "default.sdef"
+#include "${LEGATO_ROOT}/default.sdef"
 
 buildVars:
 {
