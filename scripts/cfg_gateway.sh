@@ -85,7 +85,7 @@ valid_net_mask()
     fi
 }
 
-echo "MangOH gateway configuration"
+echo "mangOH gateway configuration"
 
 read -p "Enter WAN (cellular) interface (default: rmnet_data0): " ITF_WAN
 if [ -z "$ITF_WAN" ]; then
@@ -319,4 +319,4 @@ if [ "${rsp}" = 'Y' ]; then
     fi
 fi
 
-echo "MangOH gateway configuration completed"
+echo "mangOH gateway configuration completed"

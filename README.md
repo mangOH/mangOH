@@ -1,4 +1,4 @@
-# MangOH
+# mangOH
 
 Base project containing apps and drivers for the mangOH hardware
 

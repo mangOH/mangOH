@@ -1,5 +1,5 @@
 #!/bin/sh
-# Broadcom/Cypress chip startup for MangOH Yellow
+# Broadcom/Cypress chip startup for mangOH Yellow
 
 export PATH=$PATH:/usr/bin:/bin:/usr/sbin:/sbin
 

@@ -299,7 +299,7 @@ static le_result_t MangohVoicecall_Start(void)
 
 //--------------------------------------------------------------------------------------------------
 /*
- * Mangoh must be registered on Network with the SIM in ready state.
+ * mangOH must be registered on Network with the SIM in ready state.
  * Make sure voiceCallService is started by entering: app start voiceCallService
  * Check "logread -f "
  * Execute app : app runProc  mangohVoiceCall --exe=mangohVoiceCall --  <Destination phone number>
