@@ -4,9 +4,9 @@
 
 * Cypress tar-ball based on: https://community.cypress.com/docs/DOC-15932
 
-* The version of the chip used on the MangOH Yellow is from USI which incorporates
+* The version of the chip used on the mangOH Yellow is from USI which incorporates
 	both Bluetooth & Wifi in a SIP package. The Cypress/USI chip is only available
-	on MangOH Yellow.
+	on mangOH Yellow.
 
 * Porting details
   * We have kept this as a sub-system driver and not integrated with the Legato Kernel
@@ -41,8 +41,8 @@
     to load afterward please beware.
 
 * It seems that to test with Legato one needs to setup a fake acces point such that
-    one can set the interface to wlan1. Note that MangOH Red has wlan1 used
-    by the MT7697 Wifi chip which is not present on the MangOH Yellow. AP_REF refers
+    one can set the interface to wlan1. Note that mangOH Red has wlan1 used
+    by the MT7697 Wifi chip which is not present on the mangOH Yellow. AP_REF refers
     to the AP reference found from scan. These are the steps:
   * To have the Cypress Wifi start via init.d properly (i.e. ifup scripts) you need to add
       following lines to "/etc/network/interfaces":
