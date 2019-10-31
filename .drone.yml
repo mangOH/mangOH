@@ -1,0 +1,27 @@
+---
+kind: pipeline
+type: docker
+name: default
+
+workspace:
+  base: /leaf_workspace/mangOH
+
+platform:
+  os: linux
+  arch: amd64
+
+steps:
+  - name: submodules
+    image: alpine/git
+    commands:
+      - git submodule update --init --recursive --remote
+
+  - name: build
+    image: mangoh/mangoh_build:yellow-wp77xx_0.2.3-1
+    commands:
+      - leaf shell -c "make yellow"
+
+trigger:
+  event:
+    include:
+      - pull_request
