@@ -22,7 +22,7 @@
 # Copyright (C) Sierra Wireless Inc.
 
 UPDATE_FILE_DIR = build/update_files
-LEAF_DATA = ../leaf-data/current
+LEAF_DATA ?= $(LEAF_WORKSPACE)/leaf-data/current
 
 # Arguments passed to mksys whenever it is invoked.
 MKSYS_ARGS_COMMON = --cflags=-O2 --object-dir=build/$@ --output-dir=$(UPDATE_FILE_DIR)
