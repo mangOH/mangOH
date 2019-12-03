@@ -26,8 +26,10 @@ jobs:
       - name: Add the mangOH leaf remote
         run: leaf remote add --insecure mangOH https://downloads.sierrawireless.com/mangOH/leaf/mangOH-yellow.json
 
-      # Check out the mangOH repository
+      # Check out the mangOH repository and its submodules, recursively.
       - uses: actions/checkout@v1
+        with:
+          submodules: recursive
 
       - name: Create leaf workspace
         run: |
@@ -42,11 +44,6 @@ jobs:
         #       workspace profile is sync'd by 'leaf setup'.
         run: |
           sudo apt-get install -y swicwe
-
-      - name: Get submodules
-        run: |
-          git submodule init
-          git submodule update
 
       - name: Get Bosch Bsec library
         run: |
