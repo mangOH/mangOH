@@ -1,0 +1,33 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow collision sensor component.
+ */
+//--------------------------------------------------------------------------------------------------
+provides:
+{
+    api:
+    {
+        collision.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+        D5 = le_gpio.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}
+
+
+sources:
+{
+    collisionSensor.c
+}
+

@@ -1,0 +1,25 @@
+sources:
+{
+    groveRFID.c
+}
+
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/RFIDReader.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}

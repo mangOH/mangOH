@@ -1,0 +1,25 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_collision Collision Sensor API
+ *
+ * The following function can be used to fetch collision measurement:
+ *
+ * - collision_Read
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the Collision Sensor measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    uint8 value OUT ///return 0 or 1
+);

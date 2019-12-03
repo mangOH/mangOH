@@ -1,0 +1,27 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_groveRFIDReader 125Khz RFID reader API
+ *
+ * The following function can be used to get the ID reported by RFID reader:
+ *
+ * - RFIDReader_getID()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file RFIDReader_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the ID reported by RFID reader.
+ *
+ * @return ID as string. Empty string returned for no ID.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION getID
+(
+	string cmd_buffer[64] OUT
+);

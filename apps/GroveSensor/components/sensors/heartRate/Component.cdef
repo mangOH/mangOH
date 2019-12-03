@@ -1,0 +1,37 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow heart rate sensor component.
+ */
+//--------------------------------------------------------------------------------------------------
+cflags:
+{
+    -I$CURDIR/../../i2cUtils
+    -std=c99
+}
+provides:
+{
+    api:
+    {
+        heartRate.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+
+    component:
+    {
+        periodicSensor
+        i2cUtils
+    }
+}
+
+sources:
+{
+    heartRateSensor.c
+}
+

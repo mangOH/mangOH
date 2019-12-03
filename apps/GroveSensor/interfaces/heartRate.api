@@ -1,0 +1,25 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh Heart Rate Sensor API
+ *
+ * The following function can be used to fetch heart rate measurement:
+ *
+ * - heartRate_Read()
+  *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the Heart Rate Sensor measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    uint8 value OUT ///return times
+);

@@ -1,0 +1,34 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow Alcohol
+ * sensor interface component.
+ */
+//--------------------------------------------------------------------------------------------------
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/pirMotion.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = $CURDIR/../../../../DataHub/io.api
+        le_gpioPin8 = le_gpio.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}
+
+
+sources:
+{
+    pirMotionSensor.c
+}
+

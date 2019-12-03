@@ -1,0 +1,27 @@
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/ultraSonic.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = $CURDIR/../../../../DataHub/io.api
+        le_gpioPin8 = le_gpio.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}
+
+sources:
+{
+    ultraSonic.c
+}
+

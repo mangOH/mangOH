@@ -1,0 +1,27 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_alcohol Sensor API
+ *
+ * The following function can be used to fetch alcohol measurement:
+ *
+ * - ma_alcoholSensor_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file ma_alcoholSensor.api
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the alcohol measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+	uint8 value OUT ///return 0 or 1
+);

@@ -1,0 +1,35 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow Analog light Sensor
+ * http://wiki.seeedstudio.com/Grove-Light_Sensor/
+ * sensor interface component.
+ */
+//--------------------------------------------------------------------------------------------------
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/light.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+        modemServices/le_adc.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}
+
+
+sources:
+{
+    lightSensor.c
+}
+

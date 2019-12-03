@@ -1,0 +1,25 @@
+sources:
+{
+    speechRecognizer.c
+}
+
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/recognizer.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+}
+
+cflags:
+{
+    -I$LEGATO_ROOT/apps/sample/dataHub/components/periodicSensor
+}
