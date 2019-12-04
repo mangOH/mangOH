@@ -1,0 +1,56 @@
+name: Test Build
+
+# Run a build on every push and each day at 06:00 UTC.
+on:
+  push:
+  schedule:
+    - cron:  '0 6 * * *'
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-18.04
+
+    strategy:
+      matrix:
+        board: [yellow]
+        module: [wp77xx]
+
+    steps:
+      - name: Install leaf
+        run: |
+          curl -o /tmp/leaf_latest.deb https://downloads.sierrawireless.com/tools/leaf/leaf_latest.deb
+          sudo apt-get install -y /tmp/leaf_latest.deb
+
+      - name: Add the mangOH leaf remote
+        run: leaf remote add --insecure mangOH https://downloads.sierrawireless.com/mangOH/leaf/mangOH-yellow.json
+
+      # Check out the mangOH repository and its submodules, recursively.
+      - uses: actions/checkout@v1
+        with:
+          submodules: recursive
+
+      - name: Create leaf workspace
+        run: |
+          echo "mangOH-${{ matrix.board }}-${{ matrix.module }}_latest"
+          yes | leaf setup -p mangOH-${{ matrix.board }}-${{ matrix.module }}
+
+      - name: Install swicwe
+        # NOTE: This has to be done after leaf is installed, because the .deb from Sierra contains
+        #       the information we need re. where to find swicwe.
+        # ALSO: When we've fixed our leaf packages to include this dependency on swicwe, then this
+        #       step will become unnecessary, because swicwe will get installed when the leaf
+        #       workspace profile is sync'd by 'leaf setup'.
+        run: |
+          sudo apt-get install -y swicwe
+
+      - name: Get Bosch Bsec library
+        run: |
+          curl -o components/boschBsec/boschBsec.zip https://community.bosch-sensortec.com/varuj77995/attachments/varuj77995/bst_community-mems-forum/44/1/BSEC_1.4.7.2_GCC_CortexA7_20190225.zip
+          unzip components/boschBsec/boschBsec.zip -d components/boschBsec
+
+      - name: Build .spk
+        run: |
+          eval $(leaf env print -q)
+          make ${{ matrix.board }}_spk
