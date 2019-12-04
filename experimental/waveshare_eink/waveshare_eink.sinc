@@ -1,0 +1,42 @@
+/*
+ * Experimental - waveshare kernel modules for mangOH Yellow and a couple of apps:
+ *                   1. eink dhub app that writes data from the dhub to the waveshare
+ *                      eink display. 
+ *                   2. dhub app that gathers sensor data and time from the
+ *                      dhub and writes to the eink dhub app.
+ *
+ * Directions: Include this file in the yellow.sdef file.
+ *
+ * Dependencies: assumes mangOH Yellow kernel was built from meta-mangOH repo which
+ *               by default includes the core Framebuffer (FB) & FB  helpers as loaadable
+ *               modules.
+ *               
+ *               Includes the littlevgl graphics library embedded with the app.
+ *
+ *               On Legato 19.04 if one includes this file in the beginning
+ *               of yellow.sdef mksys segfaults - at the end it works.
+ */
+
+apps:
+{
+#if ${MANGOH_BOARD} = yellow
+    $CURDIR/apps/einkDhubIf/einkDhubIf
+    $CURDIR/apps/displayData/displayData
+#endif
+}
+
+bindings:
+{
+#if ${MANGOH_BOARD} = yellow
+    einkDhubIf.dhubIO -> dataHub.io
+#endif
+}
+
+kernelModules:
+{
+#if ${MANGOH_BOARD} = yellow
+    $CURDIR/linux_kernel_modules/mangOH_yellow_ws213
+    $CURDIR/linux_kernel_modules/fb_waveshare_eink
+#endif
+}
+

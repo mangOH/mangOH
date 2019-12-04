@@ -40,8 +40,10 @@
 #define WS_SET_RAM_Y_ADDRESS_COUNTER		0x4F
 #define WS_TERMINATE_FRAME_READ_WRITE		0xFF
 
- #define WS_FB_SET_SCREEN_DEEP_SLEEP		_IOW('M', 1, int8_t)
- #define WS_FB_SET_SCREEN_WAKEUP		_IOW('M', 2, int8_t)
+#define WS_FB_SET_SCREEN_DEEP_SLEEP		_IOW('M', 1, int8_t)
+#define WS_FB_SET_SCREEN_WAKEUP			_IOW('M', 2, int8_t)
+
+#define MAX_BUSY_TMOUT_TRIES			3
 
 struct waveshare_eink_device_properties {
 	unsigned int width;
@@ -99,10 +101,24 @@ static int ws_eink_send_cmd(struct ws_eink_fb_par *par, u8 cmd, const u8 *data,
 	return ret;
 }
 
-static void wait_until_idle(struct ws_eink_fb_par *par)
+/* Previous code would hang forever in insmod if the busy gpio or Eink
+ * was not connected. Added number of tries - note the 100 msecs. is from
+ * the Waveshare bcm driver.
+ */
+static int wait_until_idle(struct ws_eink_fb_par *par)
 {
-	while (gpio_get_value_cansleep(par->busy) != 0)
+	// e.g. if MAX_BUSY_TMOUT_TRIES is 40 then 40 * 100 msecs is 4 secs
+	int tmout_tries = MAX_BUSY_TMOUT_TRIES;
+
+	while ((gpio_get_value_cansleep(par->busy) != 0) && tmout_tries--)
 		mdelay(100);
+
+	if(tmout_tries == 0) {
+		dev_err(&par->spi->dev, "Maximum Eink BUSY timeout hit - check hardware - EXITING\n");
+		return -EBUSY;
+	}
+
+	return 0;
 }
 
 static void ws_eink_reset(struct ws_eink_fb_par *par)
@@ -120,7 +136,10 @@ static int ws_eink_sleep(struct ws_eink_fb_par *par)
 	if (ret)
 		return ret;
 
-	wait_until_idle(par);
+	ret = wait_until_idle(par);
+
+	if (ret)
+		return ret;
 
 	return 0;
 }
@@ -219,7 +238,9 @@ static int set_memory_pointer(struct ws_eink_fb_par *par, int x, int y)
 	if (ret)
 		return ret;
 
-	wait_until_idle(par);
+	ret = wait_until_idle(par);
+	if (ret)
+		return ret;
 
 	return 0;
 }
@@ -289,7 +310,10 @@ static int display_frame(struct ws_eink_fb_par *par)
 	if (ret)
 		return ret;
 
-	wait_until_idle(par);
+	ret = wait_until_idle(par);
+
+	if (ret)
+		return ret;
 
 	return 0;
 }
@@ -346,16 +370,18 @@ static int ws_eink_update_display(struct ws_eink_fb_par *par)
 	u8 *ssbuf = par->ssbuf;
 	const u8 *lut;
 	size_t lut_size;
-	static int update_count = 0;
 
-	if(++update_count == 10) {
-		update_count = 0;
-		lut = lut_full_update;
-		lut_size = ARRAY_SIZE(lut_full_update);
-	} else {
-		lut = lut_partial_update;
-		lut_size = ARRAY_SIZE(lut_partial_update);
-	}
+        /* Previous code had partial refresh for a count of 10 here.
+         * Removed because serious ghosting issues existed. On further
+         * investigation found from
+         *    https://www.waveshare.com/wiki/2.13inch_e-Paper_HAT
+         * that these ghosting issues may even damage the display.
+         * Thus, we only do full refresh for now - TODO: see
+         * if a better combination of partial/full exists.
+         */
+
+	lut = lut_full_update;
+	lut_size = ARRAY_SIZE(lut_full_update);
 
 	ret = int_lut(par, lut, lut_size);
 	if (ret)
@@ -604,13 +630,18 @@ static int ws_eink_spi_probe(struct spi_device *spi)
 	return 0;
 
 disp_init_fail:
-	framebuffer_release(info);
+	if(info)
+		unregister_framebuffer(info);
 fbreg_fail:
-	vfree(par->ssbuf);
+	if(par->ssbuf)
+		vfree(par->ssbuf);
 ssbuf_alloc_fail:
-	vfree(info->screen_base);
+	if(info->screen_base)
+		vfree(info->screen_base);
 screen_base_fail:
-	vfree(info->screen_base);
+	if(info)
+		framebuffer_release(info);
+
 	return retval;
 }
 
@@ -618,11 +649,15 @@ static int ws_eink_spi_remove(struct spi_device *spi)
 {
 	struct fb_info *p = spi_get_drvdata(spi);
 	struct ws_eink_fb_par *par = p->par;
-	fb_deferred_io_cleanup(p);
-	unregister_framebuffer(p);
-	vfree(p->screen_base);
-	vfree(par->ssbuf);
-	framebuffer_release(p);
+	if(p) {
+		fb_deferred_io_cleanup(p);
+		unregister_framebuffer(p);
+		if(p->screen_base)
+			vfree(p->screen_base);
+		if(par->ssbuf)
+			vfree(par->ssbuf);
+		framebuffer_release(p);
+	}
 
 	return 0;
 }

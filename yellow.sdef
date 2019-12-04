@@ -46,6 +46,7 @@ apps:
     $CURDIR/samples/BluetoothSensorTag/bluetoothSensorTag
     $CURDIR/apps/ntag/ntag
     $CURDIR/apps/NtagDhubIf/NtagDhubIf
+    $CURDIR/apps/rtcDhubIf/rtcDhubIf
 
 }
 
@@ -61,6 +62,8 @@ bindings:
     ntag.dhubIO -> dataHub.io
     ntag.dhubio2 -> dataHub.io
     NtagDhubIf.dhubIO -> dataHub.io
+    rtcDhubIf.dhubIO -> dataHub.io
+    rtcDhubIf.rtcDhubIf.periodicSensor.dhubIO -> dataHub.io
 }
 
 
@@ -100,6 +103,8 @@ kernelModules:
     $CURDIR/linux_kernel_modules/bq27xxx/bq27xxx_battery
     $CURDIR/linux_kernel_modules/opt300x/opt300x
     $CURDIR/linux_kernel_modules/expander/expander
+    $CURDIR/linux_kernel_modules/expander_expbrd/expander_expbrd
     $CURDIR/linux_kernel_modules/cypwifi/cypwifi
     $CURDIR/linux_kernel_modules/cp2130/cp2130
 }
+

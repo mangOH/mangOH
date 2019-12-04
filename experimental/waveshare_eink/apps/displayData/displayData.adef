@@ -1,0 +1,29 @@
+sandboxed: false
+
+executables:
+{
+	displayData = ( displayDataComponent )
+}
+
+processes:
+{
+	run:
+	{
+		( displayData )
+	}
+
+	faultAction: stopApp
+}
+
+bindings:
+{
+    displayData.displayDataComponent.dhubIO -> dataHub.io // required API
+    displayData.displayDataComponent.admin -> dataHub.admin
+    displayData.displayDataComponent.query -> dataHub.query
+}
+
+requires:
+{
+
+}
+

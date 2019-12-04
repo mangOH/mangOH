@@ -2,6 +2,7 @@ cflags:
 {
     -DDEBUG
     -I${MANGOH_ROOT}/linux_kernel_modules/expander
+    -I${MANGOH_ROOT}/linux_kernel_modules/expander_expbrd
     -I${MANGOH_ROOT}/linux_kernel_modules/opt300x
     -I${MANGOH_ROOT}/linux_kernel_modules/bq27xxx
     -I${MANGOH_ROOT}/linux_kernel_modules/bq25601
@@ -43,5 +44,6 @@ requires:
         $CURDIR/../bmm150/bmc150_magn_i2c
         $CURDIR/../opt300x/opt300x
         $CURDIR/../expander/expander
+        $CURDIR/../expander_expbrd/expander_expbrd
     }
 }

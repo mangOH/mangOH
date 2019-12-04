@@ -1,0 +1,19 @@
+sources:
+{
+    rtcDhubIf.c
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+
+}
+

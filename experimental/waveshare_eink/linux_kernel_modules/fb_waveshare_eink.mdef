@@ -3,13 +3,16 @@ sources:
     fb_waveshare_eink.c
 }
 
-cflags:
+requires:
 {
-    // -DDEBUG
+	kernelModules:
+	{
+		$CURDIR/mangOH_yellow_ws213
+	}
 }
 
-params:
-{
-}
-
+// mangOH_yellow_ws213.mdef install script first loads loadable kernel modules, then
+// mangOH_yellow_ws213 and then this module in that order - Legato does not handle
+// dependencies on loadable kernel modules and we also have to kludge over Linux/hardware
+// issues with the SPI busy port.
 load: manual
