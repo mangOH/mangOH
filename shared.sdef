@@ -35,7 +35,6 @@ interfaceSearch:
     $CURDIR/interfaces
     $CURDIR/apps/LedService
     $CURDIR/apps/DataHub
-    $CURDIR/apps/DataHub/components/periodicSensor
 }
 
 componentSearch:
