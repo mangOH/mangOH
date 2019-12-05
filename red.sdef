@@ -7,6 +7,10 @@
 buildVars:
 {
     MANGOH_BOARD = red
+
+    // To keep consistency with yellow - by default wifiService is in a stopped state
+    // Start it to run any wifi commands.
+    LEGATO_WIFI_PA=${CURDIR}/linux_kernel_modules/mt7697wifi/scripts/pa_wifi.sh
 }
 
 

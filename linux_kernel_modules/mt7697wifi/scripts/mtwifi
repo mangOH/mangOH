@@ -75,11 +75,13 @@ case "$1" in
         mt_wifi_start $2 $3
         ;;
     stop)
-	mt_wifi_supplicant_stop
+        # pa_wifi no longer assumes that the supplicant needs to be stopped
+        #mt_wifi_supplicant_stop
         mt_wifi_stop $2
         ;;
     restart)
-	mt_wifi_supplicant_stop
+        # pa_wifi no longer assumes that the supplicant needs to be stopped
+        #mt_wifi_supplicant_stop
         mt_wifi_stop $2
         mt_wifi_start $2 $3
         ;;

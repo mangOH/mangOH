@@ -36,4 +36,14 @@ requires:
     }
 }
 
+bundles:
+{
+    file:
+    {
+        [x] $CURDIR/scripts/mtwifi mtwifi
+        [x] ${LEGATO_WIFI_PA}  pa_wifi
+    }
+}
+
+
 load: manual

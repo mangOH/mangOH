@@ -11,7 +11,8 @@ buildVars:
 {
     LEGATO_WIFI_ROOT=${LEGATO_ROOT}/modules/WiFi
     // File is selected by users, replace "ti" with "qca" to support qca chipset
-    LEGATO_WIFI_PA=${LEGATO_WIFI_ROOT}/service/platformAdaptor/ti/pa_wifi.sh
+    // For mangOH we select the PA script in the board file - i.e. red/yellow ...
+    //LEGATO_WIFI_PA=${LEGATO_WIFI_ROOT}/service/platformAdaptor/ti/pa_wifi.sh
 }
 
 apps:
