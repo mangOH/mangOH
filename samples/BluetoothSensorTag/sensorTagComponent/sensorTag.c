@@ -1063,7 +1063,7 @@ static void SensorTagFoundHandler(void)
     g_object_get(SensorTagDeviceInterface, "g-object-path", &devicePath, NULL);
     GList *bluezObjects = g_dbus_object_manager_get_objects(BluezObjectManager);
     for (GList *node = bluezObjects;
-         node != NULL && SensorTagDeviceInterface == NULL;
+         node != NULL;
          node = node->next)
     {
         GDBusObject *obj = node->data;
