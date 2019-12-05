@@ -34,9 +34,9 @@ buildVars:
 
 apps:
 {
-    $CURDIR/apps/YellowSensorToCloud/imu
-    $CURDIR/apps/YellowSensorToCloud/light
-    $CURDIR/apps/YellowSensorToCloud/button
+    $CURDIR/apps/YellowSensor/imu
+    $CURDIR/apps/YellowSensor/light
+    $CURDIR/apps/YellowSensor/button
     $CURDIR/apps/Bme680EnvironmentalSensor/environment
     $CURDIR/apps/DataHub-Buzzer/buzzer
     $CURDIR/apps/YellowOnBoardActuators/leds
@@ -75,7 +75,7 @@ interfaceSearch:
 {
     $CURDIR/apps/BatteryService
     $CURDIR/apps/Bme680EnvironmentalSensor
-    $CURDIR/apps/YellowSensorToCloud/interfaces
+    $CURDIR/apps/YellowSensor/interfaces
     $LEGATO_ROOT/interfaces/wifi
 }
 
@@ -83,7 +83,7 @@ interfaceSearch:
 componentSearch:
 {
     $CURDIR/apps/BatteryService
-    $CURDIR/apps/YellowSensorToCloud/components
+    $CURDIR/apps/YellowSensor/components
 }
 
 
