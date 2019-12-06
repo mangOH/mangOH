@@ -1,7 +1,7 @@
 #!/bin/sh
 # Copyright (C) Sierra Wireless Inc.
 #
-# Cypress Wifi PA for the mangOH platform
+# Mediatek Wifi PA for the mangOH Red platform
 #
 # ($1:) -d Debug logs
 # $1: Command (ex:  WIFI_START
