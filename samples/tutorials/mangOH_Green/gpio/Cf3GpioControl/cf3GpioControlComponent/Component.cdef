@@ -3,7 +3,7 @@ requires:
     api:
     {
         le_sensorGpio = le_gpio.api
-        mangoh_ledGpio =le_gpio.api
+        mangoh_ledGpio = le_gpio.api
     }
 }
 

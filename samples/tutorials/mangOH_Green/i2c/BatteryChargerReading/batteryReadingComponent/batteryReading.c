@@ -271,7 +271,6 @@ static void OutputBatteryChargerVoltage
 //--------------------------------------------------------------------------------------------------
 COMPONENT_INIT
 {
-
     LE_INFO("=============== I2C Reading & Writing application has started");
     EnableI2cBus();
     ReadBatteryChargerRegister();
