@@ -41,9 +41,6 @@
 [submodule "samples/BatteryClient"]
 	path = samples/BatteryClient
 	url = https://github.com/mangOH/BatteryClient
-[submodule "apps/LocationTriangulation"]
-	path = apps/LocationTriangulation
-	url = https://github.com/mangOH/LocationTriangulation
 [submodule "components/libiioComponent/libiio"]
 	path = components/libiioComponent/libiio
 	url = https://github.com/mangOH/libiio.git

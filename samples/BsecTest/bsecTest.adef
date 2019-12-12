@@ -1,5 +1,4 @@
 sandboxed: true
-version: 1.0.0
 start: auto
 
 executables:
@@ -18,5 +17,5 @@ processes:
 
 bindings:
 {
-    bsecTest.bsecTestComponent.mangOH_bme680 -> bme680EnvironmentalSensor.mangOH_bme680
+    bsecTest.bsecTestComponent.mangOH_bme680 -> environment.mangOH_bme680
 }
