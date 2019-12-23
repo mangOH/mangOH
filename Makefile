@@ -63,22 +63,6 @@ ALL_COMBINATIONS = $(GREEN_GOALS) $(RED_GOALS) $(YELLOW_GOALS)
 .PHONY: all $(ALL_COMBINATIONS)
 all: $(ALL_COMBINATIONS)
 
-# Until Legato allows external builds in mdefs we will need to build a
-# subsystem driver like Cypress Wifi in the top Makefile and with scripts
-# define a function to build the Cypress driver for different architectures
-#
-# $(call cyp_bld,$(board)_$(module))
-# E.g., $(call cyp_bld,yellow_wp76xx)
-define cyp_bld
-	if [ ! -d build/$1/modules/cypwifi ] ; then \
-		mkdir -p build/$1/modules/cypwifi ;\
-		cp -pr linux_kernel_modules/cypwifi build/$1/modules/ ; \
-		build/$1/modules/cypwifi/build.sh $1 clean; \
-	else \
-		build/$1/modules/cypwifi/build.sh $1 modules; \
-	fi
-endef
-
 # Rule to build the Legato framework, if $(LEGATO) is not 0.
 # WARNING: Do not use LEGATO=1 when using a Legato provided by leaf. This will result in the
 # modification of files within ~/leaf-data which may be shared between many leaf workspaces and leaf
@@ -148,13 +132,11 @@ $(YELLOW_GOALS): yellow_%: legato_%
 		echo "*        build without Octave." >&2 ; \
 		false ; \
 	fi
-	# Build the Cypress WiFi driver.
-	$(call cyp_bld,$@)
 	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
 	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
 	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
-	find build/$@/modules/cypwifi -name '*.ko' | xargs $(TOOLCHAIN_DIR)/$(TOOLCHAIN_PREFIX)strip --strip-debug && \
-	OCTAVE=$(OCTAVE) mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
+	OCTAVE=$(OCTAVE) \
+	mksys -t $* $(MKSYS_ARGS_COMMON) yellow.sdef
 
 # The cleaning goal.
 .PHONY: clean
@@ -168,7 +150,6 @@ env_test_yellow: env_test_%:
 ifndef LEGATO_TARGET
 	$(error LEGATO_TARGET not specified)
 endif
-	$(call cyp_bld,$*_$(LEGATO_TARGET))
 	mksys -t $(LEGATO_TARGET) \
 		  --object-dir=build/$(TEST_BUILD_ID) \
 		  --output-dir=build/update_files \
