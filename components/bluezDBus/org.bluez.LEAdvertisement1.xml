@@ -22,8 +22,10 @@
     <property name="Appearance" type="q" access="readwrite"/>
     <property name="Duration" type="q" access="readwrite"/>
     <property name="Timeout" type="q" access="readwrite"/>
+    <!--
     <property name="SecondaryChannel" type="s" access="readwrite">
       <annotation name="org.bluez.Experimental" value="true"/>
     </property>
+    -->
   </interface>
 </node>

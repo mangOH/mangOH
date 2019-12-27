@@ -12,8 +12,10 @@
     <property name="ActiveInstances" type="y" access="read"/>
     <property name="SupportedInstances" type="y" access="read"/>
     <property name="SupportedIncludes" type="as" access="read"/>
+    <!--
     <property name="SupportedSecondaryChannels" type="as" access="read">
       <annotation name="org.bluez.Experimental" value="true"/>
     </property>
+    -->
   </interface>
 </node>
