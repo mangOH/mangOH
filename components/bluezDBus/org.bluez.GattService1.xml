@@ -3,13 +3,17 @@
 <node>
   <interface name="org.bluez.GattService1">
     <property name="UUID" type="s" access="read"/>
-    <property name="Device" type="o" access="read"/>
     <property name="Primary" type="b" access="read"/>
+    <property name="Device" type="o" access="read"/>
     <!--
     This property is commented out because it's optional and bluez is giving this error when I try
     to pass NULL or an array with a NULL pointer as its only member:
     Failed to read "Includes" property of service
     <property name="Includes" type="ao" access="read"/>
     -->
+    <property name="Handle" type="q" access="readwrite">
+      <annotation name="org.bluez.Optional" value="true"/>
+      <annotation name="org.bluez.ServerOnly" value="true"/>
+    </property>
   </interface>
 </node>
