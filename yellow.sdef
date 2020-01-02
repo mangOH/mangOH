@@ -46,7 +46,7 @@ apps:
     $CURDIR/samples/BluetoothSensorTag/bluetoothSensorTag
     $CURDIR/apps/ntag/ntag
     $CURDIR/apps/NtagDhubIf/NtagDhubIf
-
+    $CURDIR/apps/BluetoothServices/bluetoothServices
 }
 
 

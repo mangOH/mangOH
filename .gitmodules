@@ -56,3 +56,6 @@
 [submodule "apps/DataHub"]
 	path = apps/DataHub
 	url = https://github.com/mangOH/legatoDataHub
+[submodule "apps/BluetoothServices"]
+	path = apps/BluetoothServices
+	url = https://github.com/mangOH/BluetoothServices.git
