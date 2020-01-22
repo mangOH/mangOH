@@ -158,7 +158,7 @@ endif
 # Rule for generating legato.cwe files from .update files.
 CWE_FILES = $(foreach board,$(BOARDS),build/$(board)_$(LEGATO_TARGET)/legato.cwe)
 $(CWE_FILES): build/%_$(LEGATO_TARGET)/legato.cwe: $(UPDATE_FILE_DIR)/%.$(LEGATO_TARGET).update
-	systoimg -s $(LEGATO_TARGET) $< build/yellow_$(LEGATO_TARGET)
+	systoimg -s $(LEGATO_TARGET) $< build/$*_$(LEGATO_TARGET)
 
 # Goals, like "yellow_spk", for building complete .spk files for factory programming.
 # The names of the resulting .spk files are of the form build/yellow_wp76xx.spk.
