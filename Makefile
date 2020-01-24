@@ -115,6 +115,7 @@ $(RED_GOALS): red_%: legato_%
 	# NOTE: When using leaf, these TOOLCHAIN_X variables don't need to be passed to mksys.
 	TOOLCHAIN_DIR=$(TOOLCHAIN_DIR) \
 	TOOLCHAIN_PREFIX=$(TOOLCHAIN_PREFIX) \
+	OCTAVE=$(OCTAVE) \
 	mksys -t $* $(MKSYS_ARGS_COMMON) red.sdef
 
 $(YELLOW_GOALS): yellow_%: legato_%

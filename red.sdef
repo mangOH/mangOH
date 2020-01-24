@@ -17,10 +17,19 @@ buildVars:
 #include "shared.sdef"
 
 
+#if ${OCTAVE} = 1
+#include "sinc/octave_full.sinc"
+#endif
+
 apps:
 {
     $CURDIR/apps/LedService/ledService
-    $CURDIR/apps/RedSensorToCloud/redSensorToCloud
+    $CURDIR/apps/RedSensorToCloud/redSensor
+#if ${OCTAVE} = 1
+    // redCloud uses AirVantage Data API to publish data which isn't useful when using Octave.
+#else
+    $CURDIR/apps/RedSensorToCloud/redCloud
+#endif
     $CURDIR/apps/BatteryService/battery
 }
 
@@ -34,6 +43,7 @@ bindings:
 interfaceSearch:
 {
     $CURDIR/apps/BatteryService
+    $CURDIR/apps/RedSensorToCloud/interfaces
 }
 
 
