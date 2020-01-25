@@ -71,10 +71,6 @@ static char *force_revision = "";
 module_param(force_revision, charp, S_IRUGO);
 MODULE_PARM_DESC(force_revision, "Skip board revision detection and assume a specific revision");
 
-static bool allow_eeprom_write = false;
-module_param(allow_eeprom_write, bool, S_IRUGO);
-MODULE_PARM_DESC(allow_eeprom_write, "Should the EEPROM be writeable by root");
-
 static struct platform_driver mangoh_yellow_driver = {
 	.probe = mangoh_yellow_probe,
 	.remove = mangoh_yellow_remove,
@@ -232,9 +228,29 @@ static void eeprom_setup(struct memory_accessor *mem_acc, void *context)
 	}
 
 	if (eeprom_blank) {
+		ssize_t write_res;
+		const char eeprom_data[] = \
+			"mangOH Yellow\n" \
+			"Rev: 1.0\n" \
+			"Forced-By-Driver: true\n";
 		pr_warn("EEPROM is empty - assuming board is a mangOH Yellow %s\n",
 			board_rev_strings[BOARD_REV_NEWEST]);
 		mangoh_yellow_driver_data.board_rev = BOARD_REV_NEWEST;
+
+		/*
+		 * If it is found that the eeprom is empty, then we write it
+		 * with content which indicates that it's a mangOH Yellow of the
+		 * latest revision, but we also set a flag to show that this
+		 * value was written by the driver rather than programmed in the
+		 * factory. This path *should* never be executed if the factory
+		 * test procedure was completed successfully.
+		 */
+		write_res = mem_acc->write(mem_acc, eeprom_data, 0,
+					   sizeof(eeprom_data));
+		if (write_res != sizeof(eeprom_data))
+			pr_warn("EEPROM was empty and write failed");
+		else
+			pr_info("EEPROM write completed\n");
 	} else if (strstarts(data, production_first_line)) {
 		/*
 		 * TODO:
@@ -305,8 +321,6 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 
 	/* map the EEPROM */
 	dev_dbg(&pdev->dev, "mapping eeprom\n");
-	if (!allow_eeprom_write)
-		mangoh_yellow_eeprom_data.flags |= AT24_FLAG_READONLY;
 	mangoh_yellow_driver_data.eeprom =
 		i2c_new_device(i2c_adapter_primary, &mangoh_yellow_eeprom_info);
 	if (!mangoh_yellow_driver_data.eeprom) {
