@@ -298,6 +298,7 @@ static void mangoh_yellow_release(struct device* dev)
 
 static int mangoh_yellow_probe(struct platform_device* pdev)
 {
+	int light_sensor_gpio_res;
 	int ret = 0;
 	struct i2c_adapter *i2c_adapter_primary, *i2c_adapter_port1 = NULL,
 		*i2c_adapter_port2 = NULL, *i2c_adapter_port3 = NULL;
@@ -457,13 +458,21 @@ static int mangoh_yellow_probe(struct platform_device* pdev)
 
  	/* Map the I2C Light Sensor */
 	dev_dbg(&pdev->dev, "mapping Light Sensor\n");
-	if (devm_gpio_request_one(&pdev->dev, CF3_GPIO36, GPIOF_DIR_IN,
-				  "CF3 opt300x gpio interrupt")) {
+	light_sensor_gpio_res = devm_gpio_request_one(
+		&pdev->dev, CF3_GPIO36, GPIOF_DIR_IN,
+		"CF3 opt300x gpio interrupt");
+	if (light_sensor_gpio_res == -EPROBE_DEFER) {
+		/*
+		 * Assume this module doesn't have a low power MCU and thus this
+		 * GPIO isn't available
+		 */
+	} else if (light_sensor_gpio_res) {
 		dev_err(&pdev->dev, "Couldn't request CF3 gpio36");
 		ret = -ENODEV;
 		goto cleanup;
+	} else {
+		mangoh_yellow_light_devinfo.irq = gpio_to_irq(CF3_GPIO36);
 	}
-	mangoh_yellow_light_devinfo.irq = gpio_to_irq(CF3_GPIO36);
 	mangoh_yellow_driver_data.light =
 		i2c_new_device(i2c_adapter_port2, &mangoh_yellow_light_devinfo);
 	if (!mangoh_yellow_driver_data.light) {
