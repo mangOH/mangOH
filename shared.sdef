@@ -7,14 +7,13 @@
 // Copyright (C) Sierra Wireless Inc.
 //--------------------------------------------------------------------------------------------------
 
-#include "wifi.sdef"
+#include "${LEGATO_ROOT}/default.sdef"
+#include "${LEGATO_ROOT}/modules/WiFi/wifi.sinc"
 #include "sinc/module/${LEGATO_TARGET}.sinc"
 
 buildVars:
 {
     MANGOH_ROOT = $CURDIR
-
-    LEGATO_WIFI_ROOT = ${LEGATO_ROOT}/modules/WiFi
 }
 
 apps:
