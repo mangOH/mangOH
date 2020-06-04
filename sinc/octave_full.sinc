@@ -2,6 +2,7 @@
 
 apps:
 {
+    $OCTAVE_ROOT/actionTool.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/canopen.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/io.${LEGATO_TARGET}.app
 #if ${MANGOH_BOARD} = red
@@ -12,4 +13,9 @@ apps:
     $OCTAVE_ROOT/orp.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/usp.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/util.${LEGATO_TARGET}.app
+}
+
+commands:
+{
+    action = actionTool:/bin/action
 }
