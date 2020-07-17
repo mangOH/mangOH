@@ -2,7 +2,8 @@
 
 apps:
 {
-    $OCTAVE_ROOT/actionTool.${LEGATO_TARGET}.app
+    // Disabled due to LE-14946
+    // $OCTAVE_ROOT/actionTool.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/canopen.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/io.${LEGATO_TARGET}.app
 #if ${MANGOH_BOARD} = red
@@ -17,5 +18,6 @@ apps:
 
 commands:
 {
-    action = actionTool:/bin/action
+    // Disabled due to LE-14946
+    // action = actionTool:/bin/action
 }
