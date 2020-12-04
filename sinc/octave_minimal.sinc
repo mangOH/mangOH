@@ -2,6 +2,7 @@ apps:
 {
     $OCTAVE_ROOT/actions.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/cloudInterface.${LEGATO_TARGET}.app
+    $OCTAVE_ROOT/router.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/diagnostic.${LEGATO_TARGET}.app
     $OCTAVE_ROOT/virtual.${LEGATO_TARGET}.app
 }
