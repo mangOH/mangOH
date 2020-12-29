@@ -212,10 +212,12 @@
 
 #define BMI160_REG_INT_MOTION_0			0x5F
 #define BMI160_INT_MOTION_0_ANYM_DUR		GENMASK(1, 0)
+#define BMI160_INT_MOTION_0_ANYM_DUR_DEFAULT		2
 #define BMI160_INT_MOTION_0_SLO_NO_MOT_DUR	GENMASK(7, 2)
 
 #define BMI160_REG_INT_MOTION_1			0x60
 #define BMI160_INT_MOTION_1_ANYM_TH		GENMASK(7, 0)
+#define BMI160_INT_MOTION_1_ANYM_TH_DEFAULT		128
 /*
  * All 8-bits represent an acceleration slope which must be maintained for
  * int_anym_dur + 1 samples in order to trigger the interrupt. It seems that
@@ -230,6 +232,8 @@
 #define BMI160_REG_INT_MOTION_3			0x62
 #define BMI160_INT_MOTION_3_NO_MOT_SEL		BIT(0)
 #define BMI160_INT_MOTION_3_SIG_MOT_SEL		BIT(1)
+#define BMI160_INT_MOTION_3_SIG_MOT_SEL_ANY	0
+#define BMI160_INT_MOTION_3_SIG_MOT_SEL_SIG	1
 #define BMI160_INT_MOTION_3_SIG_MOT_SKIP	GENMASK(3, 2)
 #define BMI160_SIG_MOT_SKIP_TIME_1500_MS	0
 #define BMI160_SIG_MOT_SKIP_TIME_3000_MS	1
@@ -311,8 +315,19 @@ enum bmi160_pmu_state {
 	BMI160_PMU_STATE_COUNT /* Special last element */
 };
 
+enum bmi160_interrupt_type {
+	SIGMOT = 0,
+	ANYMOT
+};
+
+static char *BMI160_INTERRUPT_TYPE_STR[] = {
+	"significant_motion", "any_motion"
+};
+
 struct bmi160_data {
 	struct regmap *regmap;
+	int interrupt_type;
+	u8 anymot_th;
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
 	/*
 	 * This member is necessary in kernel versions < 3.16 because
@@ -751,14 +766,15 @@ static int bmi160_write_raw(struct iio_dev *indio_dev,
 	return 0;
 }
 
-static int bmi160_setup_sigmot_int(struct bmi160_data *data)
+static int bmi160_setup_int(struct bmi160_data *data)
 {
 	int ret = 0;
-	/* Route any motion/significant motion interrupt to int2 */
+
+	/* Route any motion/significant motion interrupt to int1 and int2 */
 	ret = regmap_write(
 		data->regmap,
 		BMI160_REG_INT_MAP_0,
-		0);
+		BMI160_INT_MAP_0_INT1_ANYM_SIGMOT);
 	if (ret < 0)
 		return ret;
 
@@ -775,22 +791,60 @@ static int bmi160_setup_sigmot_int(struct bmi160_data *data)
 		BMI160_INT_MAP_2_INT2_ANYM_SIGMOT);
 	if (ret < 0)
 		return ret;
-	/*
-	 * Select the significant motion interrupt instead of anymotion and set
-	 * "skip" which is the minimum time between two anymotion events and
-	 * "proof" which is the duration of motion required to trigger the
-	 * significant motion event.
-	 */
-	ret = regmap_write(
-		data->regmap,
-		BMI160_REG_INT_MOTION_3,
-		(BMI160_INT_MOTION_3_SIG_MOT_SEL |
-		 FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_SKIP,
-			    BMI160_SIG_MOT_SKIP_TIME_1500_MS) |
-		 FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_PROOF,
-			    BMI160_SIG_MOT_PROOF_TIME_2000_MS)));
-	if (ret < 0)
-		return ret;
+
+	if (data->interrupt_type == SIGMOT) {
+		/*
+		 * Select the significant motion interrupt instead of anymotion and set
+		 * "skip" which is the minimum time between two anymotion events and
+		 * "proof" which is the duration of motion required to trigger the
+		 * significant motion event.
+		 */
+		ret = regmap_write(
+			data->regmap,
+			BMI160_REG_INT_MOTION_3,
+			(FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_SEL,
+				BMI160_INT_MOTION_3_SIG_MOT_SEL_SIG) |
+			FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_SKIP,
+				BMI160_SIG_MOT_SKIP_TIME_1500_MS) |
+			FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_PROOF,
+				BMI160_SIG_MOT_PROOF_TIME_2000_MS)));
+		if (ret < 0)
+			return ret;
+	} else {
+		/*
+		 * Select the any motion interrupt instead of significant motion.
+		 */
+		ret = regmap_write(
+			data->regmap,
+			BMI160_REG_INT_MOTION_3,
+			FIELD_PREP(BMI160_INT_MOTION_3_SIG_MOT_SEL,
+				BMI160_INT_MOTION_3_SIG_MOT_SEL_ANY));
+		if (ret < 0)
+			return ret;
+
+		/*
+		 * Select the number of points above threshold needed before triggering the
+		 * interruption
+		 */
+		ret = regmap_write(
+			data->regmap,
+			BMI160_REG_INT_MOTION_0,
+			FIELD_PREP(BMI160_INT_MOTION_0_ANYM_DUR,
+				BMI160_INT_MOTION_0_ANYM_DUR_DEFAULT));
+		if (ret < 0)
+			return ret;
+
+		/*
+		 * Select the value of the threshold
+		 */
+		ret = regmap_write(
+			data->regmap,
+			BMI160_REG_INT_MOTION_1,
+			FIELD_PREP(BMI160_INT_MOTION_1_ANYM_TH,
+				data->anymot_th));
+		if (ret < 0)
+			return ret;
+	}
 
 	/*
 	 * Enable a long latch period to easily catch the signal while polling.
@@ -803,26 +857,133 @@ static int bmi160_setup_sigmot_int(struct bmi160_data *data)
 	if (ret < 0)
 		return ret;
 
-	/* Enable edge interrupt on INT2 pin */
+	/* Enable edge interrupt on INT1 and INT2 pin */
 	ret = regmap_write(
 		data->regmap,
 		BMI160_REG_INT_OUT_CTRL,
-		(BMI160_INT_OUT_CTRL_INT2_EDGE |
+		(BMI160_INT_OUT_CTRL_INT1_EDGE |
+		 BMI160_INT_OUT_CTRL_INT1_LVL |
+		 BMI160_INT_OUT_CTRL_INT1_OUTPUT_EN |
+		 BMI160_INT_OUT_CTRL_INT2_EDGE |
 		 BMI160_INT_OUT_CTRL_INT2_LVL |
 		 BMI160_INT_OUT_CTRL_INT2_OUTPUT_EN));
 	if (ret < 0)
 		return ret;
 
+	/* Enable anymotion/sigmotion interruptions on the 3 axis */
 	ret = regmap_write(
 		data->regmap,
 		BMI160_REG_INT_EN_0,
 		(BMI160_INT_EN_0_ANYM_X|
 		 BMI160_INT_EN_0_ANYM_Y|
 		 BMI160_INT_EN_0_ANYM_Z));
+
+	return ret;
+}
+
+/*
+ * Function called each time the user displays content of the in_accel_int file
+ */
+static ssize_t show_in_accel_int(struct device *dev,
+								struct device_attribute *attr,
+								char *buf)
+{
+	// Get driver data
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct bmi160_data *data = iio_priv(indio_dev);
+
+	// Display selected interrupt number
+	return scnprintf(buf,
+					PAGE_SIZE,
+					"%s\n",
+					BMI160_INTERRUPT_TYPE_STR[data->interrupt_type]);
+}
+
+/*
+ * Function called each time the user writes in the in_accel_int file
+ */
+static ssize_t store_in_accel_int(struct device *dev,
+								struct device_attribute *attr,
+								const char *buf,
+								size_t count)
+{
+	// Get driver data
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct bmi160_data *data = iio_priv(indio_dev);
+	int ret, interrupt_type;
+	char new[count];
+
+	// Remove \n added in buffer
+	strcpy(new, buf);
+	new[strcspn(new, "\n")] = 0;
+
+	// Compute corresponding interrupt type
+	if (strcmp(new, BMI160_INTERRUPT_TYPE_STR[SIGMOT]) == 0)
+		interrupt_type = SIGMOT;
+	else if (strcmp(new, BMI160_INTERRUPT_TYPE_STR[ANYMOT]) == 0)
+		interrupt_type = ANYMOT;
+	else
+		return -EINVAL;
+
+	// Update interrupt configuration if necessary
+	if (interrupt_type != data->interrupt_type){
+		data->interrupt_type = interrupt_type;
+		ret = bmi160_setup_int(data);
+		if (ret < 0)
+			return ret;
+	}
+	return count;
+}
+
+/*
+ * Function called each time the user displays content of the in_accel_int_anymot_th file.
+ */
+static ssize_t show_in_accel_int_anymot_th(struct device *dev,
+										struct device_attribute *attr,
+										char *buf)
+{
+	// Get driver data
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct bmi160_data *data = iio_priv(indio_dev);
+
+	// Display selected threshold value
+	return scnprintf(buf, PAGE_SIZE, "%d\n", data->anymot_th);
+}
+
+/*
+ * Function called each time the user writes in the in_accel_int_anymot_th file.
+ * If the user try to write in in_accel_int_anymot_th when the Significant
+ * motion interrupt is selected, the function does nothing and doesn't
+ * update driver data.
+ */
+static ssize_t store_in_accel_int_anymot_th(struct device *dev,
+											struct device_attribute *attr,
+											const char *buf,
+											size_t count)
+{
+	// Get driver data
+	struct iio_dev *indio_dev = dev_get_drvdata(dev);
+	struct bmi160_data *data = iio_priv(indio_dev);
+	int ret;
+	u8 new;
+
+	// Convert str user input into int value
+	ret = kstrtou8(buf, 10, &new);
 	if (ret < 0)
 		return ret;
 
-	return ret;
+	// Select the value of the threshold
+	ret = regmap_write(
+		data->regmap,
+		BMI160_REG_INT_MOTION_1,
+		new);
+	if (ret < 0)
+		return ret;
+
+	// Update threshold value
+	data->anymot_th = new;
+
+	return count;
 }
 
 static
@@ -837,12 +998,24 @@ IIO_CONST_ATTR(in_accel_scale_available,
 static
 IIO_CONST_ATTR(in_anglvel_scale_available,
 	       "0.001065 0.000532 0.000266 0.000133 0.000066");
+static IIO_CONST_ATTR(in_accel_int_available, "significant_motion any_motion");
+static IIO_CONST_ATTR(in_accel_int_anymot_th_min, "0");
+static IIO_CONST_ATTR(in_accel_int_anymot_th_max, "255");
+static IIO_DEVICE_ATTR(in_accel_int, (S_IRUGO | S_IWUSR), show_in_accel_int,
+						store_in_accel_int, 0);
+static IIO_DEVICE_ATTR(in_accel_int_anymot_th, (S_IRUGO | S_IWUSR), show_in_accel_int_anymot_th,
+						store_in_accel_int_anymot_th, 0);
 
 static struct attribute *bmi160_attrs[] = {
 	&iio_const_attr_in_accel_sampling_frequency_available.dev_attr.attr,
 	&iio_const_attr_in_anglvel_sampling_frequency_available.dev_attr.attr,
 	&iio_const_attr_in_accel_scale_available.dev_attr.attr,
 	&iio_const_attr_in_anglvel_scale_available.dev_attr.attr,
+	&iio_const_attr_in_accel_int_available.dev_attr.attr,
+	&iio_const_attr_in_accel_int_anymot_th_min.dev_attr.attr,
+	&iio_const_attr_in_accel_int_anymot_th_max.dev_attr.attr,
+	&iio_dev_attr_in_accel_int.dev_attr.attr,
+	&iio_dev_attr_in_accel_int_anymot_th.dev_attr.attr,
 	NULL,
 };
 
@@ -912,7 +1085,7 @@ static int bmi160_chip_init(struct bmi160_data *data, bool use_spi)
 	if (ret < 0)
 		return ret;
 
-	ret = bmi160_setup_sigmot_int(data);
+	ret = bmi160_setup_int(data);
 	if (ret < 0)
 		return ret;
 
@@ -944,10 +1117,12 @@ int bmi160_core_probe(struct device *dev, struct regmap *regmap,
 	data = iio_priv(indio_dev);
 	dev_set_drvdata(dev, indio_dev);
 	data->regmap = regmap;
+	data->interrupt_type = SIGMOT;
+	data->anymot_th = BMI160_INT_MOTION_1_ANYM_TH_DEFAULT;
+
 #if LINUX_VERSION_CODE < KERNEL_VERSION(3, 16, 0)
 	data->dev = dev;
 #endif
-
 	ret = bmi160_chip_init(data, use_spi);
 	if (ret < 0)
 		return ret;
