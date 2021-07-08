@@ -1,0 +1,45 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh Human Presence Sensor API
+ *
+ * The following function can be used to fetch human presence measurement:
+ *
+ * - humanPresence_ReadPresentField1
+ * - humanPresence_ReadPresentField2
+ * - humanPresence_ReadPresentField3
+ * - humanPresence_ReadPresentField4
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file humanPresence.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the Human Presence Sensor measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t ReadPresentField1
+(
+	double value OUT 
+);
+
+FUNCTION le_result_t ReadPresentField2
+(
+	double value OUT 
+)
+
+FUNCTION le_result_t ReadPresentField3
+(
+	double value OUT 
+)
+
+FUNCTION le_result_t ReadPresentField4
+(
+	double value OUT 
+)

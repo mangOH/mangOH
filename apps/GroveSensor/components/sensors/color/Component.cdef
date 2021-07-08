@@ -1,0 +1,37 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow color sensor component.
+ */
+//--------------------------------------------------------------------------------------------------
+cflags:
+{
+    -I$CURDIR/../../i2cUtils
+    -std=c99
+}
+provides:
+{
+    api:
+    {
+        color.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+    }
+
+    component:
+    {
+        periodicSensor
+        i2cUtils
+    }
+}
+
+sources:
+{
+    colorSensor.c
+}
+

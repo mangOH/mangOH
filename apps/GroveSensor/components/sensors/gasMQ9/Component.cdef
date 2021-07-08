@@ -1,0 +1,33 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow Gas MQ9
+ * sensor interface component.
+ */
+//--------------------------------------------------------------------------------------------------
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/gasMQ9.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = $CURDIR/../../../../DataHub/io.api
+        modemServices/le_adc.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}
+
+
+sources:
+{
+    gasMQ9Sensor.c
+}

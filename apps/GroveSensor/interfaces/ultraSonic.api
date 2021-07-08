@@ -1,0 +1,4 @@
+FUNCTION le_result_t ReadUltraSonicRanger
+(
+	uint16 reading OUT
+);

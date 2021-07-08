@@ -1,0 +1,39 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow HumanPresence
+ * sensor interface component.
+ */
+//--------------------------------------------------------------------------------------------------
+cxxflags:
+{
+    -std=c++0x
+    -I $CURDIR/../../i2cUtils
+}
+
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/humanPresence.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = $CURDIR/../../../../DataHub/io.api
+    }
+
+    component:
+    {
+        periodicSensor
+        $CURDIR/../../i2cUtils
+    }
+}
+
+sources:
+{
+    humanPresenceSensor.cpp
+    AK9753.cpp
+}

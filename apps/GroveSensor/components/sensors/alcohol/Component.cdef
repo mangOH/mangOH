@@ -1,0 +1,34 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow Alcohol
+ * sensor interface component.
+ */
+//--------------------------------------------------------------------------------------------------
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/alcohol.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = io.api
+        modemServices/le_adc.api
+    }
+
+    component:
+    {
+        periodicSensor
+    }
+}
+
+
+sources:
+{
+    alcoholSensor.c
+}
+

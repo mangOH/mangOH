@@ -1,0 +1,510 @@
+//-------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_groveRecognizer Speech Recognizer API
+ *
+ * The following function can be used to get the command reported by recognizer:
+ *
+ * - recognizer_getCmd()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file recognizer_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the command reported by speech recognizer.
+ *
+ * @return Command as string. Empty string returned for no command.
+ */
+//-------------------------------------------------------------------------------------------------
+DEFINE I2C_CMD_CONTINUE_DATA			= 0x81;
+
+DEFINE GROVE_TWO_RGB_LED_MATRIX_DEF_I2C_ADDR	= 0x65; // The device i2c address in default
+DEFINE GROVE_TWO_RGB_LED_MATRIX_VID		= 0x2886; // Vender ID of the device
+DEFINE GROVE_TWO_RGB_LED_MATRIX_PID		= 0x8005; // Product ID of the device
+
+DEFINE I2C_CMD_GET_DEV_ID			= 0x00; // This command gets device ID information
+DEFINE I2C_CMD_DISP_BAR				= 0x01; // This command displays LED bar
+DEFINE I2C_CMD_DISP_EMOJI			= 0x02; // This command displays emoji
+DEFINE I2C_CMD_DISP_NUM				= 0x03; // This command displays number
+DEFINE I2C_CMD_DISP_STR				= 0x04; // This command displays string
+DEFINE I2C_CMD_DISP_CUSTOM			= 0x05; // This command displays user-defined pictures
+DEFINE I2C_CMD_DISP_OFF				= 0x06; // This command cleans the display
+DEFINE I2C_CMD_DISP_ASCII			= 0x07; // not use
+DEFINE I2C_CMD_DISP_FLASH			= 0x08; // This command displays pictures which are stored in flash
+DEFINE I2C_CMD_DISP_COLOR_BAR			= 0x09; // This command displays colorful LED bar
+DEFINE I2C_CMD_DISP_COLOR_WAVE			= 0x0a; // This command displays built-in wave animation
+DEFINE I2C_CMD_DISP_COLOR_CLOCKWISE		= 0x0b; // This command displays built-in clockwise animation
+DEFINE I2C_CMD_DISP_COLOR_ANIMATION		= 0x0c; // This command displays other built-in animation
+DEFINE I2C_CMD_DISP_COLOR_BLOCK			= 0x0d; // This command displays an user-defined color
+DEFINE I2C_CMD_STORE_FLASH			= 0xa0; // This command stores frames in flash
+DEFINE I2C_CMD_DELETE_FLASH			= 0xa1; // This command deletes all the frames in flash
+
+DEFINE I2C_CMD_LED_ON				= 0xb0; // This command turns on the indicator LED flash mode
+DEFINE I2C_CMD_LED_OFF				= 0xb1; // This command turns off the indicator LED flash mode
+DEFINE I2C_CMD_AUTO_SLEEP_ON			= 0xb2; // This command enable device auto sleep mode
+DEFINE I2C_CMD_AUTO_SLEEP_OFF			= 0xb3; // This command disable device auto sleep mode (default mode)
+
+DEFINE I2C_CMD_DISP_ROTATE			= 0xb4; // This command setting the display orientation
+DEFINE I2C_CMD_DISP_OFFSET			= 0xb5; // This command setting the display offset
+
+DEFINE I2C_CMD_SET_ADDR				= 0xc0; // This command sets device i2c address
+DEFINE I2C_CMD_RST_ADDR				= 0xc1; // This command resets device i2c address
+DEFINE I2C_CMD_TEST_TX_RX_ON			= 0xe0; // This command enable TX RX pin test mode
+DEFINE I2C_CMD_TEST_TX_RX_OFF			= 0xe1; // This command disable TX RX pin test mode
+DEFINE I2C_CMD_TEST_GET_VER			= 0xe2; // This command use to get software version
+DEFINE I2C_CMD_GET_DEVICE_UID			= 0xf1; // This command use to get chip id
+
+ENUM orientation_type
+{
+	DISPLAY_ROTATE_0 = 0,
+	DISPLAY_ROTATE_90 = 1,
+	DISPLAY_ROTATE_180 = 2,
+	DISPLAY_ROTATE_270 = 3,
+};
+
+ENUM COLORS
+{
+	RED = 0x00,
+	ORANGE = 0x12,
+	YELLOW = 0x18,
+	GREEN = 0x52,
+	CYAN = 0x7f,
+	BLUE = 0xaa,
+	PURPLE =0xc3,
+	PINK = 0xdc,
+	WHITE = 0xfe,
+	BLACK = 0xff,
+};
+
+/**
+ * @Description
+ *	Get vendor ID of device.
+ * @parameter
+ *	Null.
+ * @return
+ *	@return vendor ID of device.
+ **/
+FUNCTION uint16 getDeviceVID();
+
+/**
+ * @Description
+ *	Get product ID of device.
+ * @parameter
+ *	Null.
+ * @return
+ *	@return product ID of device.
+ **/
+FUNCTION uint16 getDevicePID();
+
+/**
+ * @Description
+ *	Change i2c base address of device.
+ * @parameter
+ *	newAddress: 0x10-0x70, The new i2c base address of device.
+ * @return
+ *	Null.
+ **/
+FUNCTION changeDeviceBaseAddress(uint8 newAddress IN);
+
+/**
+ * @Description
+ *	Restore the i2c address of device to default.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION defaultDeviceAddress();
+
+/**
+ * @Description
+ *	Turn on the indicator LED flash mode.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION turnOnLEDFlash();
+
+/**
+ * @Description
+ *	Turn off the indicator LED flash mode.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION turnOffLEDFlash();
+
+/**
+ * @Description
+ *	Enable device auto sleep mode. Send any I2C commands will 
+ * wake up all the sleepy devices.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION enableAutoSleep();
+
+/**
+ * @Description
+ *	Don't need this function anymore.
+ *	(Wake device from sleep mode. It takes about 0.15ms.)
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION wakeDevice();
+
+/**
+ * @Description
+ *	Disable device auto sleep mode.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION disableAutoSleep();
+
+/**
+ * @Description
+ *	Setting the display orientation.
+ *	This function can be used before or after display.
+ *	DO NOT WORK with displayColorWave(), displayClockwise(), displayColorAnimation()
+ * @parameter
+ *	orientation: DISPLAY_ROTATE_0, DISPLAY_ROTATE_90, DISPLAY_ROTATE_180,
+ * DISPLAY_ROTATE_270, which means the display will rotate 0°, 90°,180° or 270°.
+ * @return
+ *	Null.
+ **/
+FUNCTION setDisplayOrientation(orientation_type orientation IN);
+
+/**
+ * @Description
+ *	Setting the display offset of x-axis and y-axis.
+ *	This function can be used before or after display.
+ *	DO NOT WORK with displayColorWave(), displayClockwise(), displayColorAnimation(),
+ *	displayNumber(when number<0 or number>=10), displayString(when more than one character)
+ * @parameter
+ *	offset_x: The display offset value of horizontal x-axis, range from -8 to 8.
+ *	offset_y: The display offset value of horizontal y-axis, range from -8 to 8.
+ * @return
+ *	Null.
+ **/
+FUNCTION setDisplayOffset(int32 offset_x IN, int32 offset_y IN);
+
+/**
+ * @Description
+ *	Display a bar on RGB LED Matrix.
+ * @parameter
+ *	bar: 0 - 32. 0 is blank and 32 is full.
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, and the duration_time will not work.
+ *		      Or set it to false to display one time.
+ *	color: Set the color of the display, range from 0 to 255. See COLORS for more details.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayBar(uint8 bar IN,
+		    uint16 duration_time IN,
+		    bool forever_flag IN,
+		    uint8 color IN);
+
+/**
+ * @Description
+ *	Display a colorful bar on RGB LED Matrix.
+ * @parameter
+ *	bar: 0 - 32. 0 is blank and 32 is full.
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, and the duration_time will not work.
+ *		      Or set it to false to display one time.
+ * @return
+ *    Null.
+ **/
+FUNCTION displayColorBar(uint8 bar IN,
+			 uint16 duration_time IN,
+			 bool forever_flag IN);
+
+/**
+ * @Description
+ *	Display a wave on RGB LED Matrix.
+ * @parameter
+ *	color: Set the color of the display, range from 0 to 255. See COLORS for more details.
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, and the duration_time will not work.
+ *		      Or set it to false to display one time.
+ * @return
+ *    Null.
+ **/
+FUNCTION displayColorWave(uint8 color IN,
+			  uint16 duration_time IN,
+			  bool forever_flag IN);
+
+/**
+ * @Description
+ *	Display a clockwise(or anti-clockwise) animation on RGB LED Matrix.
+ * @parameter
+ *	is_cw: Set it true to display a clockwise animation, while set it false to display a anti-clockwise
+ *	is_big: Set it true to display a 8*8 animation, while set it false to display a 4*4 animation
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, and the duration_time will not work.
+ *		      Or set it to false to display one time.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayClockwise(bool is_cw IN,
+			  bool is_big IN,
+			  uint16 duration_time IN,
+			  bool forever_flag IN);
+
+/**
+ * @Description
+ *	Display other built-in animations on RGB LED Matrix.
+ * @parameter
+ *	index: the index of animations, 
+ *			0. big clockwise 
+ *			1. small clockwise
+ *			2. rainbow cycle
+ *			3. fire
+ *			4. walking child
+ *			5. broken heart
+ *    duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, and the duration_time will not work.
+ *		      Or set it to false to display one time.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayColorAnimation(uint8 index IN,
+			      uint16 duration_time IN,
+			      bool forever_flag IN);
+
+/**
+ * @Description
+ *	Display emoji on LED matrix.
+ * @parameter
+ *	emoji: Set a number from 0 to 29 for different emoji.	
+ *		0	smile	10	heart		20	house
+ *		1	laugh	11	small heart	21	tree
+ *		2	sad	12	broken heart	22	flower
+ *		3	mad	13	waterdrop	23	umbrella
+ *		4	angry	14	flame		24	rain
+ *		5	cry	15	creeper		25	monster
+ *		6	greedy	16	mad creeper	26	crab
+ *		7	cool	17	sword		27	duck
+ *		8	shy	18	wooden sword	28	rabbit
+ *		9	awkward	19	crystal sword	29	cat
+ *		30	up	31	down		32	left
+ *		33	right	34	smile face 3
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, and the duration_time will not work. 
+ *		      Or set it to false to display one time.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayEmoji(uint8 emoji IN,
+		      uint16 duration_time IN,
+		      bool forever_flag IN);
+
+/**
+ * @Description
+ *	Display a number(-32768 ~ 32767) on LED matrix.
+ * @parameter
+ *	number: Set the number you want to display on LED matrix. Number(except 0-9)
+ *		will scroll horizontally, the shorter you set the duration time, 
+ *		the faster it scrolls. The number range from -32768 to +32767, if 
+ *		you want to display larger number, please use displayString().
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, or set it to false to display one time.
+ *	color: Set the color of the display, range from 0 to 255. See COLORS for more details.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayNumber(int16 number IN,
+		       uint16 duration_time IN,
+		       bool forever_flag IN,
+		       uint8 color IN);
+
+/**
+ * @Description
+ *	Display a string on LED matrix.
+ * @parameter
+ *	str: The string pointer, the maximum length is 28 bytes. String will 
+ *	     scroll horizontally when its length is more than 1. The shorter 
+ *	     you set the duration time, the faster it scrolls.
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, or set it to false to display one time.
+ *	color: Set the color of the display, range from 0 to 255. See COLORS for more details.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayString(string str[28] IN,
+		       uint16 duration_time IN,
+		       bool forever_flag IN,
+		       uint8 color IN);
+
+/**
+ * @Description
+ *	Display user-defined frames on LED matrix.
+ * @parameter
+ *	buffer: The data pointer. 1 frame needs 64bytes data. Frames will switch
+ *		automatically when the frames_number is larger than 1. The shorter 
+ *		you set the duration_time, the faster it switches.
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, or set it to false to 
+ *		display one time.
+ *	frames_number: the number of frames in your buffer. Range from 1 to 5.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayFrames(uint8 buffer[64] IN,
+		       uint16 duration_time IN,
+		       bool forever_flag IN,
+		       uint8 frames_number IN);
+
+FUNCTION displayFrames64(uint64 buffer[8] IN,
+			 uint16 duration_time IN,
+			 bool forever_flag IN,
+			 uint8 frames_number IN);
+
+/**
+ * @Description
+ *	Display color block on LED matrix with a given uint32 rgb color.
+ * @parameter
+ *	rgb: uint32 rgb color, such as 0xff0000(red), 0x0000ff(blue)
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *	forever_flag: Set it to true to display forever, or set it to false to display one time.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayColorBlock(uint32 rgb IN,
+			   uint16 duration_time IN,
+			   bool forever_flag IN);
+
+/**
+ * @Description
+ *	Display nothing on LED Matrix.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION stopDisplay();
+
+/**
+ * @Description
+ *	Store the frames(you send to the device) to flash. It takes about 200ms.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION storeFrames();
+
+/**
+ * @Description
+ *	Delete all the frames in the flash of device. It takes about 200ms.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION deleteFrames();
+
+/**
+ * @Description
+ *	Display frames which is stored in the flash of device.
+ * @parameter
+ *	duration_time: Set the display time(ms) duration. Set it to 0 to not display.
+ *		If there are more than 1 frame to display, frames will switch automatically.
+ *		The shorter you set the duration_time, the faster it switches.
+ *	forever_flag: Set it to true to display forever, or set it to false to
+ *		display one time.
+ *	from: the index of frames in your flash. Range from 1 to 5. 
+ *	to: the index of frames in your flash. Range from 1 to 5.
+ * @return
+ *	Null.
+ **/
+FUNCTION displayFramesFromFlash(uint16 duration_time IN,
+				bool forever_flag IN,
+				uint8 from IN,
+				uint8 to IN);
+
+/**
+ * @Description
+ *	Enable TX and RX pin test mode.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION enableTestMode();
+
+/**
+ * @Description
+ *	Disable TX and RX pin test mode.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION disableTestMode();
+
+/**
+ * @Description
+ *	Get software vresion.
+ * @parameter
+ *	Null.
+ * @return
+ *	@return software version.
+ **/
+FUNCTION uint32 getTestVersion();
+
+/**
+ * @Description
+ *	Reset device.
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION resetDevice();
+
+/**
+ * @Description
+ *	Get device id.
+ * @parameter
+ *	deviceId: Output 12 bytes ID.
+ * @return
+ *	A pointer to device ID (12 bytes).
+ **/
+FUNCTION getDeviceId(uint8 deviceId[12] OUT);
+
+/**
+ * @Description
+ *	Initialize the LED matrix
+ * @parameter
+ *	i2c_bus: string type, represent the name if I2C bus that used for LED matrix
+ *	base: LED matrix base address, leave 0 for default address
+ *	screenNumber: LED matrix screen number
+ * @return
+ *	Null.
+ **/
+FUNCTION init(uint8 base IN, 
+	      uint8 screenNumber IN);
+
+/**
+ * @Description
+ *	Deinitialize the LED matrix
+ * @parameter
+ *	Null.
+ * @return
+ *	Null.
+ **/
+FUNCTION deinit();

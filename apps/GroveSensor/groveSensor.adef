@@ -1,0 +1,92 @@
+sandboxed: true
+start: auto
+version: 0.0
+
+extern:
+{
+    gasMQ9              = groveSensor.gasMQ9.gasMQ9
+    alcohol             = groveSensor.alcohol.alcohol
+    air                 = groveSensor.air.air
+    speechRecognizer    = groveSensor.speechRecognizer.recognizer
+    ledmatrix           = groveSensor.ledmatrix.ledmatrix
+    light               = groveSensor.light.light
+    RFIDReader          = groveSensor.RFIDReader.RFIDReader
+    ultraSonic          = groveSensor.ultraSonic.ultraSonic
+    pirMotion           = groveSensor.pirMotion.pirMotion
+    i2cUtils            = groveSensor.i2cUtils.i2cUtils
+    humanPresence       = groveSensor.humanPresence.humanPresence
+    tsl2561DigitalLight = groveSensor.tsl2561DigitalLight.tsl2561DigitalLight
+    collision           = groveSensor.collision.collision
+    heartRate           = groveSensor.heartRate.heartRate
+    color               = groveSensor.color.color
+}
+
+
+executables:
+{
+    groveSensor = (
+        components/i2cUtils/i2cUtils
+        components/sensors/gasMQ9
+        components/sensors/alcohol
+        components/sensors/air
+        components/sensors/speechRecognizer
+        components/sensors/RFIDReader
+        components/actuators/ledmatrix
+        components/sensors/light
+        components/sensors/ultraSonic
+        components/sensors/pirMotion
+        components/sensors/humanPresence
+        components/sensors/collision
+        components/sensors/heartRate
+        components/sensors/color
+        components/sensors/tsl2561DigitalLight
+    )
+}
+
+processes:
+{
+    run:
+    {
+        ( groveSensor )
+    }
+
+    envVars:
+    {
+        LE_LOG_LEVEL = DEBUG
+        LD_LIBRARY_PATH = /legato/systems/current/apps/groveSensor/read-only/usr/lib
+    }
+}
+
+bindings:
+{
+    groveSensor.periodicSensor.dhubIO -> dataHub.io
+    groveSensor.gasMQ9.le_adc -> modemService.le_adc
+    groveSensor.gasMQ9.dhubIO -> dataHub.io
+    groveSensor.alcohol.le_adc -> modemService.le_adc
+    groveSensor.alcohol.dhubIO -> dataHub.io
+    groveSensor.air.dhubIO -> dataHub.io
+    groveSensor.ledmatrix.io -> dataHub.io
+    groveSensor.ledmatrix.admin -> dataHub.admin
+    groveSensor.speechRecognizer.dhubIO -> dataHub.io
+    groveSensor.RFIDReader.dhubIO -> dataHub.io
+    groveSensor.light.dhubIO -> dataHub.io
+    groveSensor.light.le_adc -> modemService.le_adc
+    groveSensor.ultraSonic.dhubIO -> dataHub.io
+    groveSensor.ultraSonic.le_gpioPin8 -> gpioService.le_gpioPin8
+    groveSensor.pirMotion.dhubIO -> dataHub.io
+    groveSensor.pirMotion.le_gpioPin8 -> gpioService.le_gpioPin8
+    groveSensor.humanPresence.dhubIO -> dataHub.io
+    groveSensor.tsl2561DigitalLight.dhubIO -> dataHub.io
+    groveSensor.collision.D5 -> gpioService.le_gpioPin8
+    groveSensor.heartRate.dhubIO -> dataHub.io
+    groveSensor.color.dhubIO -> dataHub.io
+}
+
+requires:
+{
+    device:
+    {
+        // replace these devices based on your module
+        [rw]    /dev/i2c-5  /dev/
+    }
+}

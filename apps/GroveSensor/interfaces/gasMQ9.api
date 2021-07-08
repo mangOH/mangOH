@@ -1,0 +1,27 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_gasmq9 GasMQ9 Sensor API
+ *
+ * The following function can be used to fetch gas resistance measurement:
+ *
+ * - gasMQ9_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file gas_interface.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the Gas measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+    double reading OUT
+);

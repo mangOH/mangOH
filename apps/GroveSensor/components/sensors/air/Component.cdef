@@ -1,0 +1,37 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * Component definition file for the mangOH Yellow air sensor component.
+ */
+//--------------------------------------------------------------------------------------------------
+cflags:
+{
+    -I$CURDIR/../../i2cUtils
+    -std=c99
+}
+provides:
+{
+    api:
+    {
+        $CURDIR/../../../interfaces/air.api
+    }
+}
+
+requires:
+{
+    api:
+    {
+        dhubIO = $CURDIR/../../../../DataHub/io.api
+    }
+
+    component:
+    {
+        periodicSensor
+        $CURDIR/../../i2cUtils
+    }
+}
+
+sources:
+{
+    airSensor.c
+}
+

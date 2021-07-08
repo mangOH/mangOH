@@ -1,0 +1,26 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_color Color Sensor API
+ *
+ * The following function can be used to fetch air measurement:
+ *
+ * - color_Read()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read the Color Sensor measurement.
+ *
+ * @return LE_OK if successful.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t Read
+(
+   	string color_hex[6] OUT //color hex code
+);
+

@@ -1,0 +1,43 @@
+//--------------------------------------------------------------------------------------------------
+/**
+ * @page c_mangoh_thermocouple Thermocouple API
+ *
+ * The following function can be used to temperature value from Thermocouple:
+ *
+ * - thermocouple_getCelsius()
+ * - thermocouple_getFarenheit()
+ *
+ * <hr>
+ *
+ * Copyright (C) Sierra Wireless Inc.
+ *
+ * @file thermocouple.h
+ */
+//--------------------------------------------------------------------------------------------------
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read temperature value in Celsius.
+ *
+ * @Parameter: value - data output
+ * @return LE_OK for successful read, LE_FAULT for errors detected.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t getCelsius
+(
+	double value OUT
+);
+
+
+//--------------------------------------------------------------------------------------------------
+/**
+ * Read temperature value in Farenheit.
+ *
+ * @Parameter: value - data output
+ * @return LE_OK for successful read, LE_FAULT for errors detected.
+ */
+//--------------------------------------------------------------------------------------------------
+FUNCTION le_result_t getFarenheit
+(
+	double value OUT
+);
